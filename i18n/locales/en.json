@@ -1,0 +1,369 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "start": "Start",
+    "restart": "Restart",
+    "completed": "Completed",
+    "failed": "Failed",
+    "rollDice": "Roll Dice",
+    "rolling": "Rolling...",
+    "moving": "Moving...",
+    "preparing": "Preparing...",
+    "skipToHome": "Skip to Home",
+    "cancel": "Cancel",
+    "confirm": "Confirm"
+  },
+  "settings": {
+    "title": "Settings",
+    "backToHome": "Back to Home",
+    "sound": {
+      "title": "Sound Settings",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "volume": "Volume",
+      "testPlay": "Test Play",
+      "globalMute": "Global Mute",
+      "names": {
+        "bgm": "Background Music",
+        "rollDice": "Roll Dice",
+        "stepDice": "Move Piece",
+        "countDown": "Countdown",
+        "stopDice": "Stop Dice"
+      }
+    },
+    "other": {
+      "title": "Other Settings",
+      "comingSoon": "More setting options coming soon..."
+    },
+    "flying": {
+      "title": "Game Time Settings",
+      "backToGameMode": "Back to Game Mode",
+      "resetToDefaults": "Reset to Defaults",
+      "basic": {
+        "title": "Basic Settings",
+        "defaultTaskTime": "Default Task Time",
+        "defaultTaskTimeDesc": "Default time when no keywords match",
+        "smartTimeDetection": "Smart Time Detection",
+        "smartTimeDetectionDesc": "Automatically set time based on task keywords"
+      },
+      "keywords": {
+        "title": "Keyword Time Configuration",
+        "addNew": "Add New Keyword",
+        "addNewKeyword": "Enter keyword...",
+        "seconds": "seconds",
+        "deleteKeyword": "Delete keyword"
+      },
+      "test": {
+        "title": "Keyword Detection Test",
+        "taskContent": "Test Task Content:",
+        "taskPlaceholder": "Enter task description to test keyword detection...",
+        "detectedTime": "Detected Time",
+        "matchedKeywords": "Matched Keywords",
+        "detectionReason": "Detection Reason",
+        "noMatch": "No Match",
+        "tryExamples": "Try these examples:",
+        "useDefault": "Use default time",
+        "matchedKeyword": "Matched keyword",
+        "multipleKeywords": "Multiple keywords matched, using longest time"
+      },
+      "usage": {
+        "title": "Usage Instructions",
+        "point1": "When \"Smart Time Detection\" is enabled, the system will automatically identify keywords in tasks and set corresponding times",
+        "point2": "If a task contains multiple keywords, the longest time will be used",
+        "point3": "When no keywords match, the default task time will be used",
+        "point4": "All time settings are automatically saved to local storage",
+        "point5": "You can preview keyword detection effects in the test area above"
+      }
+    }
+  },
+  "game": {
+    "title": "Flight Chess",
+    "subtitle": "Love Flight Chess",
+    "selectMode": "Select Game Mode",
+    "modeDescription": "Each mode offers different interactive experiences",
+    "redTurn": " Red Player's Turn (Plane ✈️)",
+    "blueTurn": " Blue Player's Turn (Helicopter 🚁)",
+    "redWin": "🎉 Red Player Wins!",
+    "blueWin": "🎉 Blue Player Wins!",
+    "backToHome": "Back to Home",
+    "continueGameTitle": "Continue Game",
+    "continueGameMessage": "You have an unfinished game. Would you like to continue?",
+    "newGame": "New Game",
+    "continueGame": "Continue Game",
+    "selectWinTask": "Choose a victory task to celebrate!",
+    "winTasksTitle": "Victory Task Selection",
+    "winTaskExecution": "Victory Task Execution",
+    "celebrationMessage": "Complete this task to celebrate your victory!",
+    "findLocalGame": "Found previous game progress",
+    "red": "Red (Airplane ✈️)",
+    "blue": "Blue (Helicopter 🚁)",
+    "positions": "Positions",
+    "gameMode": "Game Mode",
+    "currentPlayer": "Current Player",
+    "lastLocation": "Resume from last position",
+    "star": {
+      "title": "🌟 Lucky Star",
+      "subtitle": "Good fortune arrives!"
+    },
+    "collision": {
+      "title": "⚡ Collision",
+      "subtitle": "An unexpected encounter!"
+    },
+    "trap": {
+      "title": "💥 Trap",
+      "subtitle": "Watch out for challenges!"
+    }
+
+  },
+  "modeCategories": {
+    "basic": "Classic Mode",
+    "lifestyle": "Lifestyle Mode",
+    "roleplay": "Roleplay",
+    "adult": "Adult Mode"
+  },
+  "modes": {
+    "normal": {
+      "name": "Normal",
+      "description": "Perfect for friends and first-time players"
+    },
+    "love": {
+      "name": "Romance",
+      "description": "Perfect for couples in love"
+    },
+    "couple": {
+      "name": "Couple",
+      "description": "Perfect for stable relationships"
+    },
+    "advanced": {
+      "name": "Advanced",
+      "description": "For couples seeking more excitement"
+    },
+    "intimate": {
+      "name": "Intimate",
+      "description": "Private space only"
+    },
+    "mixed": {
+      "name": "Mixed",
+      "description": "Random combination of all modes"
+    },
+    "hetero": {
+      "name": "Hetero Fun",
+      "description": "Designed for heterosexual couples"
+    },
+    "daily": {
+      "name": "Daily Life",
+      "description": "Warm daily life interactions"
+    },
+    "food": {
+      "name": "Culinary",
+      "description": "Sweet interactions during food time"
+    },
+    "fitness": {
+      "name": "Active",
+      "description": "Exercise together, stay healthy together"
+    },
+    "creative": {
+      "name": "Creative",
+      "description": "Artistic interactions with creativity"
+    },
+    "romantic": {
+      "name": "Romantic",
+      "description": "Romantic date moments"
+    },
+    "game": {
+      "name": "Playful",
+      "description": "Fun and relaxing game interactions"
+    },
+    "adult": {
+      "name": "Mature",
+      "description": "Intimate interactions for adult couples only"
+    },
+    "master-slave-sex": {
+      "name": "Roleplay",
+      "description": "Explore special role-based interactions"
+    },
+    "roleplay-workplace": {
+      "name": "Workplace Roleplay",
+      "description": "Experience various workplace roles and scenarios"
+    },
+    "roleplay-fantasy": {
+      "name": "Fantasy Roleplay",
+      "description": "Enter fantasy worlds and experience different characters"
+    },
+    "roleplay-uniform": {
+      "name": "Uniform Roleplay", 
+      "description": "Various uniform-themed roleplay experiences"
+    },
+    "roleplay-ancient": {
+      "name": "Ancient Roleplay",
+      "description": "Travel through time to experience ancient roles and scenarios"
+    }
+  },
+  "customMode": {
+    "title": "Custom Mode",
+    "description": "Create your own unique game mode",
+    "create": "Create Mode",
+    "edit": "Edit",
+    "delete": "Delete",
+    "deleteConfirm": "Are you sure you want to delete this custom mode?",
+    "creatorType": {
+      "ai": "AI Task",
+      "type": "Task Type",
+      "custom": "Custom"
+    },
+    "ai": {
+      "link": "Get Key",
+      "role": "Please enter the executor’s relationship: couple, friend, sibling",
+      "title": "AI Task",
+      "keyword": "Please enter task keywords: sweet, interactive, funny",
+      "number": "Please enter the number of AI tasks to generate",
+      "deepSeekKey": "Please enter DeepSeek key",
+      "loadTasks": "Load AI Tasks",
+      "fromExistingModes": "Generate tasks from AI",
+      "apiKeyRequired": "Please enter DeepSeek API key",
+      "invalidTaskNumber": "Please enter a number between 1 and 10",
+      "tasksGenerated": "Tasks generated successfully",
+      "generationFailed": "Failed to generate tasks, please try again",
+      "defaultKeyword": "Sweet, Funny, Challenge, Interactive, Prank",
+      "template": "Randomly generate a task pool that can be directly used for ${role} board game, and can also be generated by ${keyword}. All tasks can be completed without props. ${count} tasks in total. All time and measurement units must use Arabic numerals (e.g., 10 seconds, 1 minute). Only return the content in JSON format like [\"Sweet:xx\",\"Interactive:xx\"]"
+    },
+    "creator": {
+      "title": "Create Custom Mode",
+      "close": "Close",
+      "basicInfo": "Basic Information",
+      "modeName": "Mode Name",
+      "modeDescription": "Mode Description",
+      "modeNamePlaceholder": "Enter mode name",
+      "modeDescriptionPlaceholder": "Describe the unique features of this mode",
+      "taskSelection": "Add Tasks",
+      "fromExistingModes": "Select from existing modes",
+      "loadTasks": "Load all mode tasks",
+      "loading": "Loading...",
+      "manualAdd": "Add custom task",
+      "manualAddPlaceholder": "Enter custom task",
+      "selectedTasks": "Selected tasks",
+      "taskCount": "tasks",
+      "createButton": "Create Mode",
+      "cancel": "Cancel",
+      "nameRequired": "Please enter a mode name",
+      "tasksRequired": "Please add at least one task",
+      "subTitle": "Create your own game mode",
+      "baseInfo": "Basic Information"
+    },
+    "messages": {
+      "createSuccess": "Custom mode created successfully!",
+      "deleteSuccess": "Custom mode deleted",
+      "loadTasksError": "Failed to load tasks, please try again"
+    }
+  },
+  "board": {
+    "start": "Start",
+    "end": "Finish",
+    "star": "Lucky",
+    "trap": "Trap"
+  },
+  "customModeManager": {
+    "title": "Custom Mode Manager",
+    "noModes": "No custom modes yet",
+    "createFirstMode": "Create your first custom mode!",
+    "createMode": "Create Mode",
+    "editMode": "Edit Mode",
+    "importMode": "Import Mode",
+    "exportMode": "Export Mode",
+    "modeName": "Mode Name",
+    "modeDescription": "Mode Description",
+    "taskList": "Task List",
+    "addTask": "Add Task",
+    "taskPlaceholder": "Enter task content",
+    "batchAddTasks": "Batch Add Tasks",
+    "pasteFromClipboard": "Paste from Clipboard",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "tasksCount": "{count} tasks",
+    "createdOn": "Created on",
+    "type": {
+      "ai": "AI Generated",
+      "custom": "Custom"
+    },
+    "deleteConfirm": {
+      "title": "Confirm Deletion",
+      "message": "Are you sure you want to delete mode \"{modeName}\"? This action cannot be undone."
+    },
+    "import": {
+      "success": "Successfully imported {count} tasks",
+      "invalidFile": "Please select a JSON file (.json)",
+      "invalidFormat": "Invalid file format, missing required mode information",
+      "overwriteConfirm": {
+        "title": "Confirm Overwrite",
+        "message": "A mode named \"{name}\" already exists. Overwrite the existing mode?"
+      },
+      "successImport": "Successfully imported mode \"{name}\" with {count} tasks",
+      "importFailed": "Import failed, please check the file content",
+      "fileError": "File format error, please make sure it's a valid JSON file",
+      "readError": "Failed to read file, please check browser permissions"
+    },
+    "clipboard": {
+      "noTasks": "No valid task content found in clipboard",
+      "readError": "Failed to read from clipboard, please check browser permissions"
+    },
+    "validation": {
+      "nameRequired": "Please enter a mode name",
+      "tasksRequired": "Please add at least one task"
+    }
+  },
+  "tasks": {
+    "challenge": "Task Challenge",
+    "starTask": "⭐ Lucky Star Task",
+    "trapTask": "💣 Trap Task",
+    "collisionTask": "💥 Collision Task",
+    "redExecute": " Red Player Executes",
+    "blueExecute": " Blue Player Executes",
+    "completedReward": " Completion Reward: Executor moves forward 0-3 spaces",
+    "failedPenalty": "Failure Penalty: Executor moves backward 3-6 spaces",
+    "collisionCompletedReward": " Completion Reward: Executor stays in place",
+    "collisionFailedPenalty": "Failure Penalty: Executor returns to start",
+    "emptyQueue": "Task queue is empty! Take a break!"
+  },
+  "tips": {
+    "twoPlayers": "Two players take turns",
+    "faceToFace": "Face-to-face interaction",
+    "improveRelation": "Improve relationship"
+  },
+  "toast": {
+    "redForward": "Red moves forward {steps} spaces!",
+    "blueForward": "Blue moves forward {steps} spaces!",
+    "redBackward": "Red moves backward {steps} spaces!",
+    "blueBackward": "Blue moves backward {steps} spaces!",
+    "redStay": "Red completed task but stays in place.",
+    "blueStay": "Blue completed task but stays in place.",
+    "redFailedToStart": " Red failed task, returns to start!",
+    "blueFailedToStart": " Blue failed task, returns to start!",
+    "redCompleted": " Red completed task, stays in place!",
+    "blueCompleted": " Blue completed task, stays in place!"
+  },
+  "home": {
+    "title": "Couple's Game",
+    "subtitle": "Warm up your love through the game",
+    "features": {
+      "title": "Game Features",
+      "classic": {
+        "title": "Classic Gameplay",
+        "description": "Traditional flight chess rules, easy to learn and play"
+      },
+      "interaction": {
+        "title": "Couple Interaction",
+        "description": "Specially designed interactive tasks to enhance your relationship"
+      },
+      "modes": {
+        "title": "Multiple Modes",
+        "description": "Various game modes to keep you entertained"
+      }
+    },
+    "cta": {
+      "startGame": "Start Game",
+      "subtext": "Click to start and enjoy the game with your loved one"
+    }
+  }
+}

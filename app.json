@@ -23,6 +23,12 @@
     },
     "web": {
       "output": "static",
+      "bundler": "metro",
+      "build": {
+        "babel": {
+          "include": []
+        }
+      },
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
@@ -38,7 +44,8 @@
             "backgroundColor": "#000000"
           }
         }
-      ]
+      ],
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": true,

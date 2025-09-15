@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx expo install nativewind)",
+      "Bash(npx expo install zustand)",
+      "Bash(npx expo install @react-native-async-storage/async-storage)",
+      "Bash(npx expo install immer)",
+      "Bash(npx tsc --noEmit)",
+      "Bash(npx expo install react-i18next i18next expo-localization)",
+      "Bash(npx expo install expo-linear-gradient)",
+      "Bash(npm start --clear)",
+      "Bash(pkill -f \"expo start\")",
+      "Bash(npx expo start --clear --port 8082)",
+      "Bash(yarn remove nativewind tailwindcss)",
+      "Bash(yarn add nativewind@^4.0.0 tailwindcss@3.3.0)",
+      "Bash(npx expo install zustand @react-native-async-storage/async-storage)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
