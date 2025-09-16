@@ -1,5 +1,17 @@
 import React, {useEffect, useState} from 'react';
-import {Alert, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View, Platform, PanResponder, Animated, Dimensions} from 'react-native';
+import {
+    Alert,
+    ScrollView,
+    Share,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+    Platform,
+    PanResponder,
+    Animated,
+    Dimensions
+} from 'react-native';
 import {Ionicons} from '@expo/vector-icons';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useColorScheme} from '@/hooks/use-color-scheme';
@@ -76,7 +88,7 @@ const TaskSettings: React.FC = () => {
     // 浮动按钮拖拽状态
     const screenWidth = Dimensions.get('window').width;
     const screenHeight = Dimensions.get('window').height;
-    const [fabPosition] = useState(new Animated.ValueXY({ x: screenWidth - 76, y: screenHeight - 200 }));
+    const [fabPosition] = useState(new Animated.ValueXY({x: screenWidth - 76, y: screenHeight - 200}));
 
     // 创建拖拽响应器
     const panResponder = PanResponder.create({
@@ -88,8 +100,8 @@ const TaskSettings: React.FC = () => {
             });
         },
         onPanResponderMove: Animated.event(
-            [null, { dx: fabPosition.x, dy: fabPosition.y }],
-            { useNativeDriver: false }
+            [null, {dx: fabPosition.x, dy: fabPosition.y}],
+            {useNativeDriver: false}
         ),
         onPanResponderRelease: () => {
             fabPosition.flattenOffset();
@@ -102,7 +114,7 @@ const TaskSettings: React.FC = () => {
             let newY = Math.max(100, Math.min(screenHeight - 200, currentY));
 
             Animated.spring(fabPosition, {
-                toValue: { x: newX, y: newY },
+                toValue: {x: newX, y: newY},
                 useNativeDriver: false,
             }).start();
         },
@@ -111,12 +123,10 @@ const TaskSettings: React.FC = () => {
     // 初始化默认数据和系统任务
     useEffect(() => {
         const initializeData = async () => {
-            if (categories.length === 0 && taskSets.length === 0) {
-                initializeDefaultData();
-                // 根据当前i18n语言加载系统任务
-                const currentLanguage = i18n.language as Language;
-                await loadSystemTasks(currentLanguage);
-            }
+            initializeDefaultData();
+            // 根据当前i18n语言加载系统任务
+            const currentLanguage = i18n.language as Language;
+            await loadSystemTasks(currentLanguage);
         };
 
         initializeData();
@@ -128,7 +138,7 @@ const TaskSettings: React.FC = () => {
             title: '删除确认',
             message: `确定要删除任务集 "${taskSet.name}" 吗？此操作无法撤销。`,
             buttons: [
-                { text: '取消', style: 'cancel' },
+                {text: '取消', style: 'cancel'},
                 {
                     text: '删除',
                     style: 'destructive',
@@ -146,7 +156,7 @@ const TaskSettings: React.FC = () => {
             title: '删除确认',
             message: `确定要删除分类 "${category.name}" 吗？${taskCount > 0 ? `这将同时删除该分类下的 ${taskCount} 个任务集。` : ''}此操作无法撤销。`,
             buttons: [
-                { text: '取消', style: 'cancel' },
+                {text: '取消', style: 'cancel'},
                 {
                     text: '删除',
                     style: 'destructive',
@@ -216,7 +226,7 @@ const TaskSettings: React.FC = () => {
                     title: '导出任务集',
                     message: '请选择导出方式',
                     buttons: [
-                        { text: '取消', style: 'cancel' },
+                        {text: '取消', style: 'cancel'},
                         {
                             text: '分享',
                             onPress: async () => {
@@ -248,7 +258,7 @@ const TaskSettings: React.FC = () => {
 
             if (Platform.OS === 'web') {
                 // Web端使用浏览器下载
-                const blob = new Blob([content], { type: 'application/json' });
+                const blob = new Blob([content], {type: 'application/json'});
                 const url = URL.createObjectURL(blob);
 
                 const link = document.createElement('a');
@@ -520,8 +530,8 @@ const TaskSettings: React.FC = () => {
                     styles.fabContainer,
                     {
                         transform: [
-                            { translateX: fabPosition.x },
-                            { translateY: fabPosition.y }
+                            {translateX: fabPosition.x},
+                            {translateY: fabPosition.y}
                         ]
                     }
                 ]}
