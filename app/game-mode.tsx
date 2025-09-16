@@ -28,6 +28,9 @@ export default function GameMode() {
     const colorScheme = useColorScheme() ?? 'light';
     const colors = Colors[colorScheme] as any;
 
+    // 获取传入的游戏类型参数
+    const gameType = params.type as string || 'all';
+
     // 从store获取数据
     const {categories, taskSets} = useTasksStore();
 
@@ -62,6 +65,30 @@ export default function GameMode() {
             {translateY: interpolate(fadeAnimation.value, [0, 1], [30, 0])},
         ],
     }));
+
+    // 根据游戏类型获取标题
+    const getPageTitle = () => {
+        switch (gameType) {
+            case 'strategy':
+                return '策略游戏';
+            case 'couple':
+                return '情侣任务';
+            default:
+                return '任务选择';
+        }
+    };
+
+    // 根据游戏类型获取副标题
+    const getPageSubtitle = () => {
+        switch (gameType) {
+            case 'strategy':
+                return '挑战你的策略思维';
+            case 'couple':
+                return '增进感情的互动任务';
+            default:
+                return '选择适合你们的互动方式';
+        }
+    };
 
     // 根据选中分类过滤任务集
     const filteredTaskSets = selectedCategory === 'all'
@@ -202,8 +229,25 @@ export default function GameMode() {
 
         const handlePress = () => {
             setSelectedTaskSet(taskSet);
-            // TODO: 这里可以跳转到游戏界面或显示任务详情
-            console.log('选择任务集:', taskSet.name);
+
+            // 根据游戏类型跳转到不同页面
+            if (gameType === 'strategy') {
+                // 策略游戏跳转到飞行棋，传递选中的分类
+                router.push({
+                    pathname: '/flying-chess',
+                    params: {
+                        taskSetId: taskSet.id
+                    }
+                });
+            } else {
+                // 其他游戏类型可以跳转到任务游戏页面
+                router.push({
+                    pathname: '/flying-chess',
+                    params: {
+                        taskSetId: taskSet.id
+                    }
+                });
+            }
         };
 
         return (
@@ -337,7 +381,7 @@ export default function GameMode() {
         <>
             <Stack.Screen
                 options={{
-                    title: '任务选择',
+                    title: getPageTitle(),
                     headerShown: true,
                     headerStyle: {
                         backgroundColor: colors.homeBackground,

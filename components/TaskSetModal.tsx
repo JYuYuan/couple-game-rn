@@ -38,7 +38,7 @@ export const TaskSetModal: React.FC<TaskSetModalProps> = ({
         name: taskSet.name,
         description: taskSet.description || '',
         categoryId: taskSet.categoryId,
-        tasks: taskSet.tasks.length > 0 ? taskSet.tasks : [''],
+        tasks: taskSet.tasks.length > 0 ? taskSet.tasks.map(task => typeof task === 'string' ? task : task.title || '') : [''],
       });
     } else {
       setFormData({

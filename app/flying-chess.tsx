@@ -1,0 +1,692 @@
+import React, {useEffect, useState} from 'react';
+import {ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {Stack, useLocalSearchParams, useRouter} from 'expo-router';
+import Animated, {useAnimatedStyle, useSharedValue, withTiming} from 'react-native-reanimated';
+import {LinearGradient} from 'expo-linear-gradient';
+import {Ionicons} from '@expo/vector-icons';
+import {useColorScheme} from '@/hooks/use-color-scheme';
+import {Colors} from '@/constants/theme';
+import GameBoard from '@/components/GameBoard';
+import TaskModal, {TaskModalData} from '@/components/TaskModal';
+import VictoryModal from '@/components/VictoryModal';
+import {useGameTasks} from '@/hooks/use-game-tasks';
+import {useGamePlayers, GamePlayer} from '@/hooks/use-game-players';
+import {createBoardPath} from '@/utils/board';
+import {PathCell} from '@/types/game';
+
+export default function FlyingChessGame() {
+    const router = useRouter();
+    const params = useLocalSearchParams();
+    const colorScheme = useColorScheme() ?? 'light';
+    const colors = Colors[colorScheme] as any;
+
+    // 获取传入的参数
+    const taskSetId = params.taskSetId as string;
+
+    // 使用hooks，传入分类参数
+    const gameTasks = useGameTasks(taskSetId);
+    const gamePlayersHook = useGamePlayers(2);
+    const {
+        players,
+        currentPlayerIndex,
+        currentPlayer,
+        gameStatus,
+        startGame,
+        resetGame,
+        nextPlayer,
+        movePlayer,
+        checkWinCondition,
+        showWinDialog,
+        completeTask,
+        applyTaskReward,
+        getOpponentPlayer
+    } = gamePlayersHook;
+
+    // 游戏状态
+    const [diceValue, setDiceValue] = useState(0);
+    const [isRolling, setIsRolling] = useState(false);
+    const [isMoving, setIsMoving] = useState(false);
+    const [currentTask, setCurrentTask] = useState(gameTasks.getRandomTask());
+    const [showTaskModal, setShowTaskModal] = useState(false);
+    const [taskModalData, setTaskModalData] = useState<TaskModalData | null>(null);
+    const [pendingTaskType, setPendingTaskType] = useState<'trap' | 'star' | 'collision' | null>(null);
+
+    // 胜利弹窗状态
+    const [showVictoryModal, setShowVictoryModal] = useState(false);
+    const [winner, setWinner] = useState<GamePlayer | null>(null);
+
+    // 棋盘数据
+    const [boardPath, setBoardPath] = useState<PathCell[]>([]);
+
+    // 初始化棋盘
+    useEffect(() => {
+        const newBoard = createBoardPath();
+        setBoardPath(newBoard);
+        console.log('棋盘已生成，特殊格子位置：');
+        newBoard.forEach((cell, index) => {
+            if (cell.type !== 'path') {
+                console.log(`位置 ${index}: ${cell.type}`);
+            }
+        });
+    }, []);
+
+    // 动画值
+    const diceRotation = useSharedValue(0);
+
+    // 处理胜利
+    const handleVictory = (victoryPlayer: GamePlayer) => {
+        console.log('游戏胜利！获胜者:', victoryPlayer.name);
+        setWinner(victoryPlayer);
+        setShowVictoryModal(true);
+    };
+
+    // 处理胜利奖励任务选择
+    const handleVictoryTasksSelected = (selectedTasks: any[]) => {
+        console.log('获胜者选择的奖励任务:', selectedTasks);
+        // 这里可以将选中的任务保存到获胜者的记录中
+        // 可以调用相应的API或更新本地存储
+        // 选择完任务后不关闭弹窗，而是显示游戏结束选项
+    };
+
+    // 重新开始游戏
+    const handleRestartGame = () => {
+        setShowVictoryModal(false);
+        handleResetGame();
+    };
+
+    // 退出游戏
+    const handleExitGame = () => {
+        setShowVictoryModal(false);
+        router.back();
+    };
+
+    // 关闭胜利弹窗
+    const handleCloseVictoryModal = () => {
+        setShowVictoryModal(false);
+        // 可以选择重置游戏或返回上一页
+    };
+
+    // 获取随机任务
+    const getNewTask = () => {
+        const task = gameTasks.getRandomTask();
+        setCurrentTask(task);
+        return task;
+    };
+
+    // 检查格子类型并触发任务
+    const checkCellAndTriggerTask = (playerId: number, position: number) => {
+        console.log(`检查位置 ${position} 的特殊格子，玩家ID: ${playerId}`);
+
+        // 检查位置是否有效
+        if (position < 0 || position >= boardPath.length) {
+            console.log(`位置 ${position} 超出棋盘范围`);
+            return;
+        }
+
+        const currentCell = boardPath[position];
+        if (!currentCell) {
+            console.log(`位置 ${position} 的格子数据不存在`);
+            return;
+        }
+
+        console.log(`位置 ${position} 的格子类型: ${currentCell.type}`);
+
+        // 检查是否有其他玩家在相同位置（碰撞）
+        const playersAtPosition = players.filter(p => p.position === position && p.id !== playerId);
+        if (playersAtPosition.length > 0) {
+            console.log(`检测到碰撞，位置 ${position}`);
+            triggerTask('collision', playerId);
+            return;
+        }
+
+        // 检查特殊格子
+        if (currentCell.type === 'trap') {
+            console.log(`触发陷阱任务，位置 ${position}`);
+            triggerTask('trap', playerId);
+        } else if (currentCell.type === 'star') {
+            console.log(`触发幸运任务，位置 ${position}`);
+            triggerTask('star', playerId);
+        } else {
+            console.log(`位置 ${position} 是普通格子 (${currentCell.type})`);
+        }
+    };
+
+    // 触发任务弹窗
+    const triggerTask = (taskType: 'trap' | 'star' | 'collision', playerId: number) => {
+        console.log(`触发任务：类型=${taskType}, 玩家ID=${playerId}`);
+
+        const task = gameTasks.getRandomTask();
+        console.log('获取到的任务：', task);
+
+        if (!task || !currentPlayer) {
+            console.log('任务获取失败或没有当前玩家');
+            return;
+        }
+
+        // 确定执行者
+        let executor: 'current' | 'opponent' = 'current';
+        if (taskType === 'star' || taskType === 'collision') {
+            executor = 'opponent'; // 幸运任务和碰撞任务由对方执行
+        }
+
+        const taskData: TaskModalData = {
+            id: task.id,
+            title: task.title,
+            description: task.description || '',
+            type: taskType,
+            executor,
+            category: task.category,
+            difficulty: task.difficulty
+        };
+
+        setTaskModalData(taskData);
+        setPendingTaskType(taskType);
+        setShowTaskModal(true);
+    };
+
+    // 处理任务完成结果
+    const handleTaskComplete = (completed: boolean) => {
+        if (!taskModalData || !pendingTaskType || !currentPlayer) return;
+
+        // 确定执行奖惩的玩家
+        const targetPlayerId = taskModalData.executor === 'current'
+            ? currentPlayer.id
+            : getOpponentPlayer(currentPlayer.id)?.id;
+
+        if (targetPlayerId) {
+            // 应用奖惩
+            applyTaskReward(targetPlayerId, pendingTaskType, completed);
+        }
+
+        // 关闭弹窗并重置状态
+        setShowTaskModal(false);
+        setTaskModalData(null);
+        setPendingTaskType(null);
+
+        // 重新检查胜利条件
+        setTimeout(() => {
+            checkWinCondition((winner) => {
+                handleVictory(winner);
+            });
+        }, 1000);
+    };
+
+    const handleStartGame = () => {
+        startGame();
+        getNewTask();
+    };
+
+
+    const rollDice = () => {
+        if (isRolling || isMoving) return;
+
+        setIsRolling(true);
+
+        // 骰子旋转动画
+        diceRotation.value = withTiming(360 * 4, {duration: 1200});
+
+        // 生成随机数
+        setTimeout(() => {
+            const newDiceValue = Math.floor(Math.random() * 6) + 1;
+            setDiceValue(newDiceValue);
+
+            // 投掷完成，直接开始移动（不重置isRolling状态）
+            setTimeout(() => {
+                setIsRolling(false);
+                setIsMoving(true);
+                diceRotation.value = 0;
+
+                // 移动当前玩家
+                movePlayerStepByStep(currentPlayerIndex, newDiceValue);
+
+                // 移动完成后检查胜利条件并切换玩家
+                setTimeout(() => {
+                    setIsMoving(false);
+
+                    checkWinCondition((winner) => {
+                        handleVictory(winner);
+                    });
+
+                    if (gameStatus === 'playing') {
+                        setDiceValue(0);
+                        nextPlayer();
+                        // 切换玩家时获取新任务
+                        getNewTask();
+                    }
+                }, 1000 + newDiceValue * 400);
+            }, 1000);
+        }, 1200);
+    };
+
+    const handleResetGame = () => {
+        resetGame();
+        setDiceValue(0);
+        setIsMoving(false);
+        getNewTask();
+    };
+
+    const movePlayerStepByStep = (playerIndex: number, steps: number) => {
+        const startPlayer = players[playerIndex];
+        if (!startPlayer) return;
+
+        const startPosition = startPlayer.position;
+        const boardSize = 48; // 棋盘总格数（终点位置为47，索引从0开始）
+        let stepCount = 0;
+        let targetPosition;
+
+        // 计算最终位置，考虑终点反弹机制
+        if (startPosition + steps > boardSize) {
+            // 如果超过终点，需要反弹
+            const excess = (startPosition + steps) - boardSize;
+            targetPosition = boardSize - excess;
+        } else {
+            targetPosition = startPosition + steps;
+        }
+
+        // 确保位置不小于起始位置（防止反弹到起点之前）
+        targetPosition = Math.max(0, targetPosition);
+
+        console.log(`玩家 ${startPlayer.id} 从位置 ${startPosition} 投掷 ${steps} 步，目标位置: ${targetPosition}`);
+
+        const moveOneStep = () => {
+            if (stepCount < steps && gameStatus === 'playing') {
+                stepCount++;
+                let currentMovePosition;
+
+                if (stepCount <= boardSize - startPosition) {
+                    // 向前移动阶段
+                    currentMovePosition = startPosition + stepCount;
+                } else {
+                    // 反弹阶段
+                    const bounceSteps = stepCount - (boardSize - startPosition);
+                    currentMovePosition = boardSize - bounceSteps;
+                }
+
+                // 确保位置在有效范围内
+                currentMovePosition = Math.max(0, Math.min(boardSize, currentMovePosition));
+                movePlayer(startPlayer.id, currentMovePosition);
+
+                if (stepCount < steps) {
+                    setTimeout(moveOneStep, 400);
+                } else {
+                    // 移动完成，检查特殊格子
+                    console.log(`移动完成！玩家 ${startPlayer.id} 从位置 ${startPosition} 移动到位置 ${targetPosition}`);
+                    setTimeout(() => {
+                        checkCellAndTriggerTask(startPlayer.id, targetPosition);
+                    }, 500);
+                }
+            }
+        };
+
+        moveOneStep();
+    };
+
+
+    const diceAnimatedStyle = useAnimatedStyle(() => ({
+        transform: [
+            {rotate: `${diceRotation.value}deg`}
+        ],
+    }));
+
+
+    return (
+        <>
+            <Stack.Screen
+                options={{
+                    title: '飞行棋',
+                    headerShown: true,
+                    headerStyle: {
+                        backgroundColor: colors.homeBackground,
+                    },
+                    headerTintColor: colors.homeTitle,
+                    headerTitleStyle: {
+                        fontWeight: '600',
+                        fontSize: 18,
+                    },
+                    headerBackTitle: '返回',
+                }}
+            />
+            <View style={[styles.container, {backgroundColor: colors.homeBackground}]}>
+                {/* 背景渐变 */}
+                <LinearGradient
+                    colors={[colors.homeGradientStart, colors.homeGradientMiddle, colors.homeGradientEnd]}
+                    style={StyleSheet.absoluteFillObject}
+                    start={{x: 0, y: 0}}
+                    end={{x: 1, y: 1}}
+                />
+
+                <ScrollView
+                    style={styles.content}
+                    contentContainerStyle={styles.contentContainer}
+                    showsVerticalScrollIndicator={false}
+                >
+                    {/* 游戏状态栏 */}
+                    <View style={[styles.statusBar, {backgroundColor: colors.homeCardBackground}]}>
+                        <View style={styles.statusLeft}>
+                            <Text style={[styles.statusTitle, {color: colors.homeCardTitle}]}>
+                                {gameStatus === 'waiting' ? '准备开始' :
+                                    gameStatus === 'playing' ? '游戏进行中' : '游戏结束'}
+                            </Text>
+                            {gameStatus === 'playing' && (
+                                <Text style={[styles.currentPlayerText, {color: currentPlayer.color}]}>
+                                    轮到 {currentPlayer.name}
+                                </Text>
+                            )}
+                        </View>
+
+                        {gameStatus === 'playing' && (
+                            <View style={styles.diceContainer}>
+                                <View style={styles.diceWrapper}>
+                                    <TouchableOpacity
+                                        style={[styles.diceButton, {
+                                            backgroundColor: (isRolling || isMoving) ? '#FF6B6B' : colors.settingsAccent,
+                                            borderWidth: 3,
+                                            borderColor: 'white',
+                                            opacity: (isRolling || isMoving) ? 0.6 : 1
+                                        }]}
+                                        onPress={rollDice}
+                                        disabled={isRolling || isMoving}
+                                        activeOpacity={0.8}
+                                    >
+                                        {isRolling ? (
+                                            <Animated.View style={diceAnimatedStyle}>
+                                                <Text style={styles.diceEmoji}>🎲</Text>
+                                            </Animated.View>
+                                        ) : (
+                                            <Text style={[styles.diceResultText, {color: 'white'}]}>
+                                                {diceValue || '🎲'}
+                                            </Text>
+                                        )}
+                                    </TouchableOpacity>
+                                </View>
+
+                                <Text style={[styles.diceText, {color: colors.homeCardDescription, fontWeight: '600'}]}>
+                                    {isRolling ? '投掷中...' : isMoving ? '棋子移动中...' : '点击投掷骰子'}
+                                </Text>
+                            </View>
+                        )}
+                    </View>
+
+                    {/* 玩家信息 */}
+                    <View style={[styles.playersInfo, {backgroundColor: colors.homeCardBackground}]}>
+                        <Text style={[styles.sectionTitle, {color: colors.homeCardTitle}]}>玩家状态</Text>
+                        <View style={styles.playersGrid}>
+                            {players.map((player, index) => (
+                                <View
+                                    key={player.id}
+                                    style={[
+                                        styles.playerCard,
+                                        {
+                                            backgroundColor: player.color + '15',
+                                            borderColor: currentPlayerIndex === index ? player.color : 'transparent',
+                                            borderWidth: currentPlayerIndex === index ? 2 : 0
+                                        }
+                                    ]}
+                                >
+                                    <View style={[styles.playerAvatar, {backgroundColor: player.color}]}>
+                                        <Text style={styles.playerAvatarText}>{player.name.charAt(0)}</Text>
+                                    </View>
+                                    <View style={styles.playerInfo}>
+                                        <Text style={[styles.playerName, {color: colors.homeCardTitle}]}>
+                                            {player.name}
+                                        </Text>
+                                        <Text style={[styles.playerPosition, {color: colors.homeCardDescription}]}>
+                                            位置: {player.position + 1}
+                                        </Text>
+                                    </View>
+                                </View>
+                            ))}
+                        </View>
+                    </View>
+
+                    {/* 游戏棋盘 */}
+                    <View style={[styles.boardSection, {backgroundColor: colors.homeCardBackground}]}>
+                        <GameBoard
+                            players={players}
+                            currentPlayer={currentPlayerIndex}
+                            boardData={boardPath}
+                            onCellPress={(cell) => {
+                                console.log('Cell pressed:', cell);
+                            }}
+                        />
+                    </View>
+
+                    {/* 游戏控制 */}
+                    <View style={styles.gameControls}>
+                        {gameStatus === 'waiting' ? (
+                            <TouchableOpacity
+                                style={[styles.controlButton, {backgroundColor: colors.settingsAccent}]}
+                                onPress={handleStartGame}
+                            >
+                                <LinearGradient
+                                    colors={['#4CAF50', '#66BB6A']}
+                                    style={styles.controlButtonGradient}
+                                    start={{x: 0, y: 0}}
+                                    end={{x: 1, y: 1}}
+                                >
+                                    <Ionicons name="play" size={20} color="white"/>
+                                    <Text style={styles.controlButtonText}>开始游戏</Text>
+                                </LinearGradient>
+                            </TouchableOpacity>
+                        ) : (
+                            <View style={styles.controlButtons}>
+                                <TouchableOpacity
+                                    style={[styles.controlButton, styles.smallButton]}
+                                    onPress={handleResetGame}
+                                >
+                                    <LinearGradient
+                                        colors={['#FF9500', '#FFB74D']}
+                                        style={styles.controlButtonGradient}
+                                        start={{x: 0, y: 0}}
+                                        end={{x: 1, y: 1}}
+                                    >
+                                        <Ionicons name="refresh" size={16} color="white"/>
+                                        <Text style={[styles.controlButtonText, styles.smallButtonText]}>重新开始</Text>
+                                    </LinearGradient>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    style={[styles.controlButton, styles.smallButton]}
+                                    onPress={() => router.back()}
+                                >
+                                    <LinearGradient
+                                        colors={['#FF6B6B', '#FF8A80']}
+                                        style={styles.controlButtonGradient}
+                                        start={{x: 0, y: 0}}
+                                        end={{x: 1, y: 1}}
+                                    >
+                                        <Ionicons name="exit" size={16} color="white"/>
+                                        <Text style={[styles.controlButtonText, styles.smallButtonText]}>退出游戏</Text>
+                                    </LinearGradient>
+                                </TouchableOpacity>
+                            </View>
+                        )}
+                    </View>
+                </ScrollView>
+            </View>
+
+            {/* 任务弹窗 */}
+            <TaskModal
+                visible={showTaskModal}
+                task={taskModalData}
+                currentPlayer={currentPlayer}
+                opponentPlayer={currentPlayer ? getOpponentPlayer(currentPlayer.id) : null}
+                onComplete={handleTaskComplete}
+                onClose={() => setShowTaskModal(false)}
+            />
+
+            {/* 胜利弹窗 */}
+            <VictoryModal
+                visible={showVictoryModal}
+                winner={winner}
+                availableTasks={gameTasks.currentTasks}
+                onTasksSelected={handleVictoryTasksSelected}
+                onRestart={handleRestartGame}
+                onExit={handleExitGame}
+                onClose={handleCloseVictoryModal}
+            />
+        </>
+    );
+}
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+    },
+    content: {
+        flex: 1,
+    },
+    contentContainer: {
+        padding: 20,
+        paddingBottom: 100,
+    },
+    statusBar: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: 16,
+        borderRadius: 12,
+        marginBottom: 16,
+    },
+    statusLeft: {
+        flex: 1,
+    },
+    statusTitle: {
+        fontSize: 18,
+        fontWeight: '700',
+        marginBottom: 4,
+    },
+    currentPlayerText: {
+        fontSize: 14,
+        fontWeight: '600',
+    },
+    diceContainer: {
+        alignItems: 'center',
+        gap: 12,
+    },
+    diceWrapper: {
+        position: 'relative',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    diceGlow: {
+        position: 'absolute',
+        width: 90,
+        height: 90,
+        borderRadius: 45,
+        zIndex: 0,
+    },
+    diceGlowGradient: {
+        width: '100%',
+        height: '100%',
+        borderRadius: 45,
+    },
+    diceButton: {
+        width: 70,
+        height: 70,
+        borderRadius: 35,
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: '#000',
+        shadowOffset: {width: 0, height: 4},
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 8,
+        zIndex: 1,
+    },
+    diceEmoji: {
+        fontSize: 32,
+    },
+    diceResultText: {
+        fontSize: 24,
+        fontWeight: '700',
+    },
+    diceText: {
+        fontSize: 14,
+        fontWeight: '600',
+        textAlign: 'center',
+    },
+    playersInfo: {
+        padding: 16,
+        borderRadius: 12,
+        marginBottom: 16,
+    },
+    sectionTitle: {
+        fontSize: 16,
+        fontWeight: '700',
+        marginBottom: 12,
+    },
+    playersGrid: {
+        flexDirection: 'row',
+        gap: 12,
+    },
+    playerCard: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 12,
+        borderRadius: 8,
+        gap: 8,
+    },
+    playerAvatar: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    playerAvatarText: {
+        color: 'white',
+        fontSize: 14,
+        fontWeight: '700',
+    },
+    playerInfo: {
+        flex: 1,
+    },
+    playerName: {
+        fontSize: 14,
+        fontWeight: '600',
+        marginBottom: 2,
+    },
+    playerPosition: {
+        fontSize: 12,
+    },
+    boardSection: {
+        borderRadius: 12,
+        marginBottom: 16,
+        overflow: 'hidden',
+    },
+    gameControls: {
+        alignItems: 'center',
+    },
+    controlButtons: {
+        flexDirection: 'row',
+        gap: 12,
+        width: '100%',
+    },
+    controlButton: {
+        borderRadius: 12,
+        overflow: 'hidden',
+
+        flex: 1,
+    },
+    smallButton: {
+        flex: 0.5,
+    },
+    controlButtonGradient: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 14,
+        paddingHorizontal: 10,
+        gap: 8,
+    },
+    controlButtonText: {
+        color: 'white',
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    smallButtonText: {
+        fontSize: 14,
+    },
+});

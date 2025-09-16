@@ -18,7 +18,8 @@
       "Bash(npx expo install expo-clipboard)",
       "Bash(npx expo install expo-file-system expo-sharing)",
       "Bash(cat /Users/dompling/Desktop/GIT/couple-game-rn/node_modules/expo-file-system/build/index.d.ts)",
-      "Bash(cat /Users/dompling/Desktop/GIT/couple-game-rn/node_modules/expo-file-system/build/FileSystem.d.ts)"
+      "Bash(cat /Users/dompling/Desktop/GIT/couple-game-rn/node_modules/expo-file-system/build/FileSystem.d.ts)",
+      "Bash(npx expo install expo-blur)"
     ],
     "deny": [],
     "ask": []

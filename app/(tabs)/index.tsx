@@ -59,22 +59,24 @@ export default function Home() {
 
     const gameOptions = [
         {
+            key: "fly",
             title: t('home.flyingChess.title', '飞行棋'),
             subtitle: t('home.flyingChess.subtitle', '策略对战'),
             description: t('home.flyingChess.description', '体验策略与运气的完美结合'),
             icon: 'airplane',
             iconType: 'Ionicons',
-            href: '/game-mode',
+            href: '/game-mode?type=strategy',
             gradient: ['#5E5CE6', '#BF5AF2'],
             accentColor: '#5E5CE6',
         },
         {
+            key: "wheel",
             title: t('home.luckyWheel.title', '情侣任务'),
             subtitle: t('home.luckyWheel.subtitle', '趣味互动'),
             description: t('home.luckyWheel.description', '专为情侣设计的互动任务'),
             icon: 'heart',
             iconType: 'Ionicons',
-            href: '/game-mode',
+            href: '/game-mode?type=couple',
             gradient: ['#FF6482', '#FF9F40'],
             accentColor: '#FF6482',
         },

@@ -2,6 +2,11 @@ export type TaskDifficulty = 'easy' | 'normal' | 'hard' | 'extreme';
 
 export type TaskType = 'system' | 'custom';
 
+export interface Task {
+  title?: string;
+  description?: string;
+}
+
 export interface TaskCategory {
   id: string;
   name: string;
@@ -18,7 +23,7 @@ export interface TaskSet {
   difficulty: TaskDifficulty;
   type: TaskType;
   categoryId: string;
-  tasks: string[];
+  tasks: (string | Task)[];
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
