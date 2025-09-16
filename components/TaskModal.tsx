@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect} from 'react';
 import {
     View,
     Text,
@@ -16,13 +16,13 @@ import Animated, {
     interpolate,
     runOnJS
 } from 'react-native-reanimated';
-import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
-import { Ionicons } from '@expo/vector-icons';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Colors } from '@/constants/theme';
+import {LinearGradient} from 'expo-linear-gradient';
+import {BlurView} from 'expo-blur';
+import {Ionicons} from '@expo/vector-icons';
+import {useColorScheme} from '@/hooks/use-color-scheme';
+import {Colors} from '@/constants/theme';
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
 export interface TaskModalData {
     id: string;
@@ -54,13 +54,13 @@ interface TaskModalProps {
 }
 
 export default function TaskModal({
-    visible,
-    task,
-    currentPlayer,
-    opponentPlayer,
-    onComplete,
-    onClose
-}: TaskModalProps) {
+                                      visible,
+                                      task,
+                                      currentPlayer,
+                                      opponentPlayer,
+                                      onComplete,
+                                      onClose
+                                  }: TaskModalProps) {
     const colorScheme = useColorScheme() ?? 'light';
     const colors = Colors[colorScheme] as any;
 
@@ -79,17 +79,17 @@ export default function TaskModal({
             setShowResult(false);
 
             // 开始动画
-            backdropOpacity.value = withTiming(1, { duration: 300 });
+            backdropOpacity.value = withTiming(1, {duration: 300});
             modalScale.value = withSpring(1, {
                 damping: 15,
                 stiffness: 150
             });
-            contentOpacity.value = withTiming(1, { duration: 400 });
+            contentOpacity.value = withTiming(1, {duration: 400});
         } else {
             // 关闭动画
-            backdropOpacity.value = withTiming(0, { duration: 200 });
-            modalScale.value = withTiming(0, { duration: 200 });
-            contentOpacity.value = withTiming(0, { duration: 200 });
+            backdropOpacity.value = withTiming(0, {duration: 200});
+            modalScale.value = withTiming(0, {duration: 200});
+            contentOpacity.value = withTiming(0, {duration: 200});
         }
     }, [visible]);
 
@@ -99,7 +99,7 @@ export default function TaskModal({
 
     const modalStyle = useAnimatedStyle(() => ({
         transform: [
-            { scale: modalScale.value },
+            {scale: modalScale.value},
             {
                 translateY: interpolate(
                     modalScale.value,
@@ -113,7 +113,7 @@ export default function TaskModal({
 
     // 获取任务类型信息
     const getTaskTypeInfo = () => {
-        if (!task) return { icon: 'help', color: '#999', title: '未知任务' };
+        if (!task) return {icon: 'help', color: '#999', title: '未知任务'};
 
         switch (task.type) {
             case 'trap':
@@ -156,22 +156,32 @@ export default function TaskModal({
     // 获取难度颜色
     const getDifficultyColor = (difficulty: string) => {
         switch (difficulty) {
-            case 'easy': return '#4CAF50';
-            case 'normal': return '#FF9500';
-            case 'hard': return '#FF6B6B';
-            case 'extreme': return '#9C27B0';
-            default: return '#999999';
+            case 'easy':
+                return '#4CAF50';
+            case 'normal':
+                return '#FF9500';
+            case 'hard':
+                return '#FF6B6B';
+            case 'extreme':
+                return '#9C27B0';
+            default:
+                return '#999999';
         }
     };
 
     // 获取难度文本
     const getDifficultyText = (difficulty: string) => {
         switch (difficulty) {
-            case 'easy': return '简单';
-            case 'normal': return '普通';
-            case 'hard': return '困难';
-            case 'extreme': return '极限';
-            default: return '未知';
+            case 'easy':
+                return '简单';
+            case 'normal':
+                return '普通';
+            case 'hard':
+                return '困难';
+            case 'extreme':
+                return '极限';
+            default:
+                return '未知';
         }
     };
 
@@ -244,7 +254,7 @@ export default function TaskModal({
             onRequestClose={onClose}
         >
             <Animated.View style={[styles.backdrop, backdropStyle]}>
-                <BlurView intensity={20} style={StyleSheet.absoluteFillObject} />
+                <BlurView intensity={20} style={StyleSheet.absoluteFillObject}/>
             </Animated.View>
 
             <View style={styles.container}>
@@ -252,25 +262,25 @@ export default function TaskModal({
                     <LinearGradient
                         colors={[colors.homeCardBackground, colors.homeCardBackground + 'F0']}
                         style={styles.modalContent}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
+                        start={{x: 0, y: 0}}
+                        end={{x: 1, y: 1}}
                     >
                         {!showResult ? (
                             // 任务展示界面
                             <>
                                 {/* 任务类型头部 */}
                                 <View style={styles.header}>
-                                    <View style={[styles.typeIcon, { backgroundColor: taskTypeInfo.color + '20' }]}>
+                                    <View style={[styles.typeIcon, {backgroundColor: taskTypeInfo.color + '20'}]}>
                                         <Ionicons
                                             name={taskTypeInfo.icon as any}
                                             size={32}
                                             color={taskTypeInfo.color}
                                         />
                                     </View>
-                                    <Text style={[styles.typeTitle, { color: colors.homeCardTitle }]}>
+                                    <Text style={[styles.typeTitle, {color: colors.homeCardTitle}]}>
                                         {taskTypeInfo.title}
                                     </Text>
-                                    <Text style={[styles.typeDescription, { color: colors.homeCardDescription }]}>
+                                    <Text style={[styles.typeDescription, {color: colors.homeCardDescription}]}>
                                         {taskTypeInfo.description}
                                     </Text>
                                 </View>
@@ -278,16 +288,16 @@ export default function TaskModal({
                                 {/* 执行者信息 */}
                                 {executor && (
                                     <View style={styles.executorSection}>
-                                        <Text style={[styles.sectionTitle, { color: colors.homeCardTitle }]}>
+                                        <Text style={[styles.sectionTitle, {color: colors.homeCardTitle}]}>
                                             执行者
                                         </Text>
-                                        <View style={[styles.executorCard, { backgroundColor: executor.color + '15' }]}>
-                                            <View style={[styles.executorAvatar, { backgroundColor: executor.color }]}>
+                                        <View style={[styles.executorCard, {backgroundColor: executor.color + '15'}]}>
+                                            <View style={[styles.executorAvatar, {backgroundColor: executor.color}]}>
                                                 <Text style={styles.executorAvatarText}>
                                                     {executor.id === 1 ? '✈️' : '🚁'}
                                                 </Text>
                                             </View>
-                                            <Text style={[styles.executorName, { color: colors.homeCardTitle }]}>
+                                            <Text style={[styles.executorName, {color: colors.homeCardTitle}]}>
                                                 {executor.name}
                                             </Text>
                                         </View>
@@ -297,22 +307,24 @@ export default function TaskModal({
                                 {/* 任务内容 */}
                                 <View style={styles.taskSection}>
                                     <View style={styles.taskHeader}>
-                                        <Text style={[styles.sectionTitle, { color: colors.homeCardTitle }]}>
+                                        <Text style={[styles.sectionTitle, {color: colors.homeCardTitle}]}>
                                             任务内容
                                         </Text>
-                                        <View style={[styles.difficultyBadge, { backgroundColor: getDifficultyColor(task.difficulty) + '15' }]}>
-                                            <Text style={[styles.difficultyText, { color: getDifficultyColor(task.difficulty) }]}>
+                                        <View
+                                            style={[styles.difficultyBadge, {backgroundColor: getDifficultyColor(task.difficulty) + '15'}]}>
+                                            <Text
+                                                style={[styles.difficultyText, {color: getDifficultyColor(task.difficulty)}]}>
                                                 {getDifficultyText(task.difficulty)}
                                             </Text>
                                         </View>
                                     </View>
 
-                                    <Text style={[styles.taskTitle, { color: colors.homeCardTitle }]}>
+                                    <Text style={[styles.taskTitle, {color: colors.homeCardTitle}]}>
                                         {task.title}
                                     </Text>
 
                                     {task.description && (
-                                        <Text style={[styles.taskDescription, { color: colors.homeCardDescription }]}>
+                                        <Text style={[styles.taskDescription, {color: colors.homeCardDescription}]}>
                                             {task.description}
                                         </Text>
                                     )}
@@ -320,7 +332,7 @@ export default function TaskModal({
 
                                 {/* 选择按钮 */}
                                 <View style={styles.actionSection}>
-                                    <Text style={[styles.actionPrompt, { color: colors.homeCardTitle }]}>
+                                    <Text style={[styles.actionPrompt, {color: colors.homeCardTitle}]}>
                                         请选择任务完成情况：
                                     </Text>
 
@@ -333,10 +345,10 @@ export default function TaskModal({
                                             <LinearGradient
                                                 colors={['#4CAF50', '#66BB6A']}
                                                 style={styles.actionButtonGradient}
-                                                start={{ x: 0, y: 0 }}
-                                                end={{ x: 1, y: 1 }}
+                                                start={{x: 0, y: 0}}
+                                                end={{x: 1, y: 1}}
                                             >
-                                                <Ionicons name="checkmark" size={20} color="white" />
+                                                <Ionicons name="checkmark" size={20} color="white"/>
                                                 <Text style={styles.actionButtonText}>完成</Text>
                                             </LinearGradient>
                                         </TouchableOpacity>
@@ -349,10 +361,10 @@ export default function TaskModal({
                                             <LinearGradient
                                                 colors={['#FF6B6B', '#FF8A80']}
                                                 style={styles.actionButtonGradient}
-                                                start={{ x: 0, y: 0 }}
-                                                end={{ x: 1, y: 1 }}
+                                                start={{x: 0, y: 0}}
+                                                end={{x: 1, y: 1}}
                                             >
-                                                <Ionicons name="close" size={20} color="white" />
+                                                <Ionicons name="close" size={20} color="white"/>
                                                 <Text style={styles.actionButtonText}>未完成</Text>
                                             </LinearGradient>
                                         </TouchableOpacity>
@@ -363,7 +375,7 @@ export default function TaskModal({
                             // 结果展示界面
                             resultInfo && (
                                 <View style={styles.resultContainer}>
-                                    <View style={[styles.resultIcon, { backgroundColor: resultInfo.color + '20' }]}>
+                                    <View style={[styles.resultIcon, {backgroundColor: resultInfo.color + '20'}]}>
                                         <Ionicons
                                             name={resultInfo.icon as any}
                                             size={48}
@@ -371,16 +383,16 @@ export default function TaskModal({
                                         />
                                     </View>
 
-                                    <Text style={[styles.resultTitle, { color: colors.homeCardTitle }]}>
+                                    <Text style={[styles.resultTitle, {color: colors.homeCardTitle}]}>
                                         {resultInfo.title}
                                     </Text>
 
-                                    <Text style={[styles.resultDescription, { color: colors.homeCardDescription }]}>
+                                    <Text style={[styles.resultDescription, {color: colors.homeCardDescription}]}>
                                         {resultInfo.description}
                                     </Text>
 
                                     <View style={styles.resultFooter}>
-                                        <Text style={[styles.resultFooterText, { color: colors.homeCardDescription }]}>
+                                        <Text style={[styles.resultFooterText, {color: colors.homeCardDescription}]}>
                                             正在执行中...
                                         </Text>
                                     </View>
@@ -411,7 +423,7 @@ const styles = StyleSheet.create({
         borderRadius: 24,
         overflow: 'hidden',
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 10 },
+        shadowOffset: {width: 0, height: 10},
         shadowOpacity: 0.3,
         shadowRadius: 20,
         elevation: 20,
