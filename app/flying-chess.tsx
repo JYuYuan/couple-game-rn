@@ -36,8 +36,6 @@ export default function FlyingChessGame() {
         nextPlayer,
         movePlayer,
         checkWinCondition,
-        showWinDialog,
-        completeTask,
         applyTaskReward,
         getOpponentPlayer
     } = gamePlayersHook;
@@ -46,7 +44,6 @@ export default function FlyingChessGame() {
     const [diceValue, setDiceValue] = useState(0);
     const [isRolling, setIsRolling] = useState(false);
     const [isMoving, setIsMoving] = useState(false);
-    const [currentTask, setCurrentTask] = useState(gameTasks.getRandomTask());
     const [showTaskModal, setShowTaskModal] = useState(false);
     const [taskModalData, setTaskModalData] = useState<TaskModalData | null>(null);
     const [pendingTaskType, setPendingTaskType] = useState<'trap' | 'star' | 'collision' | null>(null);
@@ -106,13 +103,6 @@ export default function FlyingChessGame() {
         // 可以选择重置游戏或返回上一页
     };
 
-    // 获取随机任务
-    const getNewTask = () => {
-        const task = gameTasks.getRandomTask();
-        setCurrentTask(task);
-        return task;
-    };
-
     // 检查格子类型并触发任务
     const checkCellAndTriggerTask = (playerId: number, position: number) => {
         console.log(`检查位置 ${position} 的特殊格子，玩家ID: ${playerId}`);
@@ -120,13 +110,13 @@ export default function FlyingChessGame() {
         // 检查位置是否有效
         if (position < 0 || position >= boardPath.length) {
             console.log(`位置 ${position} 超出棋盘范围`);
-            return;
+            return false; // 返回false表示没有任务触发
         }
 
         const currentCell = boardPath[position];
         if (!currentCell) {
             console.log(`位置 ${position} 的格子数据不存在`);
-            return;
+            return false;
         }
 
         console.log(`位置 ${position} 的格子类型: ${currentCell.type}`);
@@ -136,47 +126,63 @@ export default function FlyingChessGame() {
         if (playersAtPosition.length > 0) {
             console.log(`检测到碰撞，位置 ${position}`);
             triggerTask('collision', playerId);
-            return;
+            return true; // 返回true表示有任务触发
         }
 
         // 检查特殊格子
         if (currentCell.type === 'trap') {
             console.log(`触发陷阱任务，位置 ${position}`);
             triggerTask('trap', playerId);
+            return true;
         } else if (currentCell.type === 'star') {
             console.log(`触发幸运任务，位置 ${position}`);
             triggerTask('star', playerId);
+            return true;
         } else {
             console.log(`位置 ${position} 是普通格子 (${currentCell.type})`);
+            return false;
         }
     };
 
     // 触发任务弹窗
-    const triggerTask = (taskType: 'trap' | 'star' | 'collision', playerId: number) => {
-        console.log(`触发任务：类型=${taskType}, 玩家ID=${playerId}`);
+    const triggerTask = (taskType: 'trap' | 'star' | 'collision', triggerPlayerId: number) => {
+        console.log(`触发任务：类型=${taskType}, 触发者ID=${triggerPlayerId}`);
 
         const task = gameTasks.getRandomTask();
         console.log('获取到的任务：', task);
 
-        if (!task || !currentPlayer) {
-            console.log('任务获取失败或没有当前玩家');
+        if (!task) {
+            console.log('任务获取失败');
             return;
         }
 
-        // 确定执行者
-        let executor: 'current' | 'opponent' = 'current';
-        if (taskType === 'star' || taskType === 'collision') {
-            executor = 'opponent'; // 幸运任务和碰撞任务由对方执行
+        // 根据任务类型确定执行者
+        let executorPlayerId: number;
+        let executorType: 'self' | 'opponent';
+
+        if (taskType === 'trap') {
+            // 陷阱任务：触发者自己执行
+            executorPlayerId = triggerPlayerId;
+            executorType = 'self';
+        } else {
+            // 星星任务和碰撞任务：对手执行
+            const opponentPlayer = getOpponentPlayer(triggerPlayerId);
+            executorPlayerId = opponentPlayer?.id || triggerPlayerId;
+            executorType = 'opponent';
         }
+
+        console.log(`执行者ID: ${executorPlayerId}, 类型: ${executorType}`);
 
         const taskData: TaskModalData = {
             id: task.id,
             title: task.title,
             description: task.description || '',
             type: taskType,
-            executor,
+            executor: executorType === 'self' ? 'current' : 'opponent',
             category: task.category,
-            difficulty: task.difficulty
+            difficulty: task.difficulty,
+            triggerPlayerId: triggerPlayerId,
+            executorPlayerId: executorPlayerId
         };
 
         setTaskModalData(taskData);
@@ -186,16 +192,27 @@ export default function FlyingChessGame() {
 
     // 处理任务完成结果
     const handleTaskComplete = (completed: boolean) => {
-        if (!taskModalData || !pendingTaskType || !currentPlayer) return;
+        if (!taskModalData || !pendingTaskType) return;
 
-        // 确定执行奖惩的玩家
-        const targetPlayerId = taskModalData.executor === 'current'
-            ? currentPlayer.id
-            : getOpponentPlayer(currentPlayer.id)?.id;
+        const triggerPlayerId = taskModalData.triggerPlayerId!;
+        const executorPlayerId = taskModalData.executorPlayerId!;
 
-        if (targetPlayerId) {
-            // 应用奖惩
-            applyTaskReward(targetPlayerId, pendingTaskType, completed);
+        console.log(`任务完成: 类型=${pendingTaskType}, 触发者=${triggerPlayerId}, 执行者=${executorPlayerId}, 完成=${completed}`);
+
+        // 应用任务奖惩，移动执行者
+        const moveResult = applyTaskReward(executorPlayerId, pendingTaskType, completed);
+
+        if (moveResult) {
+            console.log(`执行者 ${executorPlayerId} 从位置 ${moveResult.oldPosition} 移动到 ${moveResult.newPosition}`);
+
+            // 如果执行者位置发生了变化，立即检查胜利条件
+            if (moveResult.newPosition !== moveResult.oldPosition) {
+                setTimeout(() => {
+                    checkWinCondition((winner) => {
+                        handleVictory(winner);
+                    });
+                }, 100);
+            }
         }
 
         // 关闭弹窗并重置状态
@@ -203,17 +220,24 @@ export default function FlyingChessGame() {
         setTaskModalData(null);
         setPendingTaskType(null);
 
-        // 重新检查胜利条件
+        // 任务完成后检查是否需要切换玩家
         setTimeout(() => {
+            // 再次检查胜利条件
             checkWinCondition((winner) => {
                 handleVictory(winner);
             });
-        }, 1000);
+
+            // 如果游戏仍在进行中，切换到下一个玩家
+            if (gameStatus === 'playing') {
+                setDiceValue(0);
+                nextPlayer();
+                console.log('任务完成，切换到下一个玩家');
+            }
+        }, 500);
     };
 
     const handleStartGame = () => {
         startGame();
-        getNewTask();
     };
 
 
@@ -237,23 +261,30 @@ export default function FlyingChessGame() {
                 diceRotation.value = 0;
 
                 // 移动当前玩家
-                movePlayerStepByStep(currentPlayerIndex, newDiceValue);
-
-                // 移动完成后检查胜利条件并切换玩家
-                setTimeout(() => {
+                movePlayerStepByStep(currentPlayerIndex, newDiceValue, (playerId: number, finalPosition: number) => {
+                    // 移动完成的回调函数
                     setIsMoving(false);
 
+                    // 先检查胜利条件
                     checkWinCondition((winner) => {
                         handleVictory(winner);
+                        return; // 如果有人获胜，直接返回
                     });
 
-                    if (gameStatus === 'playing') {
-                        setDiceValue(0);
-                        nextPlayer();
-                        // 切换玩家时获取新任务
-                        getNewTask();
+                    // 检查是否触发了任务
+                    const hasTask = checkCellAndTriggerTask(playerId, finalPosition);
+
+                    // 如果没有任务触发且游戏仍在进行，切换玩家
+                    if (!hasTask && gameStatus === 'playing') {
+                        setTimeout(() => {
+                            setDiceValue(0);
+                            nextPlayer();
+                            console.log('没有任务触发，切换到下一个玩家');
+                        }, 500);
+                    } else if (hasTask) {
+                        console.log('触发了任务，等待任务完成后再切换玩家');
                     }
-                }, 1000 + newDiceValue * 400);
+                });
             }, 1000);
         }, 1200);
     };
@@ -262,10 +293,9 @@ export default function FlyingChessGame() {
         resetGame();
         setDiceValue(0);
         setIsMoving(false);
-        getNewTask();
     };
 
-    const movePlayerStepByStep = (playerIndex: number, steps: number) => {
+    const movePlayerStepByStep = (playerIndex: number, steps: number, onComplete?: (playerId: number, finalPosition: number) => void) => {
         const startPlayer = players[playerIndex];
         if (!startPlayer) return;
 
@@ -309,11 +339,15 @@ export default function FlyingChessGame() {
                 if (stepCount < steps) {
                     setTimeout(moveOneStep, 400);
                 } else {
-                    // 移动完成，检查特殊格子
+                    // 移动完成
                     console.log(`移动完成！玩家 ${startPlayer.id} 从位置 ${startPosition} 移动到位置 ${targetPosition}`);
-                    setTimeout(() => {
-                        checkCellAndTriggerTask(startPlayer.id, targetPosition);
-                    }, 500);
+
+                    // 调用完成回调
+                    if (onComplete) {
+                        setTimeout(() => {
+                            onComplete(startPlayer.id, targetPosition);
+                        }, 500);
+                    }
                 }
             }
         };
@@ -333,7 +367,7 @@ export default function FlyingChessGame() {
         <>
             <Stack.Screen
                 options={{
-                    title: '飞行棋',
+                    title: `${gameTasks.selectedTaskSet?.name || ""}-飞行棋`,
                     headerShown: true,
                     headerStyle: {
                         backgroundColor: colors.homeBackground,

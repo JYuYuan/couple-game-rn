@@ -32,6 +32,8 @@ export interface TaskModalData {
     executor: 'current' | 'opponent';
     category: string;
     difficulty: string;
+    triggerPlayerId: number;
+    executorPlayerId: number;
 }
 
 interface TaskModalProps {

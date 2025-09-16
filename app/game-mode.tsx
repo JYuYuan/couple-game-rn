@@ -1,24 +1,23 @@
-import React, {useState, useEffect} from 'react';
+import React, {useEffect, useState} from 'react';
 import {ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
-import {useRouter, useLocalSearchParams, Stack} from 'expo-router';
+import {Stack, useLocalSearchParams, useRouter} from 'expo-router';
 import {useTranslation} from 'react-i18next';
 import Animated, {
+    interpolate,
     useAnimatedStyle,
     useSharedValue,
-    withSpring,
-    withTiming,
-    interpolate,
     withRepeat,
-    withSequence
+    withSequence,
+    withSpring,
+    withTiming
 } from 'react-native-reanimated';
 import {LinearGradient} from 'expo-linear-gradient';
-import {BlurView} from 'expo-blur';
 import {Ionicons} from '@expo/vector-icons';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useColorScheme} from '@/hooks/use-color-scheme';
 import {Colors} from '@/constants/theme';
 import {useTasksStore} from '@/store/tasksStore';
-import {TaskCategory, TaskSet} from '@/types/tasks';
+import {TaskSet} from '@/types/tasks';
 
 export default function GameMode() {
     const router = useRouter();
@@ -69,26 +68,15 @@ export default function GameMode() {
     // 根据游戏类型获取标题
     const getPageTitle = () => {
         switch (gameType) {
-            case 'strategy':
-                return '策略游戏';
-            case 'couple':
-                return '情侣任务';
+            case 'fly':
+                return '飞行棋-任务选择';
+            case 'wheel':
+                return '大转盘-任务选择';
             default:
                 return '任务选择';
         }
     };
 
-    // 根据游戏类型获取副标题
-    const getPageSubtitle = () => {
-        switch (gameType) {
-            case 'strategy':
-                return '挑战你的策略思维';
-            case 'couple':
-                return '增进感情的互动任务';
-            default:
-                return '选择适合你们的互动方式';
-        }
-    };
 
     // 根据选中分类过滤任务集
     const filteredTaskSets = selectedCategory === 'all'
