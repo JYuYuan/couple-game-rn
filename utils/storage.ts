@@ -20,4 +20,4 @@ export const getStorage = () => {
 };
 
 const storage = getStorage();
-export default storage as any;
+export default storage;

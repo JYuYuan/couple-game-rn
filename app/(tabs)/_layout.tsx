@@ -9,14 +9,18 @@ import Animated, {
 import {Ionicons} from '@expo/vector-icons';
 import {BlurView} from 'expo-blur';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import {useColorScheme} from '@/hooks/use-color-scheme';
+import {Colors} from '@/constants/theme';
 
 const {width: screenWidth} = Dimensions.get('window');
 
 const ICONS = ['home', 'list-outline', 'settings-sharp']; // 支持3个标签页
 
 const CustomTabBar: React.FC<any> = ({state, navigation}) => {
-    console.log(state.routes);
     const insets = useSafeAreaInsets();
+    const colorScheme = useColorScheme() ?? 'light';
+    const colors = Colors[colorScheme] as any;
+
     const tabCount = state.routes.length;
     const tabBarPadding = 20;
     const tabWidth = (screenWidth - tabBarPadding * 2) / tabCount;
@@ -38,15 +42,22 @@ const CustomTabBar: React.FC<any> = ({state, navigation}) => {
 
     return (
         <View style={[styles.container, {paddingBottom: insets.bottom + 8}]}>
-            <BlurView intensity={25} tint="light" style={styles.blur}>
+            <BlurView intensity={80} tint={colors.tabBarTint} style={[styles.blur, {
+                backgroundColor: colors.tabBarBackground,
+                borderWidth: 1,
+                borderColor: colors.tabBarBorder
+            }]}>
                 <View style={styles.tabContent}>
                     <Animated.View style={[
                         styles.indicator,
                         indicatorStyle,
                         {width: indicatorWidth, left: 20}
                     ]}>
-                        <BlurView intensity={80} tint="light" style={styles.glassIndicator}>
-                            <View style={styles.glassBackground}/>
+                        <BlurView intensity={80} tint={colors.tabBarTint} style={styles.glassIndicator}>
+                            <View style={[styles.glassBackground, {
+                                backgroundColor: colors.tabBarIndicatorBackground,
+                                borderColor: colors.tabBarIndicatorBorder
+                            }]}/>
                         </BlurView>
                     </Animated.View>
 
@@ -68,6 +79,8 @@ const CustomTabBar: React.FC<any> = ({state, navigation}) => {
                                 isFocused={isFocused}
                                 onPress={onPress}
                                 onLongPress={onLongPress}
+                                activeColor={colors.tabBarIconActive}
+                                inactiveColor={colors.tabBarIconInactive}
                             />
                         );
                     })}
@@ -77,7 +90,7 @@ const CustomTabBar: React.FC<any> = ({state, navigation}) => {
     );
 };
 
-const TabButton: React.FC<any> = ({icon, isFocused, onPress, onLongPress}) => {
+const TabButton: React.FC<any> = ({icon, isFocused, onPress, onLongPress, activeColor, inactiveColor}) => {
     const scale = useSharedValue(isFocused ? 1.15 : 1);
 
     useEffect(() => {
@@ -92,8 +105,8 @@ const TabButton: React.FC<any> = ({icon, isFocused, onPress, onLongPress}) => {
         transform: [{scale: scale.value}],
     }));
 
-    // 直接计算颜色值
-    const iconColor = isFocused ? '#007AFF' : '#8E8E93';
+    // 使用动态颜色
+    const iconColor = isFocused ? activeColor : inactiveColor;
 
     return (
         <Animated.View style={[styles.tabButton, animatedStyle]}>
@@ -158,10 +171,8 @@ const styles = StyleSheet.create({
     },
     glassBackground: {
         flex: 1,
-        backgroundColor: 'rgba(255, 255, 255, 0.6)',
         borderRadius: 24,
         borderWidth: 0.5,
-        borderColor: 'rgba(255, 255, 255, 0.8)',
     },
     tabButton: {
         flex: 1,

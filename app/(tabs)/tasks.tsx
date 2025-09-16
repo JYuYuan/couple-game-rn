@@ -1,165 +1,791 @@
-import React from 'react';
-import {ScrollView, StyleSheet, Text, View} from 'react-native';
-import {LinearGradient} from 'expo-linear-gradient';
-import {BlurView} from 'expo-blur';
+import React, {useEffect, useState} from 'react';
+import {Alert, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View, Platform, PanResponder, Animated, Dimensions} from 'react-native';
 import {Ionicons} from '@expo/vector-icons';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import {useColorScheme} from '@/hooks/use-color-scheme';
+import {Colors} from '@/constants/theme';
+import {useTasksStore} from '@/store/tasksStore';
+import {useTranslation} from 'react-i18next';
+import {TaskCategory, TaskSet} from '@/types/tasks';
+import {TaskSetModal} from '@/components/TaskSetModal';
+import {CategoryModal} from '@/components/CategoryModal';
+import * as DocumentPicker from 'expo-document-picker';
+import {Language} from '@/utils/systemTasks';
+import i18n from '@/i18n';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
+import {CustomAlert, AlertButton} from '@/components/CustomAlert';
 
 const TaskSettings: React.FC = () => {
     const insets = useSafeAreaInsets();
+    const {t} = useTranslation();
+    const colorScheme = useColorScheme() ?? 'light';
+    const colors = Colors[colorScheme] as any;
 
-    const settingsSections = [
-        {
-            title: '通用',
-            items: [
-                {icon: 'language', label: '语言设置', value: '简体中文'},
-                {icon: 'moon', label: '深色模式', value: '跟随系统'},
-            ]
-        },
-        {
-            title: '关于',
-            items: [
-                {icon: 'information-circle', label: '版本信息', value: '1.0.0'},
-                {icon: 'document-text', label: '用户协议', value: ''},
-                {icon: 'shield-checkmark', label: '隐私政策', value: ''},
-            ]
+    // 跨平台alert函数
+    const showAlert = (title: string, message?: string) => {
+        if (Platform.OS === 'web') {
+            // Web端使用浏览器alert
+            window.alert(message ? `${title}\n\n${message}` : title);
+        } else {
+            // 移动端使用React Native Alert
+            Alert.alert(title, message);
         }
-    ];
+    };
 
-    return (
-        <View style={styles.container}>
-            <LinearGradient
-                colors={['#F2F2F7', '#E5E5EA', '#F2F2F7']}
-                style={StyleSheet.absoluteFillObject}
-            />
+    const {
+        categories,
+        taskSets,
+        deleteTaskSet,
+        deleteCategory,
+        toggleTaskSetActive,
+        initializeDefaultData,
+        loadSystemTasks,
+        exportTaskSet,
+        importTaskSet,
+    } = useTasksStore();
 
-            <ScrollView
-                style={styles.scrollView}
-                contentContainerStyle={{paddingTop: insets.top + 20, paddingBottom: 100}}
-                showsVerticalScrollIndicator={false}
-            >
-                <Text style={styles.pageTitle}>设置</Text>
+    const [activeTab, setActiveTab] = useState<'taskSets' | 'categories'>('taskSets');
+    const [showAddModal, setShowAddModal] = useState(false);
+    const [showCategoryModal, setShowCategoryModal] = useState(false);
+    const [selectedTaskSet, setSelectedTaskSet] = useState<TaskSet | null>(null);
+    const [selectedCategory, setSelectedCategory] = useState<TaskCategory | null>(null);
 
-                {settingsSections.map((section, sectionIndex) => (
-                    <View key={sectionIndex} style={styles.section}>
-                        <Text style={styles.sectionTitle}>{section.title}</Text>
+    // 自定义对话框状态
+    const [showExportAlert, setShowExportAlert] = useState(false);
+    const [exportAlertData, setExportAlertData] = useState<{
+        title: string;
+        message?: string;
+        buttons: AlertButton[];
+    }>({
+        title: '',
+        buttons: []
+    });
 
-                        <View style={styles.sectionContent}>
-                            <BlurView intensity={80} tint="light" style={styles.blurCard}>
-                                {section.items.map((item, index) => (
-                                    <View
-                                        key={index}
-                                        style={[
-                                            styles.settingItem,
-                                            index < section.items.length - 1 && styles.settingItemBorder
-                                        ]}
-                                    >
-                                        <View style={styles.settingItemLeft}>
-                                            <View style={styles.iconContainer}>
-                                                <Ionicons name={item.icon as any} size={22} color="#5E5CE6"/>
-                                            </View>
-                                            <Text style={styles.settingLabel}>{item.label}</Text>
-                                        </View>
+    // 通用对话框状态
+    const [showConfirmAlert, setShowConfirmAlert] = useState(false);
+    const [confirmAlertData, setConfirmAlertData] = useState<{
+        title: string;
+        message?: string;
+        buttons: AlertButton[];
+    }>({
+        title: '',
+        buttons: []
+    });
 
-                                        <View style={styles.settingItemRight}>
-                                            {item.value && (
-                                                <Text style={styles.settingValue}>{item.value}</Text>
-                                            )}
-                                            <Ionicons name="chevron-forward" size={20} color="#C7C7CC"/>
-                                        </View>
-                                    </View>
-                                ))}
-                            </BlurView>
+    // 浮动按钮拖拽状态
+    const screenWidth = Dimensions.get('window').width;
+    const screenHeight = Dimensions.get('window').height;
+    const [fabPosition] = useState(new Animated.ValueXY({ x: screenWidth - 76, y: screenHeight - 200 }));
+
+    // 创建拖拽响应器
+    const panResponder = PanResponder.create({
+        onMoveShouldSetPanResponder: () => true,
+        onPanResponderGrant: () => {
+            fabPosition.setOffset({
+                x: (fabPosition.x as any)._value,
+                y: (fabPosition.y as any)._value,
+            });
+        },
+        onPanResponderMove: Animated.event(
+            [null, { dx: fabPosition.x, dy: fabPosition.y }],
+            { useNativeDriver: false }
+        ),
+        onPanResponderRelease: () => {
+            fabPosition.flattenOffset();
+
+            // 限制边界
+            const currentX = (fabPosition.x as any)._value;
+            const currentY = (fabPosition.y as any)._value;
+
+            let newX = Math.max(20, Math.min(screenWidth - 76, currentX));
+            let newY = Math.max(100, Math.min(screenHeight - 200, currentY));
+
+            Animated.spring(fabPosition, {
+                toValue: { x: newX, y: newY },
+                useNativeDriver: false,
+            }).start();
+        },
+    });
+
+    // 初始化默认数据和系统任务
+    useEffect(() => {
+        const initializeData = async () => {
+            if (categories.length === 0 && taskSets.length === 0) {
+                initializeDefaultData();
+                // 根据当前i18n语言加载系统任务
+                const currentLanguage = i18n.language as Language;
+                await loadSystemTasks(currentLanguage);
+            }
+        };
+
+        initializeData();
+    }, []);
+
+
+    const handleDeleteTaskSet = (taskSet: TaskSet) => {
+        setConfirmAlertData({
+            title: '删除确认',
+            message: `确定要删除任务集 "${taskSet.name}" 吗？此操作无法撤销。`,
+            buttons: [
+                { text: '取消', style: 'cancel' },
+                {
+                    text: '删除',
+                    style: 'destructive',
+                    onPress: () => deleteTaskSet(taskSet.id),
+                },
+            ]
+        });
+        setShowConfirmAlert(true);
+    };
+
+    const handleDeleteCategory = (category: TaskCategory) => {
+        const taskCount = taskSets.filter(set => set.categoryId === category.id).length;
+
+        setConfirmAlertData({
+            title: '删除确认',
+            message: `确定要删除分类 "${category.name}" 吗？${taskCount > 0 ? `这将同时删除该分类下的 ${taskCount} 个任务集。` : ''}此操作无法撤销。`,
+            buttons: [
+                { text: '取消', style: 'cancel' },
+                {
+                    text: '删除',
+                    style: 'destructive',
+                    onPress: () => deleteCategory(category.id),
+                },
+            ]
+        });
+        setShowConfirmAlert(true);
+    };
+
+    const handleImportTaskSet = async () => {
+        try {
+            const result = await DocumentPicker.getDocumentAsync({
+                type: 'application/json',
+                copyToCacheDirectory: true,
+            });
+
+            if (!result.canceled && result.assets && result.assets.length > 0) {
+                const file = result.assets[0];
+
+                // 读取文件内容
+                const response = await fetch(file.uri);
+                const content = await response.text();
+
+                try {
+                    const importData = JSON.parse(content);
+
+                    // 验证数据格式
+                    if (!importData.tasks || !Array.isArray(importData.tasks)) {
+                        showAlert('错误', '导入的文件格式不正确');
+                        return;
+                    }
+
+                    // 使用store的importTaskSet方法
+                    importTaskSet(importData);
+
+                    showAlert('成功', `已成功导入任务集: ${importData.name || '未命名任务集'}`);
+                } catch (parseError) {
+                    showAlert('错误', '导入的文件内容格式不正确');
+                }
+            }
+        } catch (error) {
+            showAlert('错误', '导入失败');
+        }
+    };
+
+    const handleExportTaskSet = async (taskSet: TaskSet) => {
+        try {
+            const exportData = exportTaskSet(taskSet.id);
+            if (exportData) {
+                // 创建导出数据，移除敏感信息并格式化
+                const exportJson = {
+                    name: exportData.name,
+                    description: exportData.description,
+                    difficulty: exportData.difficulty,
+                    categoryId: exportData.categoryId,
+                    tasks: exportData.tasks,
+                    isActive: exportData.isActive,
+                    exportedAt: new Date().toISOString(),
+                    version: '1.0'
+                };
+
+                const jsonString = JSON.stringify(exportJson, null, 2);
+
+                // 设置自定义对话框数据
+                setExportAlertData({
+                    title: '导出任务集',
+                    message: '请选择导出方式',
+                    buttons: [
+                        { text: '取消', style: 'cancel' },
+                        {
+                            text: '分享',
+                            onPress: async () => {
+                                await Share.share({
+                                    message: jsonString,
+                                    title: `导出任务集: ${exportData.name}`,
+                                });
+                            }
+                        },
+                        {
+                            text: '保存到文件',
+                            onPress: async () => {
+                                await saveToFile(exportData.name, jsonString);
+                            }
+                        }
+                    ]
+                });
+                setShowExportAlert(true);
+            }
+        } catch {
+            showAlert('错误', '导出失败');
+        }
+    };
+
+    const saveToFile = async (taskSetName: string, content: string) => {
+        try {
+            // 创建文件名（移除特殊字符）
+            const fileName = `${taskSetName}_${new Date().getTime()}.json`;
+
+            if (Platform.OS === 'web') {
+                // Web端使用浏览器下载
+                const blob = new Blob([content], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+
+                showAlert('成功', '文件已下载到您的设备');
+            } else {
+                // 移动端使用expo文件系统
+                const file = new FileSystem.File(FileSystem.Paths.cache, fileName);
+
+                // 写入文件
+                await file.write(content);
+
+                // 检查是否支持分享
+                if (!(await Sharing.isAvailableAsync())) {
+                    showAlert('成功', `文件已保存到: ${fileName}`);
+                    return;
+                }
+
+                // 分享文件
+                await Sharing.shareAsync(file.uri, {
+                    mimeType: 'application/json',
+                    dialogTitle: '保存任务集文件',
+                });
+
+                showAlert('成功', '文件已导出并可以保存到您的设备');
+            }
+        } catch (error) {
+            console.error('保存文件失败:', error);
+            showAlert('错误', '保存文件失败');
+        }
+    };
+
+    const TaskSetCard = ({taskSet}: { taskSet: TaskSet }) => {
+        const category = categories.find(cat => cat.id === taskSet.categoryId);
+
+        return (
+            <View
+                style={[styles.card, {backgroundColor: colors.homeCardBackground, borderColor: colors.homeCardBorder}]}>
+                <View style={styles.cardHeader}>
+                    <View style={styles.cardTitleRow}>
+                        <View
+                            style={[styles.typeBadge, {backgroundColor: taskSet.type === 'system' ? colors.settingsAccent + '20' : '#FF9500' + '20'}]}>
+                            <Text
+                                style={[styles.typeText, {color: taskSet.type === 'system' ? colors.settingsAccent : '#FF9500'}]}>
+                                {taskSet.type === 'system' ? '系统' : '自定义'}
+                            </Text>
                         </View>
                     </View>
-                ))}
+                    <Text style={[styles.cardTitle, {color: colors.homeCardTitle}]}>{taskSet.name}</Text>
+                    {taskSet.description && (
+                        <Text style={[styles.cardDescription, {color: colors.homeCardDescription}]}>
+                            {taskSet.description}
+                        </Text>
+                    )}
+                </View>
+
+                <View style={styles.cardInfo}>
+                    <View style={styles.infoRow}>
+                        <Ionicons name="list" size={16} color={colors.homeCardDescription}/>
+                        <Text style={[styles.infoText, {color: colors.homeCardDescription}]}>
+                            {taskSet.tasks.length} 个任务
+                        </Text>
+                    </View>
+                    {category && (
+                        <View style={styles.infoRow}>
+                            <Ionicons name={category.icon as any} size={16} color={category.color}/>
+                            <Text style={[styles.infoText, {color: colors.homeCardDescription}]}>
+                                {category.name}
+                            </Text>
+                        </View>
+                    )}
+                </View>
+
+                <View style={styles.cardActions}>
+                    <TouchableOpacity
+                        style={[styles.actionButton, {backgroundColor: taskSet.isActive ? '#4ECDC4' + '20' : colors.homeCardArrowBg}]}
+                        onPress={() => toggleTaskSetActive(taskSet.id)}
+                    >
+                        <Ionicons
+                            name={taskSet.isActive ? 'checkmark-circle' : 'pause-circle'}
+                            size={20}
+                            color={taskSet.isActive ? '#4ECDC4' : colors.homeCardArrow}
+                        />
+                        <Text style={[styles.actionText, {color: taskSet.isActive ? '#4ECDC4' : colors.homeCardArrow}]}>
+                            {taskSet.isActive ? '已启用' : '已禁用'}
+                        </Text>
+                    </TouchableOpacity>
+
+                    <View style={styles.actionButtonGroup}>
+                        <TouchableOpacity
+                            style={[styles.iconButtonSmall, {backgroundColor: colors.settingsAccent + '20'}]}
+                            onPress={() => {
+                                setSelectedTaskSet(taskSet);
+                                setShowAddModal(true);
+                            }}
+                        >
+                            <Ionicons name="create" size={18} color={colors.settingsAccent}/>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={[styles.iconButtonSmall, {backgroundColor: '#4ECDC4' + '20'}]}
+                            onPress={() => handleExportTaskSet(taskSet)}
+                        >
+                            <Ionicons name="share" size={18} color="#4ECDC4"/>
+                        </TouchableOpacity>
+
+                        {taskSet.type === 'custom' && (
+                            <TouchableOpacity
+                                style={[styles.iconButtonSmall, {backgroundColor: '#FF6B6B' + '20'}]}
+                                onPress={() => handleDeleteTaskSet(taskSet)}
+                            >
+                                <Ionicons name="trash" size={18} color="#FF6B6B"/>
+                            </TouchableOpacity>
+                        )}
+                    </View>
+                </View>
+            </View>
+        );
+    };
+
+    const CategoryCard = ({category}: { category: TaskCategory }) => {
+        const taskCount = taskSets.filter(set => set.categoryId === category.id).length;
+
+        return (
+            <View
+                style={[styles.card, {backgroundColor: colors.homeCardBackground, borderColor: colors.homeCardBorder}]}>
+                <View style={styles.categoryHeader}>
+                    <View style={[styles.categoryIcon, {backgroundColor: category.color + '20'}]}>
+                        <Ionicons name={category.icon as any} size={24} color={category.color}/>
+                    </View>
+                    <View style={styles.categoryInfo}>
+                        <Text style={[styles.cardTitle, {color: colors.homeCardTitle}]}>{category.name}</Text>
+                        {category.description && (
+                            <Text style={[styles.cardDescription, {color: colors.homeCardDescription}]}>
+                                {category.description}
+                            </Text>
+                        )}
+                        <Text style={[styles.infoText, {color: colors.homeCardDescription}]}>
+                            {taskCount} 个任务集
+                        </Text>
+                    </View>
+                    <View style={styles.categoryActions}>
+                        <TouchableOpacity
+                            style={[styles.iconButton, {backgroundColor: colors.settingsAccent + '20'}]}
+                            onPress={() => {
+                                setSelectedCategory(category);
+                                setShowCategoryModal(true);
+                            }}
+                        >
+                            <Ionicons name="create" size={20} color={colors.settingsAccent}/>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[styles.iconButton, {backgroundColor: '#FF6B6B' + '20'}]}
+                            onPress={() => handleDeleteCategory(category)}
+                        >
+                            <Ionicons name="trash" size={20} color="#FF6B6B"/>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </View>
+        );
+    };
+
+    return (
+        <View style={[styles.container, {backgroundColor: colors.homeBackground}]}>
+            {/* 头部 */}
+            <View style={[styles.header, {paddingTop: insets.top + 20}]}>
+                <View style={styles.headerContent}>
+                    <View>
+                        <Text style={[styles.headerTitle, {color: colors.homeTitle}]}>任务管理</Text>
+                        <Text style={[styles.headerSubtitle, {color: colors.homeSubtitle}]}>
+                            管理你的游戏任务和分类
+                        </Text>
+                    </View>
+                    {activeTab === 'taskSets' && (
+                        <TouchableOpacity
+                            style={[styles.importButton, {backgroundColor: colors.settingsAccent}]}
+                            onPress={handleImportTaskSet}
+                        >
+                            <Ionicons name="download" size={20} color="white"/>
+                            <Text style={styles.importButtonText}>导入</Text>
+                        </TouchableOpacity>
+                    )}
+                </View>
+            </View>
+
+            {/* 标签页切换 */}
+            <View style={[styles.tabContainer, {
+                backgroundColor: colors.homeCardBackground,
+                borderColor: colors.homeCardBorder
+            }]}>
+                <TouchableOpacity
+                    style={[styles.tab, activeTab === 'taskSets' && {backgroundColor: colors.settingsAccent + '20'}]}
+                    onPress={() => setActiveTab('taskSets')}
+                >
+                    <Ionicons
+                        name="list"
+                        size={20}
+                        color={activeTab === 'taskSets' ? colors.settingsAccent : colors.homeCardDescription}
+                    />
+                    <Text style={[
+                        styles.tabText,
+                        {color: activeTab === 'taskSets' ? colors.settingsAccent : colors.homeCardDescription}
+                    ]}>
+                        任务集({taskSets.length})
+                    </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    style={[styles.tab, activeTab === 'categories' && {backgroundColor: colors.settingsAccent + '20'}]}
+                    onPress={() => setActiveTab('categories')}
+                >
+                    <Ionicons
+                        name="folder"
+                        size={20}
+                        color={activeTab === 'categories' ? colors.settingsAccent : colors.homeCardDescription}
+                    />
+                    <Text style={[
+                        styles.tabText,
+                        {color: activeTab === 'categories' ? colors.settingsAccent : colors.homeCardDescription}
+                    ]}>
+                        分类({categories.length})
+                    </Text>
+                </TouchableOpacity>
+            </View>
+
+            {/* 内容区域 */}
+            <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+                {activeTab === 'taskSets' ? (
+                    <View style={styles.listContainer}>
+                        {taskSets.map((taskSet) => (
+                            <TaskSetCard key={taskSet.id} taskSet={taskSet}/>
+                        ))}
+                        {taskSets.length === 0 && (
+                            <View style={styles.emptyState}>
+                                <Ionicons name="document-text-outline" size={48} color={colors.homeCardDescription}/>
+                                <Text style={[styles.emptyText, {color: colors.homeCardDescription}]}>
+                                    暂无任务集，点击右下角按钮创建
+                                </Text>
+                            </View>
+                        )}
+                    </View>
+                ) : (
+                    <View style={styles.listContainer}>
+                        {categories.map((category) => (
+                            <CategoryCard key={category.id} category={category}/>
+                        ))}
+                        {categories.length === 0 && (
+                            <View style={styles.emptyState}>
+                                <Ionicons name="folder-outline" size={48} color={colors.homeCardDescription}/>
+                                <Text style={[styles.emptyText, {color: colors.homeCardDescription}]}>
+                                    暂无分类，点击右下角按钮创建
+                                </Text>
+                            </View>
+                        )}
+                    </View>
+                )}
             </ScrollView>
+
+            {/* 浮动添加按钮 */}
+            <Animated.View
+                style={[
+                    styles.fabContainer,
+                    {
+                        transform: [
+                            { translateX: fabPosition.x },
+                            { translateY: fabPosition.y }
+                        ]
+                    }
+                ]}
+                {...panResponder.panHandlers}
+            >
+                <TouchableOpacity
+                    style={[styles.fab, {backgroundColor: colors.settingsAccent}]}
+                    onPress={() => {
+                        if (activeTab === 'taskSets') {
+                            setSelectedTaskSet(null);
+                            setShowAddModal(true);
+                        } else {
+                            setSelectedCategory(null);
+                            setShowCategoryModal(true);
+                        }
+                    }}
+                >
+                    <Ionicons name="add" size={24} color="white"/>
+                </TouchableOpacity>
+            </Animated.View>
+
+            {/* 模态框 */}
+            <TaskSetModal
+                visible={showAddModal}
+                onClose={() => {
+                    setShowAddModal(false);
+                    setSelectedTaskSet(null);
+                }}
+                taskSet={selectedTaskSet}
+            />
+
+            <CategoryModal
+                visible={showCategoryModal}
+                onClose={() => {
+                    setShowCategoryModal(false);
+                    setSelectedCategory(null);
+                }}
+                category={selectedCategory}
+            />
+
+            {/* 自定义导出对话框 */}
+            <CustomAlert
+                visible={showExportAlert}
+                title={exportAlertData.title}
+                message={exportAlertData.message}
+                buttons={exportAlertData.buttons}
+                onClose={() => setShowExportAlert(false)}
+            />
+
+            {/* 确认对话框 */}
+            <CustomAlert
+                visible={showConfirmAlert}
+                title={confirmAlertData.title}
+                message={confirmAlertData.message}
+                buttons={confirmAlertData.buttons}
+                onClose={() => setShowConfirmAlert(false)}
+            />
         </View>
     );
-}
-export default TaskSettings;
+};
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F2F2F7',
     },
-    scrollView: {
+    header: {
+        paddingHorizontal: 20,
+        paddingBottom: 20,
+    },
+    headerContent: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+    },
+    importButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 8,
+        gap: 6,
+    },
+    importButtonText: {
+        color: 'white',
+        fontSize: 14,
+        fontWeight: '600',
+    },
+    headerTitle: {
+        fontSize: 32,
+        fontWeight: '700',
+        marginBottom: 8,
+    },
+    headerSubtitle: {
+        fontSize: 16,
+        fontWeight: '500',
+    },
+    tabContainer: {
+        flexDirection: 'row',
+        marginHorizontal: 20,
+        borderRadius: 12,
+        padding: 4,
+        marginBottom: 20,
+        borderWidth: 1,
+    },
+    tab: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 12,
+        borderRadius: 8,
+        gap: 6,
+    },
+    tabText: {
+        fontSize: 14,
+        fontWeight: '600',
+    },
+    content: {
         flex: 1,
         paddingHorizontal: 20,
     },
-    pageTitle: {
-        fontSize: 34,
-        fontWeight: '700',
-        color: '#1C1C1E',
-        marginBottom: 30,
-        letterSpacing: -0.5,
+    listContainer: {
+        paddingBottom: 100,
     },
-    section: {
-        marginBottom: 30,
-    },
-    sectionTitle: {
-        fontSize: 13,
-        fontWeight: '600',
-        color: '#8E8E93',
-        textTransform: 'uppercase',
-        letterSpacing: 0.5,
-        marginBottom: 10,
-        marginLeft: 16,
-    },
-    sectionContent: {
+    card: {
         borderRadius: 16,
-        overflow: 'hidden',
-        shadowColor: '#000',
-        shadowOffset: {width: 0, height: 4},
-        shadowOpacity: 0.08,
-        shadowRadius: 12,
-        elevation: 3,
-    },
-    blurCard: {
-        borderRadius: 16,
-        overflow: 'hidden',
+        padding: 16,
+        marginBottom: 12,
         borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.3)',
-        backgroundColor: 'rgba(255, 255, 255, 0.6)',
+        shadowColor: '#000',
+        shadowOffset: {width: 0, height: 2},
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 2,
     },
-    settingItem: {
+    cardHeader: {
+        marginBottom: 12,
+    },
+    cardTitleRow: {
+        flexDirection: 'row',
+        gap: 8,
+        marginBottom: 8,
+    },
+    difficultyBadge: {
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 6,
+    },
+    difficultyText: {
+        fontSize: 12,
+        fontWeight: '600',
+    },
+    typeBadge: {
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 6,
+    },
+    typeText: {
+        fontSize: 12,
+        fontWeight: '600',
+    },
+    cardTitle: {
+        fontSize: 18,
+        fontWeight: '600',
+        marginBottom: 4,
+    },
+    cardDescription: {
+        fontSize: 14,
+        lineHeight: 20,
+    },
+    cardInfo: {
+        flexDirection: 'row',
+        gap: 16,
+        marginBottom: 12,
+    },
+    infoRow: {
         flexDirection: 'row',
         alignItems: 'center',
+        gap: 4,
+    },
+    infoText: {
+        fontSize: 14,
+    },
+    cardActions: {
+        flexDirection: 'row',
         justifyContent: 'space-between',
-        paddingVertical: 14,
-        paddingHorizontal: 16,
+        alignItems: 'center',
     },
-    settingItemBorder: {
-        borderBottomWidth: 0.5,
-        borderBottomColor: 'rgba(60, 60, 67, 0.12)',
-    },
-    settingItemLeft: {
+    actionButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        flex: 1,
-    },
-    iconContainer: {
-        width: 32,
-        height: 32,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
         borderRadius: 8,
-        backgroundColor: 'rgba(94, 92, 230, 0.1)',
+        gap: 6,
+    },
+    actionText: {
+        fontSize: 14,
+        fontWeight: '500',
+    },
+    actionButtonGroup: {
+        flexDirection: 'row',
+        gap: 6,
+    },
+    iconButton: {
+        width: 36,
+        height: 36,
+        borderRadius: 8,
         alignItems: 'center',
         justifyContent: 'center',
-        marginRight: 12,
     },
-    settingLabel: {
-        fontSize: 16,
-        color: '#1C1C1E',
-        fontWeight: '400',
-    },
-    settingItemRight: {
-        flexDirection: 'row',
+    iconButtonSmall: {
+        width: 32,
+        height: 32,
+        borderRadius: 6,
         alignItems: 'center',
+        justifyContent: 'center',
     },
-    settingValue: {
-        fontSize: 15,
-        color: '#8E8E93',
-        marginRight: 8,
+    categoryHeader: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        gap: 12,
+    },
+    categoryIcon: {
+        width: 48,
+        height: 48,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    categoryInfo: {
+        flex: 1,
+    },
+    categoryActions: {
+        flexDirection: 'row',
+        gap: 8,
+    },
+    emptyState: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 60,
+    },
+    emptyText: {
+        fontSize: 16,
+        textAlign: 'center',
+        marginTop: 16,
+    },
+    fabContainer: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+    },
+    fab: {
+        width: 56,
+        height: 56,
+        borderRadius: 28,
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: '#000',
+        shadowOffset: {width: 0, height: 4},
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 6,
     },
 });
+
+export default TaskSettings;

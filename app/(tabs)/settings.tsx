@@ -1,12 +1,12 @@
 import React, {useState} from 'react';
 import {Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
-import {LinearGradient} from 'expo-linear-gradient';
-import {BlurView} from 'expo-blur';
 import {Ionicons} from '@expo/vector-icons';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useSettingsStore} from "@/store";
 import {useTranslation} from 'react-i18next';
 import {LanguageMode, ThemeMode} from '@/types/settings';
+import {useColorScheme} from '@/hooks/use-color-scheme';
+import {Colors} from '@/constants/theme';
 
 const Settings: React.FC = () => {
     const insets = useSafeAreaInsets();
@@ -15,30 +15,26 @@ const Settings: React.FC = () => {
     const [showLanguageModal, setShowLanguageModal] = useState(false);
     const [showThemeModal, setShowThemeModal] = useState(false);
 
+    // 主题颜色
+    const colorScheme = useColorScheme() ?? 'light';
+    const colors = Colors[colorScheme] as any;
+
+    const backgroundColor = colors.settingsBackground;
+    const cardBackground = colors.settingsCardBackground;
+    const cardBorder = colors.settingsCardBorder;
+    const textColor = colors.settingsText;
+    const secondaryText = colors.settingsSecondaryText;
+    const accentColor = colors.settingsAccent;
+    const modalOverlay = colors.modalOverlay;
+    const modalBg = colors.modalBackground;
+    const modalSelected = colors.modalSelected;
+
     const getLanguageDisplay = (lang: LanguageMode) => {
-        switch (lang) {
-            case 'zh':
-                return '简体中文';
-            case 'en':
-                return 'English';
-            case 'ja':
-                return '日本語';
-            default:
-                return '简体中文';
-        }
+        return t(`settings.Language.config.${lang}`)
     };
 
     const getThemeDisplay = (theme: ThemeMode) => {
-        switch (theme) {
-            case 'system':
-                return t('settings.theme.system');
-            case 'light':
-                return t('settings.theme.light');
-            case 'dark':
-                return t('settings.theme.dark');
-            default:
-                return t('settings.theme.system');
-        }
+        return t(`settings.theme.config.${theme}`)
     };
 
     const handleLanguageChange = async (lang: LanguageMode) => {
@@ -75,13 +71,13 @@ const Settings: React.FC = () => {
             items: [
                 {
                     icon: 'language',
-                    label: '语言设置',
+                    label: t("settings.Language.title"),
                     value: getLanguageDisplay(languageMode),
                     onPress: () => setShowLanguageModal(true)
                 },
                 {
                     icon: 'moon',
-                    label: '深色模式',
+                    label: t("settings.theme.title"),
                     value: getThemeDisplay(themeMode),
                     onPress: () => setShowThemeModal(true)
                 },
@@ -124,23 +120,19 @@ const Settings: React.FC = () => {
     ];
 
     return (
-        <View style={styles.container}>
-            <LinearGradient
-                colors={['#F2F2F7', '#E5E5EA', '#F2F2F7']}
-                style={StyleSheet.absoluteFillObject}
-            />
+        <View style={[styles.container, {backgroundColor}]}>
 
             <ScrollView
                 style={styles.scrollView}
                 contentContainerStyle={{paddingTop: insets.top + 20, paddingBottom: 100}}
                 showsVerticalScrollIndicator={false}
             >
-                <Text style={styles.pageTitle}>{t('settings.title')}</Text>
+                <Text style={[styles.pageTitle, {color: textColor}]}>{t('settings.title')}</Text>
                 {settingsSections.map((section, sectionIndex) => (
                     <View key={sectionIndex} style={styles.section}>
-                        <Text style={styles.sectionTitle}>{section.title}</Text>
+                        <Text style={[styles.sectionTitle, {color: secondaryText}]}>{section.title}</Text>
                         <View style={styles.sectionContent}>
-                            <BlurView intensity={80} tint="light" style={styles.blurCard}>
+                            <View style={[styles.blurCard, {backgroundColor: cardBackground, borderColor: cardBorder}]}>
                                 {section.items.map((item, index) => (
                                     <TouchableOpacity
                                         key={index}
@@ -152,20 +144,21 @@ const Settings: React.FC = () => {
                                         activeOpacity={0.7}
                                     >
                                         <View style={styles.settingItemLeft}>
-                                            <View style={styles.iconContainer}>
-                                                <Ionicons name={item.icon as any} size={22} color="#5E5CE6"/>
+                                            <View style={[styles.iconContainer, {backgroundColor: `${accentColor}20`}]}>
+                                                <Ionicons name={item.icon as any} size={22} color={accentColor}/>
                                             </View>
-                                            <Text style={styles.settingLabel}>{item.label}</Text>
+                                            <Text style={[styles.settingLabel, {color: textColor}]}>{item.label}</Text>
                                         </View>
                                         <View style={styles.settingItemRight}>
                                             {item.value && (
-                                                <Text style={styles.settingValue}>{item.value}</Text>
+                                                <Text
+                                                    style={[styles.settingValue, {color: secondaryText}]}>{item.value}</Text>
                                             )}
-                                            <Ionicons name="chevron-forward" size={20} color="#C7C7CC"/>
+                                            <Ionicons name="chevron-forward" size={20} color={secondaryText}/>
                                         </View>
                                     </TouchableOpacity>
                                 ))}
-                            </BlurView>
+                            </View>
                         </View>
                     </View>
                 ))}
@@ -179,18 +172,18 @@ const Settings: React.FC = () => {
                 onRequestClose={() => setShowLanguageModal(false)}
             >
                 <TouchableOpacity
-                    style={styles.modalOverlay}
+                    style={[styles.modalOverlay, {backgroundColor: modalOverlay}]}
                     activeOpacity={1}
                     onPress={() => setShowLanguageModal(false)}
                 >
-                    <View style={styles.modalContent}>
+                    <View style={[styles.modalContent, {backgroundColor: modalBg}]}>
                         <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>选择语言</Text>
+                            <Text style={[styles.modalTitle, {color: textColor}]}>选择语言</Text>
                             <TouchableOpacity
                                 onPress={() => setShowLanguageModal(false)}
                                 style={styles.modalCloseButton}
                             >
-                                <Ionicons name="close" size={24} color="#666"/>
+                                <Ionicons name="close" size={24} color={secondaryText}/>
                             </TouchableOpacity>
                         </View>
                         {(['zh', 'en', 'ja'] as LanguageMode[]).map((lang) => (
@@ -198,19 +191,20 @@ const Settings: React.FC = () => {
                                 key={lang}
                                 style={[
                                     styles.modalOption,
-                                    languageMode === lang && styles.modalOptionSelected
+                                    languageMode === lang && {backgroundColor: modalSelected}
                                 ]}
                                 onPress={() => handleLanguageChange(lang)}
                                 activeOpacity={0.7}
                             >
                                 <Text style={[
                                     styles.modalOptionText,
-                                    languageMode === lang && styles.modalOptionTextSelected
+                                    {color: textColor},
+                                    languageMode === lang && {color: accentColor, fontWeight: '600'}
                                 ]}>
                                     {getLanguageDisplay(lang)}
                                 </Text>
                                 {languageMode === lang && (
-                                    <Ionicons name="checkmark" size={20} color="#5E5CE6"/>
+                                    <Ionicons name="checkmark" size={20} color={accentColor}/>
                                 )}
                             </TouchableOpacity>
                         ))}
@@ -226,18 +220,18 @@ const Settings: React.FC = () => {
                 onRequestClose={() => setShowThemeModal(false)}
             >
                 <TouchableOpacity
-                    style={styles.modalOverlay}
+                    style={[styles.modalOverlay, {backgroundColor: modalOverlay}]}
                     activeOpacity={1}
                     onPress={() => setShowThemeModal(false)}
                 >
-                    <View style={styles.modalContent}>
+                    <View style={[styles.modalContent, {backgroundColor: modalBg}]}>
                         <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>选择主题</Text>
+                            <Text style={[styles.modalTitle, {color: textColor}]}>选择主题</Text>
                             <TouchableOpacity
                                 onPress={() => setShowThemeModal(false)}
                                 style={styles.modalCloseButton}
                             >
-                                <Ionicons name="close" size={24} color="#666"/>
+                                <Ionicons name="close" size={24} color={secondaryText}/>
                             </TouchableOpacity>
                         </View>
                         {(['system', 'light', 'dark'] as ThemeMode[]).map((theme) => (
@@ -245,19 +239,20 @@ const Settings: React.FC = () => {
                                 key={theme}
                                 style={[
                                     styles.modalOption,
-                                    themeMode === theme && styles.modalOptionSelected
+                                    themeMode === theme && {backgroundColor: modalSelected}
                                 ]}
                                 onPress={() => handleThemeChange(theme)}
                                 activeOpacity={0.7}
                             >
                                 <Text style={[
                                     styles.modalOptionText,
-                                    themeMode === theme && styles.modalOptionTextSelected
+                                    {color: textColor},
+                                    themeMode === theme && {color: accentColor, fontWeight: '600'}
                                 ]}>
                                     {getThemeDisplay(theme)}
                                 </Text>
                                 {themeMode === theme && (
-                                    <Ionicons name="checkmark" size={20} color="#5E5CE6"/>
+                                    <Ionicons name="checkmark" size={20} color={accentColor}/>
                                 )}
                             </TouchableOpacity>
                         ))}
@@ -272,7 +267,6 @@ export default Settings;
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F2F2F7',
     },
     scrollView: {
         flex: 1,
@@ -281,7 +275,6 @@ const styles = StyleSheet.create({
     pageTitle: {
         fontSize: 34,
         fontWeight: '700',
-        color: '#1C1C1E',
         marginBottom: 30,
         letterSpacing: -0.5,
     },
@@ -291,7 +284,6 @@ const styles = StyleSheet.create({
     sectionTitle: {
         fontSize: 13,
         fontWeight: '600',
-        color: '#8E8E93',
         textTransform: 'uppercase',
         letterSpacing: 0.5,
         marginBottom: 10,
@@ -310,8 +302,6 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         overflow: 'hidden',
         borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.3)',
-        backgroundColor: 'rgba(255, 255, 255, 0.6)',
     },
     settingItem: {
         flexDirection: 'row',
@@ -333,14 +323,12 @@ const styles = StyleSheet.create({
         width: 32,
         height: 32,
         borderRadius: 8,
-        backgroundColor: 'rgba(94, 92, 230, 0.1)',
         alignItems: 'center',
         justifyContent: 'center',
         marginRight: 12,
     },
     settingLabel: {
         fontSize: 16,
-        color: '#1C1C1E',
         fontWeight: '400',
     },
     settingItemRight: {
@@ -349,18 +337,15 @@ const styles = StyleSheet.create({
     },
     settingValue: {
         fontSize: 15,
-        color: '#8E8E93',
         marginRight: 8,
     },
     modalOverlay: {
         flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
         justifyContent: 'center',
         alignItems: 'center',
         paddingHorizontal: 20,
     },
     modalContent: {
-        backgroundColor: '#FFF',
         borderRadius: 16,
         width: '100%',
         maxWidth: 320,
@@ -382,7 +367,6 @@ const styles = StyleSheet.create({
     modalTitle: {
         fontSize: 18,
         fontWeight: '600',
-        color: '#1C1C1E',
     },
     modalCloseButton: {
         padding: 4,
@@ -396,15 +380,7 @@ const styles = StyleSheet.create({
         borderBottomWidth: 0.5,
         borderBottomColor: '#E5E5E5',
     },
-    modalOptionSelected: {
-        backgroundColor: '#F5F5FF',
-    },
     modalOptionText: {
         fontSize: 16,
-        color: '#1C1C1E',
-    },
-    modalOptionTextSelected: {
-        color: '#5E5CE6',
-        fontWeight: '600',
     },
 });

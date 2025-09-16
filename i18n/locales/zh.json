@@ -17,9 +17,20 @@
     "title": "设置",
     "backToHome": "返回主页",
     "theme": {
-      "dark": "深色模式",
-      "light": "浅色模式",
-      "system": "系统默认"
+      "title": "主题设置",
+      "config": {
+        "dark": "深色模式",
+        "light": "浅色模式",
+        "system": "系统默认"
+      }
+    },
+    "Language": {
+      "title": "语言设置",
+      "config": {
+        "ja": "日本语",
+        "en": "英语",
+        "zh": "中文"
+      }
     },
     "sound": {
       "title": "声音设置",
@@ -368,6 +379,16 @@
         "title": "多种模式",
         "description": "多种游戏模式，玩不腻"
       }
+    },
+    "flyingChess": {
+      "title": "飞行棋",
+      "subtitle": "策略对战",
+      "description": "体验策略与运气的完美结合"
+    },
+    "luckyWheel": {
+      "title": "幸运转盘",
+      "subtitle": "趣味互动",
+      "description": "转动命运的齿轮"
     },
     "cta": {
       "startGame": "开始游戏",

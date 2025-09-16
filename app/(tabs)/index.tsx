@@ -14,11 +14,17 @@ import Animated, {
 import {LinearGradient} from 'expo-linear-gradient';
 import {BlurView} from 'expo-blur';
 import {AntDesign, Ionicons, MaterialIcons} from '@expo/vector-icons';
+import {useColorScheme} from '@/hooks/use-color-scheme';
+import {Colors} from '@/constants/theme';
 
 
 export default function Home() {
     const router = useRouter();
     const {t} = useTranslation();
+
+    // 主题颜色
+    const colorScheme = useColorScheme() ?? 'light';
+    const colors = Colors[colorScheme] as any;
 
     // 浮动动画
     const floatAnimation = useSharedValue(0);
@@ -74,7 +80,7 @@ export default function Home() {
         },
     ];
 
-    const GameCard = ({game}: any) => {
+    const GameCard = ({game, colors}: any) => {
         const scale = useSharedValue(1);
         const opacity = useSharedValue(1);
 
@@ -104,8 +110,11 @@ export default function Home() {
                     onPressOut={handlePressOut}
                 >
                     <View style={styles.cardContainer}>
-                        <BlurView intensity={80} tint="light" style={styles.blurContainer}>
-                            <View style={styles.cardContent}>
+                        <BlurView intensity={80} tint={colors.homeBlurTint} style={styles.blurContainer}>
+                            <View style={[styles.cardContent, {
+                                backgroundColor: colors.homeCardBackground,
+                                borderColor: colors.homeCardBorder
+                            }]}>
                                 {/* 图标区域 */}
                                 <View style={[styles.iconContainer, {backgroundColor: game.accentColor + '15'}]}>
                                     <LinearGradient
@@ -120,16 +129,17 @@ export default function Home() {
 
                                 {/* 文字内容 */}
                                 <View style={styles.textContainer}>
-                                    <Text style={styles.cardTitle}>{game.title}</Text>
+                                    <Text style={[styles.cardTitle, {color: colors.homeCardTitle}]}>{game.title}</Text>
                                     <Text style={[styles.cardSubtitle, {color: game.accentColor}]}>
                                         {game.subtitle}
                                     </Text>
-                                    <Text style={styles.cardDescription}>{game.description}</Text>
+                                    <Text
+                                        style={[styles.cardDescription, {color: colors.homeCardDescription}]}>{game.description}</Text>
                                 </View>
 
                                 {/* 箭头 */}
-                                <View style={styles.arrowContainer}>
-                                    <Ionicons name="chevron-forward" size={24} color="#8E8E93"/>
+                                <View style={[styles.arrowContainer, {backgroundColor: colors.homeCardArrowBg}]}>
+                                    <Ionicons name="chevron-forward" size={24} color={colors.homeCardArrow}/>
                                 </View>
                             </View>
                         </BlurView>
@@ -140,10 +150,10 @@ export default function Home() {
     };
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, {backgroundColor: colors.homeBackground}]}>
             {/* 背景渐变 */}
             <LinearGradient
-                colors={['#F2F2F7', '#E5E5EA', '#F2F2F7']}
+                colors={[colors.homeGradientStart, colors.homeGradientMiddle, colors.homeGradientEnd]}
                 style={StyleSheet.absoluteFillObject}
                 start={{x: 0, y: 0}}
                 end={{x: 1, y: 1}}
@@ -185,23 +195,24 @@ export default function Home() {
                         </LinearGradient>
                     </View>
 
-                    <Text style={styles.mainTitle}>{t('home.title', '情侣游戏')}</Text>
-                    <Text style={styles.subtitle}>{t('home.subtitle', '一起玩游戏，增进感情')}</Text>
+                    <Text style={[styles.mainTitle, {color: colors.homeTitle}]}>{t('home.title', '情侣游戏')}</Text>
+                    <Text
+                        style={[styles.subtitle, {color: colors.homeSubtitle}]}>{t('home.subtitle', '一起玩游戏，增进感情')}</Text>
                 </Animated.View>
 
                 {/* 游戏卡片 */}
                 <View style={styles.cardsContainer}>
                     {gameOptions.map((game, index) => (
-                        <GameCard key={game.title} game={game} index={index}/>
+                        <GameCard key={game.title} game={game} colors={colors} index={index}/>
                     ))}
                 </View>
 
                 {/* 底部提示 */}
                 <View style={styles.footerContainer}>
-                    <BlurView intensity={60} tint="light" style={styles.footerBlur}>
+                    <BlurView intensity={60} tint={colors.homeBlurTint} style={styles.footerBlur}>
                         <View style={styles.footerContent}>
                             <Ionicons name="sparkles" size={18} color="#5E5CE6"/>
-                            <Text style={styles.footerText}>
+                            <Text style={[styles.footerText, {color: colors.homeFooterText}]}>
                                 {t('home.cta.subtext', '选择你喜欢的游戏模式开始吧')}
                             </Text>
                         </View>
@@ -215,7 +226,6 @@ export default function Home() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F2F2F7',
     },
     decorativeContainer: {
         position: 'absolute',
@@ -259,8 +269,8 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.3,
         shadowRadius: 16,
         elevation: 10,
-        borderRadius: 30, // 添加这行
-        overflow: 'hidden', // 添加这行
+        borderRadius: 30,
+        overflow: 'hidden',
     },
     logoGradient: {
         width: 100,
@@ -268,18 +278,16 @@ const styles = StyleSheet.create({
         borderRadius: 30,
         alignItems: 'center',
         justifyContent: 'center',
-        overflow: 'hidden', // 添加这行
+        overflow: 'hidden',
     },
     mainTitle: {
         fontSize: 42,
         fontWeight: '700',
-        color: '#1C1C1E',
         marginBottom: 8,
         letterSpacing: -1,
     },
     subtitle: {
         fontSize: 18,
-        color: '#8E8E93',
         fontWeight: '500',
     },
     cardsContainer: {
@@ -298,14 +306,11 @@ const styles = StyleSheet.create({
     blurContainer: {
         borderRadius: 20,
         overflow: 'hidden',
-        borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.3)',
     },
     cardContent: {
         flexDirection: 'row',
         alignItems: 'center',
         padding: 20,
-        backgroundColor: 'rgba(255, 255, 255, 0.6)',
     },
     iconContainer: {
         width: 80,
@@ -327,7 +332,6 @@ const styles = StyleSheet.create({
     cardTitle: {
         fontSize: 22,
         fontWeight: '600',
-        color: '#1C1C1E',
         marginBottom: 4,
     },
     cardSubtitle: {
@@ -337,14 +341,12 @@ const styles = StyleSheet.create({
     },
     cardDescription: {
         fontSize: 14,
-        color: '#8E8E93',
         lineHeight: 20,
     },
     arrowContainer: {
         width: 40,
         height: 40,
         borderRadius: 20,
-        backgroundColor: 'rgba(142, 142, 147, 0.1)',
         alignItems: 'center',
         justifyContent: 'center',
         marginLeft: 12,
@@ -367,7 +369,6 @@ const styles = StyleSheet.create({
     },
     footerText: {
         fontSize: 14,
-        color: '#8E8E93',
         fontWeight: '500',
     },
 });
