@@ -221,8 +221,8 @@ export default function TaskModal({
                 color: isCompleted ? '#FFD700' : '#FF6B6B',
                 title: isCompleted ? '幸运加成！' : '错失机会！',
                 description: isCompleted
-                    ? '幸运奖励：前进 3-6 格'
-                    : '遗憾惩罚：后退 3-6 格'
+                    ? '幸运奖励：前进 3-6'
+                    : '遗憾惩罚：后退 3-6'
             };
         } else if (task.type === 'collision') {
             // 碰撞任务：完成停留原地，未完成回到起点

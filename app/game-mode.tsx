@@ -19,6 +19,11 @@ import {Colors} from '@/constants/theme';
 import {useTasksStore} from '@/store/tasksStore';
 import {TaskSet} from '@/types/tasks';
 
+const routeConfig: Record<string, string> = {
+    fly: '/flying-chess',
+    wheel: '/wheel-points',
+}
+
 export default function GameMode() {
     const router = useRouter();
     const params = useLocalSearchParams();
@@ -217,25 +222,11 @@ export default function GameMode() {
 
         const handlePress = () => {
             setSelectedTaskSet(taskSet);
-
-            // 根据游戏类型跳转到不同页面
-            if (gameType === 'strategy') {
-                // 策略游戏跳转到飞行棋，传递选中的分类
-                router.push({
-                    pathname: '/flying-chess',
-                    params: {
-                        taskSetId: taskSet.id
-                    }
-                });
-            } else {
-                // 其他游戏类型可以跳转到任务游戏页面
-                router.push({
-                    pathname: '/flying-chess',
-                    params: {
-                        taskSetId: taskSet.id
-                    }
-                });
-            }
+            if (!routeConfig[gameType]) return;
+            router.push({
+                pathname: routeConfig[gameType] as any,
+                params: {taskSetId: taskSet.id}
+            });
         };
 
         return (
