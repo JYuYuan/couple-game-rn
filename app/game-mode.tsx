@@ -22,6 +22,7 @@ import {TaskSet} from '@/types/tasks';
 const routeConfig: Record<string, string> = {
     fly: '/flying-chess',
     wheel: '/wheel-points',
+    minesweeper: '/minesweeper-battle',
 }
 
 export default function GameMode() {

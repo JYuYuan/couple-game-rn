@@ -80,6 +80,17 @@ export default function Home() {
             gradient: ['#FF6482', '#FF9F40'],
             accentColor: '#FF6482',
         },
+        {
+            key: "minesweeper",
+            title: t('home.minesweeper.title', '扫雷对战'),
+            subtitle: t('home.minesweeper.subtitle', '双人对决'),
+            description: t('home.minesweeper.description', '踩雷执行任务，积分决胜负'),
+            icon: 'nuclear',
+            iconType: 'Ionicons',
+            href: '/game-mode?type=minesweeper',
+            gradient: ['#34D399', '#10B981'],
+            accentColor: '#10B981',
+        },
     ];
 
     const GameCard = ({game, colors}: any) => {
