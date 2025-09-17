@@ -1,10 +1,10 @@
-# GitHub Actions 三端打包配置说明
+# GitHub Actions 三端打包配置说明（EAS Build）
 
 ## 🚀 功能说明
 
-这个 GitHub Actions workflow 可以自动构建并发布你的 React Native Expo 应用到三个平台：
+这个 GitHub Actions workflow 使用最新的 EAS Build 自动构建并发布你的 React Native Expo 应用到三个平台：
 - 📱 **Android APK**
-- 🍎 **iOS IPA**
+- 🍎 **iOS IPA**（无签名）
 - 🌐 **Web 版本**
 
 ## 🔧 配置要求
@@ -20,16 +20,22 @@ EXPO_TOKEN
 - 获取方式：访问 https://expo.dev/accounts/[username]/settings/access-tokens
 - 创建新的访问令牌并复制
 
-> **注意**: iOS 构建已配置为无签名模式，你可以在下载后自行签名，无需提供证书相关的 Secrets。
+> **注意**: 现在使用 EAS Build 替代废弃的 `expo build` 命令。iOS 构建为无签名模式，可在下载后自行签名。
+
+## 📁 必需的配置文件
+
+### EAS Build 配置 (eas.json)
+项目中已包含 `eas.json` 配置文件，定义了三种构建配置：
+
+- **development**: 开发环境构建
+- **preview**: 预览版本构建（用于 CI/CD）
+- **production**: 生产版本构建
 
 ## 🎯 触发方式
 
 ### 1. 自动触发（推荐）
-当你推送带有版本标签的 commit 时：
-```bash
-git tag v1.0.0
-git push origin v1.0.0
-```
+- **Tag推送**: `git tag v1.0.0 && git push origin v1.0.0` → 正式版本
+- **Main分支推送**: 提交到main分支 → 开发版本（prerelease）
 
 ### 2. 手动触发
 在 GitHub 仓库的 Actions 页面，点击 "Build and Release" workflow，然后点击 "Run workflow"
@@ -68,44 +74,60 @@ codesign -f -s "iPhone Developer: Your Name" --entitlements entitlements.plist c
 在配置 workflow 之前，可以先在本地测试构建命令：
 
 ```bash
+# 安装 EAS CLI
+npm install -g @expo/eas-cli
+
+# 登录 Expo
+eas login
+
 # 测试 Web 构建
-npx expo export:web
+npx expo export --platform web
 
-# 测试 Android 构建（需要 Expo CLI）
-npx expo build:android --type apk
+# 测试 Android 构建（使用 EAS）
+eas build --platform android --profile preview
 
-# 测试 iOS 构建（需要 Expo CLI）
-npx expo build:ios --type archive
+# 测试 iOS 构建（使用 EAS）
+eas build --platform ios --profile preview
 ```
 
 ## 📋 配置检查清单
 
 - [ ] 添加 `EXPO_TOKEN` 到 GitHub Secrets
+- [ ] 确保 `eas.json` 配置文件存在
 - [ ] 确保 `app.json` 或 `expo.json` 配置正确
-- [ ] 测试本地构建命令正常工作
+- [ ] 测试本地 EAS 构建命令正常工作
 - [ ] 推送代码并创建 tag 触发构建
 - [ ] （iOS）准备好证书和 Provisioning Profile 用于后续签名
 
 ## ❗ 注意事项
 
-1. **iOS 构建**生成无签名 IPA，需要自行签名后才能安装
-2. **Android 构建**使用 Expo 托管构建服务
-3. **Web 构建**会生成静态文件，可直接部署到任何 Web 服务器
-4. 首次构建可能需要较长时间，后续构建会更快
-5. 确保 `package.json` 中的依赖都是兼容的版本
-6. 无签名的 iOS IPA 无法直接安装到设备，必须先签名
+1. **EAS Build**: 现在使用 EAS Build 替代废弃的 `expo build` 命令
+2. **iOS 构建**: 生成无签名 IPA，需要自行签名后才能安装
+3. **Android 构建**: 使用 EAS Build 托管构建服务，生成 APK 格式
+4. **Web 构建**: 使用 `expo export --platform web` 生成静态文件
+5. 首次构建可能需要较长时间，EAS 有并发构建限制
+6. 确保 `package.json` 中的依赖都是兼容的版本
+7. 无签名的 iOS IPA 无法直接安装到设备，必须先签名
 
 ## 🔄 工作流程
 
 1. 代码推送或手动触发
-2. 并行构建三个平台
-3. 上传构建产物作为 artifacts
-4. 创建 GitHub Release
-5. 将所有构建产物附加到 Release
+2. 并行使用 EAS Build 构建 Android 和 iOS
+3. 使用 expo export --platform web 构建 Web 版本
+4. 上传构建产物作为 artifacts
+5. 创建 GitHub Release
+6. 将所有构建产物附加到 Release
 
 ## 🆘 故障排除
 
-- **构建失败**：检查 Expo token 是否有效
-- **iOS 构建失败**：检查证书和 Provisioning Profile
-- **依赖错误**：确保 `yarn.lock` 是最新的
-- **Expo 配置错误**：检查 `app.json` 配置
+- **EAS Build 失败**：检查 Expo token 是否有效，确保有 EAS 构建权限
+- **依赖错误**：确保 `yarn.lock` 是最新的，所有依赖都支持 EAS Build
+- **构建超时**：EAS Build 有时间限制，复杂项目可能需要优化
+- **配置错误**：检查 `eas.json` 和 `app.json` 配置
+- **权限问题**：确保 Expo token 有足够权限进行构建
+
+## 🔗 相关链接
+
+- [EAS Build 官方文档](https://docs.expo.dev/build/introduction/)
+- [从 Expo CLI 迁移到 EAS Build](https://docs.expo.dev/build-reference/migrating/)
+- [EAS Build 配置参考](https://docs.expo.dev/build-reference/eas-json/)

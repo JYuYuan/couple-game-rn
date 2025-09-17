@@ -38,19 +38,36 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
-      - name: Setup Expo
+      - name: Setup Expo and EAS
         uses: expo/expo-github-action@v8
         with:
           expo-version: latest
+          eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
-      - name: Build Android APK
+      - name: Build Android APK with EAS
         run: |
-          npx expo build:android --type apk --no-wait
-          # 等待构建完成并下载
-          npx expo build:status
-          npx expo url:apk > apk_url.txt
-          wget -O couple-game.apk $(cat apk_url.txt)
+          # 使用 EAS Build 构建 Android APK
+          npx eas build --platform android --profile preview --non-interactive --no-wait
+
+          # 等待构建完成
+          echo "等待 Android 构建完成..."
+          while true; do
+            BUILD_STATUS=$(npx eas build:list --platform=android --limit=1 --json | jq -r '.[0].status')
+            echo "构建状态: $BUILD_STATUS"
+
+            if [ "$BUILD_STATUS" = "FINISHED" ]; then
+              BUILD_ID=$(npx eas build:list --platform=android --limit=1 --json | jq -r '.[0].id')
+              DOWNLOAD_URL=$(npx eas build:list --platform=android --limit=1 --json | jq -r '.[0].artifacts.buildUrl')
+              echo "下载 Android APK..."
+              wget -O couple-game.apk "$DOWNLOAD_URL"
+              break
+            elif [ "$BUILD_STATUS" = "ERRORED" ]; then
+              echo "Android 构建失败"
+              exit 1
+            fi
+            sleep 60
+          done
 
       - name: Upload Android APK
         uses: actions/upload-artifact@v4
@@ -73,33 +90,36 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
-      - name: Setup Expo
+      - name: Setup Expo and EAS
         uses: expo/expo-github-action@v8
         with:
           expo-version: latest
+          eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
-      - name: Build iOS (unsigned)
+      - name: Build iOS IPA with EAS (unsigned)
         run: |
-          # 使用 Expo 构建无签名的 iOS app
-          npx expo build:ios --type archive --no-publish --no-wait
+          # 使用 EAS Build 构建无签名 iOS IPA
+          npx eas build --platform ios --profile preview --non-interactive --no-wait
+
           # 等待构建完成
-          echo "等待构建完成..."
+          echo "等待 iOS 构建完成..."
           while true; do
-            STATUS=$(npx expo build:status --non-interactive | grep -o 'finished\|in-progress\|pending\|errored')
-            echo "构建状态: $STATUS"
-            if [ "$STATUS" = "finished" ]; then
+            BUILD_STATUS=$(npx eas build:list --platform=ios --limit=1 --json | jq -r '.[0].status')
+            echo "构建状态: $BUILD_STATUS"
+
+            if [ "$BUILD_STATUS" = "FINISHED" ]; then
+              BUILD_ID=$(npx eas build:list --platform=ios --limit=1 --json | jq -r '.[0].id')
+              DOWNLOAD_URL=$(npx eas build:list --platform=ios --limit=1 --json | jq -r '.[0].artifacts.buildUrl')
+              echo "下载 iOS IPA..."
+              wget -O couple-game-unsigned.ipa "$DOWNLOAD_URL"
               break
-            elif [ "$STATUS" = "errored" ]; then
-              echo "构建失败"
+            elif [ "$BUILD_STATUS" = "ERRORED" ]; then
+              echo "iOS 构建失败"
               exit 1
             fi
-            sleep 30
+            sleep 60
           done
-
-          # 下载无签名的 IPA
-          npx expo url:ipa > ipa_url.txt
-          wget -O couple-game-unsigned.ipa $(cat ipa_url.txt)
 
       - name: Upload iOS IPA (unsigned)
         uses: actions/upload-artifact@v4
@@ -124,8 +144,8 @@ jobs:
 
       - name: Build web
         run: |
-          npx expo export:web
-          cd web-build
+          npx expo export --platform web
+          cd dist
           zip -r ../couple-game-web.zip .
 
       - name: Upload Web build
@@ -149,8 +169,13 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
-          else
+          elif [ "${{ github.ref_type }}" = "tag" ]; then
             echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          else
+            # 对于 main 分支推送，使用时间戳作为版本号
+            TIMESTAMP=$(date +"%Y%m%d-%H%M%S")
+            COMMIT_SHORT=$(echo ${{ github.sha }} | cut -c1-7)
+            echo "version=dev-${TIMESTAMP}-${COMMIT_SHORT}" >> $GITHUB_OUTPUT
           fi
 
       - name: Create Release
@@ -170,16 +195,17 @@ jobs:
             - **Web版本**: 下载 `couple-game-web.zip` 并解压到 Web 服务器
 
             ### 🚀 本次更新
-            - 修复已知问题
-            - 性能优化
-            - 新增功能特性
+            ${{ github.ref_type == 'tag' && '- 正式版本发布' || '- 开发版本构建' }}
+            - 提交信息: ${{ github.event.head_commit.message }}
+            - 提交哈希: ${{ github.sha }}
+            - 分支: ${{ github.ref_name }}
 
             ### 📋 安装说明
             **Android**: 直接安装 APK 文件
             **iOS**: 下载无签名 IPA，使用 Xcode 或其他工具签名后安装
             **Web**: 解压 zip 文件并部署到 Web 服务器
           draft: false
-          prerelease: false
+          prerelease: ${{ github.ref_type != 'tag' }}
 
       - name: Upload Android APK to Release
         uses: actions/upload-release-asset@v1
@@ -213,7 +239,12 @@ jobs:
 
       - name: Notify completion
         run: |
-          echo "🎉 Release ${{ steps.version.outputs.version }} 创建成功！"
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            echo "🎉 正式版本 Release ${{ steps.version.outputs.version }} 创建成功！"
+          else
+            echo "🚀 开发版本 Release ${{ steps.version.outputs.version }} 创建成功！"
+          fi
           echo "📱 Android APK: couple-game-android.apk"
           echo "🍎 iOS IPA (无签名): couple-game-ios-unsigned.ipa"
           echo "🌐 Web版本: couple-game-web.zip"
+          echo "📝 提交信息: ${{ github.event.head_commit.message }}"
