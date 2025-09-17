@@ -16,7 +16,8 @@
         "buildType": "apk"
       },
       "ios": {
-        "buildConfiguration": "Release"
+        "simulator": true,
+        "buildConfiguration": "Debug"
       },
       "channel": "preview",
       "autoIncrement": true
