@@ -1,0 +1,217 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., v1.0.0)'
+        required: true
+        default: 'v1.0.0'
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'yarn'
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Setup Expo
+        uses: expo/expo-github-action@v8
+        with:
+          expo-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Build Android APK
+        run: |
+          npx expo build:android --type apk --no-wait
+          # 等待构建完成并下载
+          npx expo build:status
+          npx expo url:apk > apk_url.txt
+          wget -O couple-game.apk $(cat apk_url.txt)
+
+      - name: Upload Android APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: couple-game.apk
+
+  build-ios:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Setup Expo
+        uses: expo/expo-github-action@v8
+        with:
+          expo-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Build iOS (unsigned)
+        run: |
+          # 使用 Expo 构建无签名的 iOS app
+          npx expo build:ios --type archive --no-publish --no-wait
+          # 等待构建完成
+          echo "等待构建完成..."
+          while true; do
+            STATUS=$(npx expo build:status --non-interactive | grep -o 'finished\|in-progress\|pending\|errored')
+            echo "构建状态: $STATUS"
+            if [ "$STATUS" = "finished" ]; then
+              break
+            elif [ "$STATUS" = "errored" ]; then
+              echo "构建失败"
+              exit 1
+            fi
+            sleep 30
+          done
+
+          # 下载无签名的 IPA
+          npx expo url:ipa > ipa_url.txt
+          wget -O couple-game-unsigned.ipa $(cat ipa_url.txt)
+
+      - name: Upload iOS IPA (unsigned)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-ipa-unsigned
+          path: couple-game-unsigned.ipa
+
+  build-web:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Build web
+        run: |
+          npx expo export:web
+          cd web-build
+          zip -r ../couple-game-web.zip .
+
+      - name: Upload Web build
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-build
+          path: couple-game-web.zip
+
+  create-release:
+    needs: [build-android, build-ios, build-web]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Get version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.version.outputs.version }}
+          release_name: Release ${{ steps.version.outputs.version }}
+          body: |
+            ## 🎮 情侣游戏 ${{ steps.version.outputs.version }}
+
+            ### 📱 下载链接
+            - **Android APK**: 下载 `couple-game-android.apk` 文件
+            - **iOS IPA (无签名)**: 下载 `couple-game-ios-unsigned.ipa` 文件，需要自行签名
+            - **Web版本**: 下载 `couple-game-web.zip` 并解压到 Web 服务器
+
+            ### 🚀 本次更新
+            - 修复已知问题
+            - 性能优化
+            - 新增功能特性
+
+            ### 📋 安装说明
+            **Android**: 直接安装 APK 文件
+            **iOS**: 下载无签名 IPA，使用 Xcode 或其他工具签名后安装
+            **Web**: 解压 zip 文件并部署到 Web 服务器
+          draft: false
+          prerelease: false
+
+      - name: Upload Android APK to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./android-apk/couple-game.apk
+          asset_name: couple-game-android.apk
+          asset_content_type: application/vnd.android.package-archive
+
+      - name: Upload iOS IPA to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./ios-ipa-unsigned/couple-game-unsigned.ipa
+          asset_name: couple-game-ios-unsigned.ipa
+          asset_content_type: application/octet-stream
+
+      - name: Upload Web build to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./web-build/couple-game-web.zip
+          asset_name: couple-game-web.zip
+          asset_content_type: application/zip
+
+      - name: Notify completion
+        run: |
+          echo "🎉 Release ${{ steps.version.outputs.version }} 创建成功！"
+          echo "📱 Android APK: couple-game-android.apk"
+          echo "🍎 iOS IPA (无签名): couple-game-ios-unsigned.ipa"
+          echo "🌐 Web版本: couple-game-web.zip"
