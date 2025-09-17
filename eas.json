@@ -5,7 +5,9 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "channel": "development",
+      "autoIncrement": true
     },
     "preview": {
       "distribution": "internal",
@@ -14,15 +16,19 @@
       },
       "ios": {
         "buildConfiguration": "Release"
-      }
+      },
+      "channel": "preview",
+      "autoIncrement": true
     },
     "production": {
       "android": {
-        "buildType": "aab"
+        "buildType": "app-bundle"
       },
       "ios": {
         "buildConfiguration": "Release"
-      }
+      },
+      "channel": "production",
+      "autoIncrement": true
     }
   },
   "submit": {
