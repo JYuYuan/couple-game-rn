@@ -1,26 +1,12 @@
-import React, {useState, useEffect} from 'react';
-import {
-    View,
-    Text,
-    Modal,
-    TouchableOpacity,
-    StyleSheet,
-    Dimensions,
-    Alert
-} from 'react-native';
-import Animated, {
-    useSharedValue,
-    useAnimatedStyle,
-    withSpring,
-    withTiming,
-    interpolate,
-    runOnJS
-} from 'react-native-reanimated';
+import React, {useEffect, useState} from 'react';
+import {Dimensions, Modal, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import Animated, {interpolate, useAnimatedStyle, useSharedValue, withSpring, withTiming} from 'react-native-reanimated';
 import {LinearGradient} from 'expo-linear-gradient';
 import {BlurView} from 'expo-blur';
 import {Ionicons} from '@expo/vector-icons';
 import {useColorScheme} from '@/hooks/use-color-scheme';
 import {Colors} from '@/constants/theme';
+import {useTranslation} from 'react-i18next';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
@@ -63,6 +49,7 @@ export default function TaskModal({
                                   }: TaskModalProps) {
     const colorScheme = useColorScheme() ?? 'light';
     const colors = Colors[colorScheme] as any;
+    const { t } = useTranslation();
 
     const [isCompleted, setIsCompleted] = useState<boolean | null>(null);
     const [showResult, setShowResult] = useState(false);
@@ -113,35 +100,35 @@ export default function TaskModal({
 
     // 获取任务类型信息
     const getTaskTypeInfo = () => {
-        if (!task) return {icon: 'help', color: '#999', title: '未知任务'};
+        if (!task) return {icon: 'help', color: '#999', title: t('taskModal.taskTypes.unknown.title', '未知任务')};
 
         switch (task.type) {
             case 'trap':
                 return {
                     icon: 'nuclear',
                     color: '#FF6B6B',
-                    title: '陷阱挑战',
-                    description: '踩到陷阱！需要完成任务才能继续前进'
+                    title: t('taskModal.taskTypes.trap.title', '陷阱挑战'),
+                    description: t('taskModal.taskTypes.trap.description', '踩到陷阱！需要完成任务才能继续前进')
                 };
             case 'star':
                 return {
                     icon: 'star',
                     color: '#FFD700',
-                    title: '幸运任务',
-                    description: '获得幸运机会！完成任务获得额外奖励'
+                    title: t('taskModal.taskTypes.star.title', '幸运任务'),
+                    description: t('taskModal.taskTypes.star.description', '获得幸运机会！完成任务获得额外奖励')
                 };
             case 'collision':
                 return {
                     icon: 'flash',
                     color: '#9C27B0',
-                    title: '碰撞挑战',
-                    description: '发生碰撞！需要通过挑战来决定去留'
+                    title: t('taskModal.taskTypes.collision.title', '碰撞挑战'),
+                    description: t('taskModal.taskTypes.collision.description', '发生碰撞！需要通过挑战来决定去留')
                 };
             default:
                 return {
                     icon: 'help',
                     color: '#999',
-                    title: '普通任务'
+                    title: t('taskModal.taskTypes.normal.title', '普通任务')
                 };
         }
     };
@@ -173,15 +160,15 @@ export default function TaskModal({
     const getDifficultyText = (difficulty: string) => {
         switch (difficulty) {
             case 'easy':
-                return '简单';
+                return t('taskModal.difficulty.easy', '简单');
             case 'normal':
-                return '普通';
+                return t('taskModal.difficulty.normal', '普通');
             case 'hard':
-                return '困难';
+                return t('taskModal.difficulty.hard', '困难');
             case 'extreme':
-                return '极限';
+                return t('taskModal.difficulty.extreme', '极限');
             default:
-                return '未知';
+                return t('taskModal.difficulty.unknown', '未知');
         }
     };
 
@@ -208,10 +195,10 @@ export default function TaskModal({
                 success: isCompleted,
                 icon: isCompleted ? 'checkmark-circle' : 'close-circle',
                 color: isCompleted ? '#4CAF50' : '#FF6B6B',
-                title: isCompleted ? '任务完成！' : '任务失败！',
+                title: isCompleted ? t('taskModal.results.taskCompleted', '任务完成！') : t('taskModal.results.taskFailed', '任务失败！'),
                 description: isCompleted
-                    ? '获得奖励：前进 3-6 格'
-                    : '受到惩罚：后退 3-6 格'
+                    ? t('taskModal.results.trapReward', '获得奖励：前进 3-6 格')
+                    : t('taskModal.results.trapPenalty', '受到惩罚：后退 3-6 格')
             };
         } else if (task.type === 'star') {
             // 幸运任务：完成前进3-6格，未完成后退3-6格
@@ -219,10 +206,10 @@ export default function TaskModal({
                 success: isCompleted,
                 icon: isCompleted ? 'trophy' : 'sad',
                 color: isCompleted ? '#FFD700' : '#FF6B6B',
-                title: isCompleted ? '幸运加成！' : '错失机会！',
+                title: isCompleted ? t('taskModal.results.luckyBonus', '幸运加成！') : t('taskModal.results.missedChance', '错失机会！'),
                 description: isCompleted
-                    ? '幸运奖励：前进 3-6'
-                    : '遗憾惩罚：后退 3-6'
+                    ? t('taskModal.results.starReward', '幸运奖励：前进 3-6')
+                    : t('taskModal.results.starPenalty', '遗憾惩罚：后退 3-6')
             };
         } else if (task.type === 'collision') {
             // 碰撞任务：完成停留原地，未完成回到起点
@@ -230,10 +217,10 @@ export default function TaskModal({
                 success: isCompleted,
                 icon: isCompleted ? 'shield-checkmark' : 'arrow-back',
                 color: isCompleted ? '#4CAF50' : '#FF6B6B',
-                title: isCompleted ? '成功防御！' : '碰撞失败！',
+                title: isCompleted ? t('taskModal.results.successDefense', '成功防御！') : t('taskModal.results.collisionFailed', '碰撞失败！'),
                 description: isCompleted
-                    ? '保持位置不变'
-                    : '回到起点重新开始'
+                    ? t('taskModal.results.collisionStay', '保持位置不变')
+                    : t('taskModal.results.collisionStart', '回到起点重新开始')
             };
         }
 
@@ -289,7 +276,7 @@ export default function TaskModal({
                                 {executor && (
                                     <View style={styles.executorSection}>
                                         <Text style={[styles.sectionTitle, {color: colors.homeCardTitle}]}>
-                                            执行者
+                                            {t('taskModal.executor', '执行者')}
                                         </Text>
                                         <View style={[styles.executorCard, {backgroundColor: executor.color + '15'}]}>
                                             <View style={[styles.executorAvatar, {backgroundColor: executor.color}]}>
@@ -308,7 +295,7 @@ export default function TaskModal({
                                 <View style={styles.taskSection}>
                                     <View style={styles.taskHeader}>
                                         <Text style={[styles.sectionTitle, {color: colors.homeCardTitle}]}>
-                                            任务内容
+                                            {t('taskModal.taskContent', '任务内容')}
                                         </Text>
                                         <View
                                             style={[styles.difficultyBadge, {backgroundColor: getDifficultyColor(task.difficulty) + '15'}]}>
@@ -333,7 +320,7 @@ export default function TaskModal({
                                 {/* 选择按钮 */}
                                 <View style={styles.actionSection}>
                                     <Text style={[styles.actionPrompt, {color: colors.homeCardTitle}]}>
-                                        请选择任务完成情况：
+                                        {t('taskModal.chooseCompletion', '请选择任务完成情况：')}
                                     </Text>
 
                                     <View style={styles.actionButtons}>
@@ -349,7 +336,7 @@ export default function TaskModal({
                                                 end={{x: 1, y: 1}}
                                             >
                                                 <Ionicons name="checkmark" size={20} color="white"/>
-                                                <Text style={styles.actionButtonText}>完成</Text>
+                                                <Text style={styles.actionButtonText}>{t('taskModal.completed', '完成')}</Text>
                                             </LinearGradient>
                                         </TouchableOpacity>
 
@@ -365,7 +352,7 @@ export default function TaskModal({
                                                 end={{x: 1, y: 1}}
                                             >
                                                 <Ionicons name="close" size={20} color="white"/>
-                                                <Text style={styles.actionButtonText}>未完成</Text>
+                                                <Text style={styles.actionButtonText}>{t('taskModal.notCompleted', '未完成')}</Text>
                                             </LinearGradient>
                                         </TouchableOpacity>
                                     </View>
@@ -393,7 +380,7 @@ export default function TaskModal({
 
                                     <View style={styles.resultFooter}>
                                         <Text style={[styles.resultFooterText, {color: colors.homeCardDescription}]}>
-                                            正在执行中...
+                                            {t('taskModal.executing', '正在执行中...')}
                                         </Text>
                                     </View>
                                 </View>
