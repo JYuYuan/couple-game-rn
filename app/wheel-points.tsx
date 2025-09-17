@@ -1,18 +1,21 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Colors } from '@/constants/theme';
-import WheelOfFortune, { WheelOfFortuneRef } from '@/components/WheelOfFortune';
-import SimpleTaskModal, { SimpleTaskData } from '@/components/SimpleTaskModal';
+import React, {useEffect, useRef, useState} from 'react';
+import {ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {Stack, useLocalSearchParams, useRouter} from 'expo-router';
+import {LinearGradient} from 'expo-linear-gradient';
+import {Ionicons} from '@expo/vector-icons';
+import {useColorScheme} from '@/hooks/use-color-scheme';
+import {Colors} from '@/constants/theme';
+import WheelOfFortune, {WheelOfFortuneRef} from '@/components/WheelOfFortune';
+import SimpleTaskModal, {SimpleTaskData} from '@/components/SimpleTaskModal';
 import VictoryModal from '@/components/VictoryModal';
-import { CustomAlert } from '@/components/CustomAlert';
-import { useGameTasks } from '@/hooks/use-game-tasks';
-import { useWheelGame, WheelResult, WheelPlayer } from '@/hooks/use-wheel-game';
+import {CustomAlert} from '@/components/CustomAlert';
+import {PlayerAvatar} from '@/components/PlayerAvatar';
+import {useGameTasks} from '@/hooks/use-game-tasks';
+import {useWheelGame, WheelPlayer, WheelResult} from '@/hooks/use-wheel-game';
+import {useTranslation} from 'react-i18next';
 
 export default function WheelPointsGame() {
+    const { t } = useTranslation();
     const router = useRouter();
     const params = useLocalSearchParams();
     const colorScheme = useColorScheme() ?? 'light';
@@ -102,9 +105,9 @@ export default function WheelPointsGame() {
 
         // 显示结果提示
         setAlertData({
-            title: '转盘结果',
-            message: `${currentPlayer.name} 转到了: ${result.label}`,
-            buttons: [{ text: '确定', onPress: () => processWheelResult(result) }]
+            title: t('wheelPoints.wheelResult', '转盘结果'),
+            message: t('wheelPoints.resultMessage', '{{playerName}} 转到了: {{result}}', { playerName: currentPlayer.name, result: result.label }),
+            buttons: [{ text: t('customAlert.confirm', '确定'), onPress: () => processWheelResult(result) }]
         });
         setShowAlert(true);
     };
@@ -190,7 +193,7 @@ export default function WheelPointsGame() {
         <>
             <Stack.Screen
                 options={{
-                    title: `${gameTasks.selectedTaskSet?.name || ""}-转盘积分`,
+                    title: `${gameTasks.selectedTaskSet?.name || ""}-${t('wheelPoints.title', '转盘积分')}`,
                     headerShown: true,
                     headerStyle: {
                         backgroundColor: colors.homeBackground,
@@ -200,7 +203,7 @@ export default function WheelPointsGame() {
                         fontWeight: '600',
                         fontSize: 18,
                     },
-                    headerBackTitle: '返回',
+                    headerBackTitle: t('wheelPoints.headerBackTitle', '返回'),
                 }}
             />
             <View style={[styles.container, { backgroundColor: colors.homeBackground }]}>
@@ -221,16 +224,16 @@ export default function WheelPointsGame() {
                     <View style={[styles.statusBar, { backgroundColor: colors.homeCardBackground }]}>
                         <View style={styles.statusLeft}>
                             <Text style={[styles.statusTitle, { color: colors.homeCardTitle }]}>
-                                {gameStatus === 'waiting' ? '准备开始' :
-                                    gameStatus === 'playing' ? '游戏进行中' : '游戏结束'}
+                                {gameStatus === 'waiting' ? t('wheelPoints.gameStatus.waiting', '准备开始') :
+                                    gameStatus === 'playing' ? t('wheelPoints.gameStatus.playing', '游戏进行中') : t('wheelPoints.gameStatus.finished', '游戏结束')}
                             </Text>
                             {gameStatus === 'playing' && (
                                 <View>
                                     <Text style={[styles.currentPlayerText, { color: currentPlayer.color }]}>
-                                        轮到 {currentPlayer.name}
+                                        {t('wheelPoints.currentPlayer', '轮到 {{playerName}}', { playerName: currentPlayer.name })}
                                     </Text>
                                     <Text style={[styles.roundText, { color: colors.homeCardDescription }]}>
-                                        第 {rounds + 1} 轮
+                                        {t('wheelPoints.round', '第 {{round}} 轮', { round: rounds + 1 })}
                                     </Text>
                                 </View>
                             )}
@@ -259,7 +262,7 @@ export default function WheelPointsGame() {
                                             color="white"
                                         />
                                         <Text style={styles.spinButtonText}>
-                                            {isSpinning ? '旋转中...' : '开始转盘'}
+                                            {isSpinning ? t('wheelPoints.spin.spinning', '旋转中...') : t('wheelPoints.spin.start', '开始转盘')}
                                         </Text>
                                     </LinearGradient>
                                 </TouchableOpacity>
@@ -269,9 +272,9 @@ export default function WheelPointsGame() {
 
                     {/* 玩家积分信息 */}
                     <View style={[styles.playersInfo, { backgroundColor: colors.homeCardBackground }]}>
-                        <Text style={[styles.sectionTitle, { color: colors.homeCardTitle }]}>积分排行</Text>
+                        <Text style={[styles.sectionTitle, { color: colors.homeCardTitle }]}>{t('wheelPoints.scoreRanking', '积分排行')}</Text>
                         <Text style={[styles.winCondition, { color: colors.homeCardDescription }]}>
-                            胜利条件: 率先达到 {winningScore} 分
+                            {t('wheelPoints.winCondition', '胜利条件: 率先达到 {{score}} 分', { score: winningScore })}
                         </Text>
                         <View style={styles.playersGrid}>
                             {players.map((player, index) => {
@@ -289,15 +292,17 @@ export default function WheelPointsGame() {
                                             }
                                         ]}
                                     >
-                                        <View style={[styles.playerAvatar, { backgroundColor: player.color }]}>
-                                            <Text style={styles.playerAvatarText}>{player.icon}</Text>
-                                        </View>
+                                        <PlayerAvatar
+                                            iconType={player.iconType}
+                                            color={player.color}
+                                            size={40}
+                                        />
                                         <View style={styles.playerInfo}>
                                             <Text style={[styles.playerName, { color: colors.homeCardTitle }]}>
                                                 {player.name}
                                             </Text>
                                             <Text style={[styles.playerScore, { color: player.color }]}>
-                                                {player.score} 分
+                                                {player.score} {t('simpleTaskModal.points', '积分')}
                                             </Text>
                                             <View style={styles.progressBarContainer}>
                                                 <View style={[styles.progressBar, { backgroundColor: colors.homeCardDescription + '20' }]}>
@@ -324,7 +329,7 @@ export default function WheelPointsGame() {
 
                     {/* 转盘区域 */}
                     <View style={[styles.wheelSection, { backgroundColor: colors.homeCardBackground }]}>
-                        <Text style={[styles.sectionTitle, { color: colors.homeCardTitle }]}>幸运转盘</Text>
+                        <Text style={[styles.sectionTitle, { color: colors.homeCardTitle }]}>{t('wheelPoints.luckyWheel', '幸运转盘')}</Text>
                         <View style={styles.wheelContainer}>
                             <WheelOfFortune
                                 ref={wheelRef}

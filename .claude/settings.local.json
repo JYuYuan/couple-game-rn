@@ -19,7 +19,19 @@
       "Bash(npx expo install expo-file-system expo-sharing)",
       "Bash(cat /Users/dompling/Desktop/GIT/couple-game-rn/node_modules/expo-file-system/build/index.d.ts)",
       "Bash(cat /Users/dompling/Desktop/GIT/couple-game-rn/node_modules/expo-file-system/build/FileSystem.d.ts)",
-      "Bash(npx expo install expo-blur)"
+      "Bash(npx expo install expo-blur)",
+      "Bash(npx tsc --noEmit --skipLibCheck components/TaskModal.tsx)",
+      "Bash(git add components/TaskModal.tsx)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nfeat: 为TaskModal组件添加完整的国际化支持\n\n- 添加 useTranslation hook 导入\n- 替换所有中文硬编码文本为国际化调用\n- 更新任务类型、难度、执行状态等文本的国际化\n- 使用 taskModal.* 翻译键前缀\n- 为所有国际化调用提供默认值作为fallback\n\n🤖 Generated with [Claude Code](https://claude.ai/code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(npx tsc --noEmit --skipLibCheck components/VictoryModal.tsx)",
+      "Bash(npm run type-check)",
+      "Bash(npx tsc --noEmit app/wheel-points.tsx)",
+      "Bash(node -p \"require(''react-i18next'')\")",
+      "Bash(/dev/null)",
+      "Bash(node -pe \"JSON.parse(require(''fs'').readFileSync(''i18n/locales/zh.json'', ''utf8''))\")",
+      "Bash(npx tsc --noEmit --skipLibCheck)",
+      "Bash(npx expo install expo-av)",
+      "Bash(npx expo install react-native-svg)"
     ],
     "deny": [],
     "ask": []

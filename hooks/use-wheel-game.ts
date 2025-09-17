@@ -1,18 +1,19 @@
-import { useState, useCallback } from 'react';
+import {useCallback, useState} from 'react';
+import {useTranslation} from 'react-i18next';
+import {PlayerIconType} from '@/components/icons';
 
 export interface WheelPlayer {
   id: number;
   name: string;
   color: string;
   score: number;
-  icon: string;
+  iconType: PlayerIconType; // 改为SVG图标类型
   completedTasks: string[];
   achievements: string[];
 }
 
 const PLAYER_COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4'];
-const PLAYER_ICONS = ['🎯', '⭐', '🎪', '🎨'];
-const PLAYER_NAMES = ['玩家1', '玩家2'];
+const PLAYER_ICON_TYPES: PlayerIconType[] = ['airplane', 'helicopter', 'rocket', 'ufo'];
 
 // 转盘奖励配置 - 所有区域都触发任务
 export const WHEEL_REWARDS = [
@@ -34,18 +35,27 @@ export interface WheelResult {
 }
 
 export const useWheelGame = () => {
+  const { t } = useTranslation();
+
+  // 获取国际化的玩家名称
+  const getPlayerNames = useCallback(() => [
+    t('players.names.player1', '玩家1'),
+    t('players.names.player2', '玩家2'),
+  ], [t]);
+
   // 玩家状态
-  const [players, setPlayers] = useState<WheelPlayer[]>(() =>
-    Array.from({ length: 2 }, (_, index) => ({
+  const [players, setPlayers] = useState<WheelPlayer[]>(() => {
+    const playerNames = getPlayerNames();
+    return Array.from({ length: 2 }, (_, index) => ({
       id: index + 1,
-      name: PLAYER_NAMES[index],
+      name: playerNames[index],
       color: PLAYER_COLORS[index],
       score: 0,
-      icon: PLAYER_ICONS[index],
+      iconType: PLAYER_ICON_TYPES[index],
       completedTasks: [],
       achievements: []
-    }))
-  );
+    }));
+  });
 
   const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
   const [gameStatus, setGameStatus] = useState<'waiting' | 'playing' | 'paused' | 'ended'>('waiting');

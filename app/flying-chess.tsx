@@ -3,22 +3,25 @@ import {ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native
 import {Stack, useLocalSearchParams, useRouter} from 'expo-router';
 import Animated, {useAnimatedStyle, useSharedValue, withTiming} from 'react-native-reanimated';
 import {LinearGradient} from 'expo-linear-gradient';
-import {Ionicons} from '@expo/vector-icons';
 import {useColorScheme} from '@/hooks/use-color-scheme';
 import {Colors} from '@/constants/theme';
 import GameBoard from '@/components/GameBoard';
 import TaskModal, {TaskModalData} from '@/components/TaskModal';
 import VictoryModal from '@/components/VictoryModal';
+import {PlayerAvatar} from '@/components/PlayerAvatar';
 import {useGameTasks} from '@/hooks/use-game-tasks';
-import {useGamePlayers, GamePlayer} from '@/hooks/use-game-players';
+import {GamePlayer, useGamePlayers} from '@/hooks/use-game-players';
+import {useAudioManager} from '@/hooks/use-audio-manager';
 import {createBoardPath} from '@/utils/board';
 import {PathCell} from '@/types/game';
+import {useTranslation} from 'react-i18next';
 
 export default function FlyingChessGame() {
     const router = useRouter();
     const params = useLocalSearchParams();
     const colorScheme = useColorScheme() ?? 'light';
     const colors = Colors[colorScheme] as any;
+    const { t } = useTranslation();
 
     // 获取传入的参数
     const taskSetId = params.taskSetId as string;
@@ -26,6 +29,7 @@ export default function FlyingChessGame() {
     // 使用hooks，传入分类参数
     const gameTasks = useGameTasks(taskSetId);
     const gamePlayersHook = useGamePlayers(2);
+    const audioManager = useAudioManager();
     const {
         players,
         currentPlayerIndex,
@@ -66,10 +70,10 @@ export default function FlyingChessGame() {
     useEffect(() => {
         const newBoard = createBoardPath();
         setBoardPath(newBoard);
-        console.log('棋盘已生成，特殊格子位置：');
+        console.log('Board generated, special cell positions:');
         newBoard.forEach((cell, index) => {
             if (cell.type !== 'path') {
-                console.log(`位置 ${index}: ${cell.type}`);
+                console.log(`Position ${index}: ${cell.type}`);
             }
         });
     }, []);
@@ -79,7 +83,11 @@ export default function FlyingChessGame() {
 
     // 处理胜利
     const handleVictory = (victoryPlayer: GamePlayer) => {
-        console.log('游戏胜利！获胜者:', victoryPlayer.name);
+        console.log('Game victory! Winner:', victoryPlayer.name);
+
+        // 播放胜利音效
+        audioManager.playSoundEffect('victory').catch(console.error);
+
         setWinner(victoryPlayer);
         setShowVictoryModal(true);
     };
@@ -87,54 +95,54 @@ export default function FlyingChessGame() {
 
     // 检查格子类型并触发任务
     const checkCellAndTriggerTask = (playerId: number, position: number) => {
-        console.log(`检查位置 ${position} 的特殊格子，玩家ID: ${playerId}`);
+        console.log(`Checking special cell at position ${position}, player ID: ${playerId}`);
 
         // 检查位置是否有效
         if (position < 0 || position >= boardPath.length) {
-            console.log(`位置 ${position} 超出棋盘范围`);
+            console.log(`Position ${position} out of board range`);
             return false; // 返回false表示没有任务触发
         }
 
         const currentCell = boardPath[position];
         if (!currentCell) {
-            console.log(`位置 ${position} 的格子数据不存在`);
+            console.log(`Cell data at position ${position} does not exist`);
             return false;
         }
 
-        console.log(`位置 ${position} 的格子类型: ${currentCell.type}`);
+        console.log(`Cell type at position ${position}: ${currentCell.type}`);
 
         // 检查是否有其他玩家在相同位置（碰撞）
         const playersAtPosition = players.filter(p => p.position === position && p.id !== playerId);
         if (playersAtPosition.length > 0) {
-            console.log(`检测到碰撞，位置 ${position}`);
+            console.log(`Collision detected at position ${position}`);
             triggerTask('collision', playerId);
             return true; // 返回true表示有任务触发
         }
 
         // 检查特殊格子
         if (currentCell.type === 'trap') {
-            console.log(`触发陷阱任务，位置 ${position}`);
+            console.log(`Triggered trap task at position ${position}`);
             triggerTask('trap', playerId);
             return true;
         } else if (currentCell.type === 'star') {
-            console.log(`触发幸运任务，位置 ${position}`);
+            console.log(`Triggered star task at position ${position}`);
             triggerTask('star', playerId);
             return true;
         } else {
-            console.log(`位置 ${position} 是普通格子 (${currentCell.type})`);
+            console.log(`Position ${position} is a normal cell (${currentCell.type})`);
             return false;
         }
     };
 
     // 触发任务弹窗
     const triggerTask = (taskType: 'trap' | 'star' | 'collision', triggerPlayerId: number) => {
-        console.log(`触发任务：类型=${taskType}, 触发者ID=${triggerPlayerId}`);
+        console.log(`Triggered task: type=${taskType}, trigger player ID=${triggerPlayerId}`);
 
         const task = gameTasks.getRandomTask();
-        console.log('获取到的任务：', task);
+        console.log('Retrieved task:', task);
 
         if (!task) {
-            console.log('任务获取失败');
+            console.log('Failed to retrieve task');
             return;
         }
 
@@ -153,7 +161,7 @@ export default function FlyingChessGame() {
             executorType = 'opponent';
         }
 
-        console.log(`执行者ID: ${executorPlayerId}, 类型: ${executorType}`);
+        console.log(`Executor ID: ${executorPlayerId}, type: ${executorType}`);
 
         const taskData: TaskModalData = {
             id: task.id,
@@ -179,13 +187,13 @@ export default function FlyingChessGame() {
         const triggerPlayerId = taskModalData.triggerPlayerId!;
         const executorPlayerId = taskModalData.executorPlayerId!;
 
-        console.log(`任务完成: 类型=${pendingTaskType}, 触发者=${triggerPlayerId}, 执行者=${executorPlayerId}, 完成=${completed}`);
+        console.log(`Task completed: type=${pendingTaskType}, trigger=${triggerPlayerId}, executor=${executorPlayerId}, completed=${completed}`);
 
         // 应用任务奖惩，移动执行者
         const moveResult = applyTaskReward(executorPlayerId, pendingTaskType, completed);
 
         if (moveResult) {
-            console.log(`执行者 ${executorPlayerId} 从位置 ${moveResult.oldPosition} 移动到 ${moveResult.newPosition}`);
+            console.log(`Executor ${executorPlayerId} moved from position ${moveResult.oldPosition} to ${moveResult.newPosition}`);
 
             // 如果执行者位置发生了变化，立即检查胜利条件
             if (moveResult.newPosition !== moveResult.oldPosition) {
@@ -213,7 +221,7 @@ export default function FlyingChessGame() {
             if (gameStatus === 'playing') {
                 setDiceValue(0);
                 nextPlayer();
-                console.log('任务完成，切换到下一个玩家');
+                console.log('Task completed, switching to next player');
             }
         }, 500);
     };
@@ -224,6 +232,9 @@ export default function FlyingChessGame() {
         if (isRolling || isMoving) return;
 
         setIsRolling(true);
+
+        // 播放骰子音效
+        audioManager.playSoundEffect('dice').catch(console.error);
 
         // 骰子旋转动画
         diceRotation.value = withTiming(360 * 4, {duration: 1200});
@@ -258,10 +269,10 @@ export default function FlyingChessGame() {
                         setTimeout(() => {
                             setDiceValue(0);
                             nextPlayer();
-                            console.log('没有任务触发，切换到下一个玩家');
+                            console.log('No task triggered, switching to next player');
                         }, 500);
                     } else if (hasTask) {
-                        console.log('触发了任务，等待任务完成后再切换玩家');
+                        console.log('Task triggered, waiting for task completion before switching players');
                     }
                 });
             }, 1000);
@@ -295,7 +306,7 @@ export default function FlyingChessGame() {
         // 确保位置不小于起始位置（防止反弹到起点之前）
         targetPosition = Math.max(0, targetPosition);
 
-        console.log(`玩家 ${startPlayer.id} 从位置 ${startPosition} 投掷 ${steps} 步，目标位置: ${targetPosition}`);
+        console.log(`Player ${startPlayer.id} from position ${startPosition} rolled ${steps} steps, target position: ${targetPosition}`);
 
         const moveOneStep = () => {
             if (stepCount < steps && gameStatus === 'playing') {
@@ -315,11 +326,14 @@ export default function FlyingChessGame() {
                 currentMovePosition = Math.max(0, Math.min(boardSize, currentMovePosition));
                 movePlayer(startPlayer.id, currentMovePosition);
 
+                // 播放移动音效
+                audioManager.playSoundEffect('step').catch(console.error);
+
                 if (stepCount < steps) {
                     setTimeout(moveOneStep, 400);
                 } else {
                     // 移动完成
-                    console.log(`移动完成！玩家 ${startPlayer.id} 从位置 ${startPosition} 移动到位置 ${targetPosition}`);
+                    console.log(`Movement completed! Player ${startPlayer.id} moved from position ${startPosition} to position ${targetPosition}`);
 
                     // 调用完成回调
                     if (onComplete) {
@@ -346,7 +360,7 @@ export default function FlyingChessGame() {
         <>
             <Stack.Screen
                 options={{
-                    title: `${gameTasks.selectedTaskSet?.name || ""}-飞行棋`,
+                    title: `${gameTasks.selectedTaskSet?.name || ""}-${t('flyingChess.title', '飞行棋')}`,
                     headerShown: true,
                     headerStyle: {
                         backgroundColor: colors.homeBackground,
@@ -356,7 +370,7 @@ export default function FlyingChessGame() {
                         fontWeight: '600',
                         fontSize: 18,
                     },
-                    headerBackTitle: '返回',
+                    headerBackTitle: t('flyingChess.headerBackTitle', '返回'),
                 }}
             />
             <View style={[styles.container, {backgroundColor: colors.homeBackground}]}>
@@ -377,12 +391,13 @@ export default function FlyingChessGame() {
                     <View style={[styles.statusBar, {backgroundColor: colors.homeCardBackground}]}>
                         <View style={styles.statusLeft}>
                             <Text style={[styles.statusTitle, {color: colors.homeCardTitle}]}>
-                                {gameStatus === 'waiting' ? '准备开始' :
-                                    gameStatus === 'playing' ? '游戏进行中' : '游戏结束'}
+                                {gameStatus === 'waiting' ? t('flyingChess.gameStatus.waiting', '准备开始') :
+                                    gameStatus === 'playing' ? t('flyingChess.gameStatus.playing', '游戏进行中') :
+                                    t('flyingChess.gameStatus.finished', '游戏结束')}
                             </Text>
                             {gameStatus === 'playing' && (
                                 <Text style={[styles.currentPlayerText, {color: currentPlayer.color}]}>
-                                    轮到 {currentPlayer.name}
+                                    {t('flyingChess.currentPlayer', '轮到 {{playerName}}', { playerName: currentPlayer.name })}
                                 </Text>
                             )}
                         </View>
@@ -414,7 +429,9 @@ export default function FlyingChessGame() {
                                 </View>
 
                                 <Text style={[styles.diceText, {color: colors.homeCardDescription, fontWeight: '600'}]}>
-                                    {isRolling ? '投掷中...' : isMoving ? '棋子移动中...' : '点击投掷骰子'}
+                                    {isRolling ? t('flyingChess.dice.rolling', '投掷中...') :
+                                     isMoving ? t('flyingChess.dice.moving', '棋子移动中...') :
+                                     t('flyingChess.dice.clickToRoll', '点击投掷骰子')}
                                 </Text>
                             </View>
                         )}
@@ -422,7 +439,7 @@ export default function FlyingChessGame() {
 
                     {/* 玩家信息 */}
                     <View style={[styles.playersInfo, {backgroundColor: colors.homeCardBackground}]}>
-                        <Text style={[styles.sectionTitle, {color: colors.homeCardTitle}]}>玩家状态</Text>
+                        <Text style={[styles.sectionTitle, {color: colors.homeCardTitle}]}>{t('flyingChess.playersStatus', '玩家状态')}</Text>
                         <View style={styles.playersGrid}>
                             {players.map((player, index) => (
                                 <View
@@ -436,15 +453,17 @@ export default function FlyingChessGame() {
                                         }
                                     ]}
                                 >
-                                    <View style={[styles.playerAvatar, {backgroundColor: player.color}]}>
-                                        <Text style={styles.playerAvatarText}>{player.name.charAt(0)}</Text>
-                                    </View>
+                                    <PlayerAvatar
+                                        iconType={player.iconType}
+                                        color={player.color}
+                                        size={32}
+                                    />
                                     <View style={styles.playerInfo}>
                                         <Text style={[styles.playerName, {color: colors.homeCardTitle}]}>
                                             {player.name}
                                         </Text>
                                         <Text style={[styles.playerPosition, {color: colors.homeCardDescription}]}>
-                                            位置: {player.position + 1}
+                                            {t('flyingChess.position', '位置: {{position}}', { position: player.position + 1 })}
                                         </Text>
                                     </View>
                                 </View>
@@ -591,18 +610,6 @@ const styles = StyleSheet.create({
         padding: 10,
         borderRadius: 8,
         gap: 8,
-    },
-    playerAvatar: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    playerAvatarText: {
-        color: 'white',
-        fontSize: 14,
-        fontWeight: '700',
     },
     playerInfo: {
         flex: 1,

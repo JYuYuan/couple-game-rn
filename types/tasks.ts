@@ -51,6 +51,7 @@ export interface TasksState {
 
   // 初始化数据
   initializeDefaultData: () => void;
+  updateCategoriesI18n: (getLocalizedCategories: () => TaskCategory[]) => void;
   loadSystemTasks: (language?: 'zh' | 'en' | 'ja') => Promise<void>;
 
   // 导入导出

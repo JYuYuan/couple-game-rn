@@ -7,10 +7,12 @@ import {useTranslation} from 'react-i18next';
 import {LanguageMode, ThemeMode} from '@/types/settings';
 import {useColorScheme} from '@/hooks/use-color-scheme';
 import {Colors} from '@/constants/theme';
+import {useAudioManager} from '@/hooks/use-audio-manager';
 
 const Settings: React.FC = () => {
     const insets = useSafeAreaInsets();
-    const {themeMode, languageMode, setThemeMode, setLanguageMode} = useSettingsStore();
+    const {themeMode, languageMode, soundSettings, setThemeMode, setLanguageMode, setSoundSettings} = useSettingsStore();
+    const audioManager = useAudioManager();
     const {t, i18n} = useTranslation();
     const [showLanguageModal, setShowLanguageModal] = useState(false);
     const [showThemeModal, setShowThemeModal] = useState(false);
@@ -30,7 +32,7 @@ const Settings: React.FC = () => {
     const modalSelected = colors.modalSelected;
 
     const getLanguageDisplay = (lang: LanguageMode) => {
-        return t(`settings.Language.config.${lang}`)
+        return t(`settings.language.config.${lang}`)
     };
 
     const getThemeDisplay = (theme: ThemeMode) => {
@@ -53,13 +55,26 @@ const Settings: React.FC = () => {
     const handleAboutPress = (type: string) => {
         switch (type) {
             case 'version':
-                Alert.alert('版本信息', `版本：1.0.0\n构建：${new Date().getFullYear()}.${String(new Date().getMonth() + 1).padStart(2, '0')}.${String(new Date().getDate()).padStart(2, '0')}`);
+                const buildDate = `${new Date().getFullYear()}.${String(new Date().getMonth() + 1).padStart(2, '0')}.${String(new Date().getDate()).padStart(2, '0')}`;
+                Alert.alert(
+                    t('settings.version.alertTitle', '版本信息'),
+                    t('settings.version.alertMessage', '版本：{{version}}\n构建：{{buildDate}}', {
+                        version: '1.0.0',
+                        buildDate
+                    })
+                );
                 break;
             case 'privacy':
-                Alert.alert('隐私政策', '我们重视您的隐私，所有数据均存储在本地，不会上传到服务器。');
+                Alert.alert(
+                    t('settings.privacyPolicy.alertTitle', '隐私政策'),
+                    t('settings.privacyPolicy.alertMessage', '我们重视您的隐私，所有数据均存储在本地，不会上传到服务器。')
+                );
                 break;
             case 'terms':
-                Alert.alert('用户协议', '感谢使用我们的应用，请合理使用本应用的各项功能。');
+                Alert.alert(
+                    t('settings.userAgreement.alertTitle', '用户协议'),
+                    t('settings.userAgreement.alertMessage', '感谢使用我们的应用，请合理使用本应用的各项功能。')
+                );
                 break;
         }
     };
@@ -67,51 +82,61 @@ const Settings: React.FC = () => {
 
     const settingsSections = [
         {
-            title: '通用',
+            title: t('settings.sections.general', '通用'),
             items: [
                 {
                     icon: 'language',
-                    label: t("settings.Language.title"),
+                    label: t("settings.language.label"),
                     value: getLanguageDisplay(languageMode),
                     onPress: () => setShowLanguageModal(true)
                 },
                 {
                     icon: 'moon',
-                    label: t("settings.theme.title"),
+                    label: t("settings.theme.label"),
                     value: getThemeDisplay(themeMode),
                     onPress: () => setShowThemeModal(true)
                 },
             ]
         },
         {
-            title: '游戏设置',
+            title: t('settings.sections.gameSettings', '游戏设置'),
             items: [
                 {
                     icon: 'musical-notes',
-                    label: '声音设置',
-                    value: '音效开启',
-                    onPress: () => Alert.alert('声音设置', '游戏音效功能正在开发中...')
+                    label: t('settings.sound.label', '声音设置'),
+                    value: soundSettings.globalMute ? t('settings.sound.disabled', '已关闭') : t('settings.sound.enabled', '已开启'),
+                    onPress: () => {
+                        setSoundSettings({ globalMute: !soundSettings.globalMute });
+                    }
+                },
+                {
+                    icon: 'volume-high',
+                    label: t('settings.sound.bgm', '背景音乐'),
+                    value: soundSettings.bgmEnabled ? t('settings.sound.enabled', '已开启') : t('settings.sound.disabled', '已关闭'),
+                    onPress: () => {
+                        setSoundSettings({ bgmEnabled: !soundSettings.bgmEnabled });
+                    }
                 },
             ]
         },
         {
-            title: '关于',
+            title: t('settings.sections.about', '关于'),
             items: [
                 {
                     icon: 'information-circle',
-                    label: '版本信息',
+                    label: t('settings.version.label', '版本信息'),
                     value: '1.0.0',
                     onPress: () => handleAboutPress('version')
                 },
                 {
                     icon: 'document-text',
-                    label: '用户协议',
+                    label: t('settings.userAgreement.label', '用户协议'),
                     value: '',
                     onPress: () => handleAboutPress('terms')
                 },
                 {
                     icon: 'shield-checkmark',
-                    label: '隐私政策',
+                    label: t('settings.privacyPolicy.label', '隐私政策'),
                     value: '',
                     onPress: () => handleAboutPress('privacy')
                 },
@@ -150,10 +175,8 @@ const Settings: React.FC = () => {
                                             <Text style={[styles.settingLabel, {color: textColor}]}>{item.label}</Text>
                                         </View>
                                         <View style={styles.settingItemRight}>
-                                            {item.value && (
-                                                <Text
-                                                    style={[styles.settingValue, {color: secondaryText}]}>{item.value}</Text>
-                                            )}
+                                            <Text
+                                                style={[styles.settingValue, {color: secondaryText}]}>{item.value}</Text>
                                             <Ionicons name="chevron-forward" size={20} color={secondaryText}/>
                                         </View>
                                     </TouchableOpacity>
@@ -178,7 +201,8 @@ const Settings: React.FC = () => {
                 >
                     <View style={[styles.modalContent, {backgroundColor: modalBg}]}>
                         <View style={styles.modalHeader}>
-                            <Text style={[styles.modalTitle, {color: textColor}]}>选择语言</Text>
+                            <Text
+                                style={[styles.modalTitle, {color: textColor}]}>{t('settings.language.modalTitle', '选择语言')}</Text>
                             <TouchableOpacity
                                 onPress={() => setShowLanguageModal(false)}
                                 style={styles.modalCloseButton}
@@ -226,7 +250,8 @@ const Settings: React.FC = () => {
                 >
                     <View style={[styles.modalContent, {backgroundColor: modalBg}]}>
                         <View style={styles.modalHeader}>
-                            <Text style={[styles.modalTitle, {color: textColor}]}>选择主题</Text>
+                            <Text
+                                style={[styles.modalTitle, {color: textColor}]}>{t('settings.theme.modalTitle', '选择主题')}</Text>
                             <TouchableOpacity
                                 onPress={() => setShowThemeModal(false)}
                                 style={styles.modalCloseButton}

@@ -29,7 +29,6 @@ export default function GameMode() {
     const router = useRouter();
     const params = useLocalSearchParams();
     const {t} = useTranslation();
-    const insets = useSafeAreaInsets();
     const colorScheme = useColorScheme() ?? 'light';
     const colors = Colors[colorScheme] as any;
 
@@ -41,7 +40,6 @@ export default function GameMode() {
 
     // 状态管理
     const [selectedCategory, setSelectedCategory] = useState<string>('all');
-    const [selectedTaskSet, setSelectedTaskSet] = useState<TaskSet | null>(null);
 
     // 动画值
     const floatAnimation = useSharedValue(0);
@@ -75,11 +73,13 @@ export default function GameMode() {
     const getPageTitle = () => {
         switch (gameType) {
             case 'fly':
-                return '飞行棋-任务选择';
+                return t('gameMode.flyingChess', '飞行棋-任务选择');
             case 'wheel':
-                return '大转盘-任务选择';
+                return t('gameMode.wheel', '大转盘-任务选择');
+            case 'minesweeper':
+                return t('gameMode.minesweeper', '扫雷对战-任务选择');
             default:
-                return '任务选择';
+                return t('gameMode.default', '任务选择');
         }
     };
 
@@ -140,7 +140,7 @@ export default function GameMode() {
                                         : colors.homeCardDescription
                                 }
                             ]}>
-                                全部
+                                {t('gameMode.all', '全部')}
                             </Text>
                         </LinearGradient>
                     </TouchableOpacity>
@@ -222,7 +222,6 @@ export default function GameMode() {
         };
 
         const handlePress = () => {
-            setSelectedTaskSet(taskSet);
             if (!routeConfig[gameType]) return;
             router.push({
                 pathname: routeConfig[gameType] as any,
@@ -282,7 +281,7 @@ export default function GameMode() {
                                 <Ionicons name="list" size={14} color={colors.settingsAccent}/>
                             </View>
                             <Text style={[styles.statText, {color: colors.homeCardDescription}]}>
-                                {taskSet.tasks.length} 个任务
+                                {t('gameMode.taskCount', '{{count}} 个任务', {count: taskSet.tasks.length})}
                             </Text>
                         </View>
                         <View style={styles.statItem}>
@@ -306,7 +305,7 @@ export default function GameMode() {
                             start={{x: 0, y: 0}}
                             end={{x: 1, y: 1}}
                         >
-                            <Text style={styles.startButtonText}>开始游戏</Text>
+                            <Text style={styles.startButtonText}>{t('gameMode.startGame', '开始游戏')}</Text>
                             <Ionicons name="play" size={16} color="white"/>
                         </LinearGradient>
                     </TouchableOpacity>
@@ -334,26 +333,30 @@ export default function GameMode() {
     const getDifficultyText = (difficulty: string) => {
         switch (difficulty) {
             case 'easy':
-                return '简单';
+                return t('taskModal.difficulty.easy', '简单');
             case 'normal':
-                return '普通';
+                return t('taskModal.difficulty.normal', '普通');
             case 'hard':
-                return '困难';
+                return t('taskModal.difficulty.hard', '困难');
             case 'extreme':
-                return '极限';
+                return t('taskModal.difficulty.extreme', '极限');
             default:
-                return '未知';
+                return t('taskModal.difficulty.unknown', '未知');
         }
     };
 
     const getEstimatedTime = (taskCount: number) => {
         const minutes = taskCount * 2; // 假设每个任务2分钟
         if (minutes < 60) {
-            return `约 ${minutes} 分钟`;
+            return t('gameMode.estimatedTime.minutes', '约 {{minutes}} 分钟', {minutes});
         } else {
             const hours = Math.floor(minutes / 60);
             const remainingMinutes = minutes % 60;
-            return `约 ${hours}小时${remainingMinutes > 0 ? remainingMinutes + '分钟' : ''}`;
+            if (remainingMinutes > 0) {
+                return t('gameMode.estimatedTime.hours', '约 {{hours}}小时{{minutes}}分钟', {hours, minutes: remainingMinutes});
+            } else {
+                return t('gameMode.estimatedTime.hoursOnly', '约 {{hours}}小时', {hours});
+            }
         }
     };
 
@@ -371,7 +374,7 @@ export default function GameMode() {
                         fontWeight: '600',
                         fontSize: 18,
                     },
-                    headerBackTitle: '返回',
+                    headerBackTitle: t('common.back', '返回'),
                 }}
             />
             <View style={[styles.container, {backgroundColor: colors.homeBackground}]}>
@@ -433,10 +436,10 @@ export default function GameMode() {
                                 </LinearGradient>
                             </View>
                             <Text style={[styles.emptyText, {color: colors.homeCardTitle}]}>
-                                暂无可用的游戏模式
+                                {t('gameMode.empty.title', '暂无可用的游戏模式')}
                             </Text>
                             <Text style={[styles.emptySubtext, {color: colors.homeCardDescription}]}>
-                                去任务管理页面添加一些任务集吧
+                                {t('gameMode.empty.subtitle', '去任务管理页面添加一些任务集吧')}
                             </Text>
                             <TouchableOpacity
                                 style={styles.emptyButton}
@@ -448,7 +451,7 @@ export default function GameMode() {
                                     start={{x: 0, y: 0}}
                                     end={{x: 1, y: 1}}
                                 >
-                                    <Text style={styles.emptyButtonText}>去添加任务</Text>
+                                    <Text style={styles.emptyButtonText}>{t('gameMode.empty.button', '去添加任务')}</Text>
                                     <Ionicons name="add" size={16} color="white"/>
                                 </LinearGradient>
                             </TouchableOpacity>

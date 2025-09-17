@@ -6,6 +6,7 @@ import {BlurView} from 'expo-blur';
 import {Ionicons} from '@expo/vector-icons';
 import {useColorScheme} from '@/hooks/use-color-scheme';
 import {Colors} from '@/constants/theme';
+import {PlayerIcon} from './icons';
 import {useTranslation} from 'react-i18next';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
@@ -187,8 +188,6 @@ export default function TaskModal({
     const getResultInfo = () => {
         if (!task || isCompleted === null) return null;
 
-        const taskTypeInfo = getTaskTypeInfo();
-
         if (task.type === 'trap') {
             // 陷阱任务：完成前进3-6格，未完成后退3-6格
             return {
@@ -280,9 +279,11 @@ export default function TaskModal({
                                         </Text>
                                         <View style={[styles.executorCard, {backgroundColor: executor.color + '15'}]}>
                                             <View style={[styles.executorAvatar, {backgroundColor: executor.color}]}>
-                                                <Text style={styles.executorAvatarText}>
-                                                    {executor.id === 1 ? '✈️' : '🚁'}
-                                                </Text>
+                                                <PlayerIcon
+                                                    type={executor.id === 1 ? 'airplane' : 'helicopter'}
+                                                    size={20}
+                                                    color="white"
+                                                />
                                             </View>
                                             <Text style={[styles.executorName, {color: colors.homeCardTitle}]}>
                                                 {executor.name}
@@ -462,9 +463,6 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         alignItems: 'center',
         justifyContent: 'center',
-    },
-    executorAvatarText: {
-        fontSize: 18,
     },
     executorName: {
         fontSize: 16,

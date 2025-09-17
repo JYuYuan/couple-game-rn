@@ -1,14 +1,14 @@
 import React, {useEffect, useState} from 'react';
-import {View, StyleSheet, Dimensions, Text, TouchableOpacity} from 'react-native';
+import {Dimensions, StyleSheet, TouchableOpacity, View} from 'react-native';
 import Animated, {
-    useSharedValue,
+    interpolate,
+    runOnJS,
     useAnimatedStyle,
-    withSpring,
+    useSharedValue,
     withRepeat,
     withSequence,
-    withTiming,
-    interpolate,
-    runOnJS
+    withSpring,
+    withTiming
 } from 'react-native-reanimated';
 import {LinearGradient} from 'expo-linear-gradient';
 import {Ionicons} from '@expo/vector-icons';
@@ -16,6 +16,7 @@ import {createBoardPath} from '@/utils/board';
 import {PathCell, Player} from '@/types/game';
 import {useColorScheme} from '@/hooks/use-color-scheme';
 import {Colors} from '@/constants/theme';
+import {PlayerIcon} from './icons';
 
 const BOARD_SIZE = 7;
 const {width: screenWidth} = Dimensions.get('window');
@@ -274,9 +275,11 @@ const PlayerPiece: React.FC<PlayerPieceProps> = ({player, index, total}) => {
                 shadowRadius: 2,
                 elevation: 4,
             }]}>
-                <Text style={styles.playerPieceText}>
-                    {player.id === 1 ? '✈️' : '🚁'}
-                </Text>
+                <PlayerIcon
+                    type={(player.iconType as any) || (player.id === 1 ? 'airplane' : 'helicopter')}
+                    size={CELL_SIZE * 0.4}
+                    color="white"
+                />
             </View>
         </Animated.View>
     );
@@ -489,11 +492,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         zIndex: 11,
-    },
-    playerPieceText: {
-        fontSize: 12,
-        fontWeight: '800',
-        textAlign: 'center',
     },
 });
 

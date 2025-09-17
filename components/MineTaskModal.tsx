@@ -1,24 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import {
-    View,
-    Text,
-    Modal,
-    TouchableOpacity,
-    StyleSheet,
-    Dimensions,
-} from 'react-native';
+import React, {useEffect, useState} from 'react';
+import {Dimensions, Modal, StyleSheet, Text, TouchableOpacity, View,} from 'react-native';
+import {useTranslation} from 'react-i18next';
 import Animated, {
-    useSharedValue,
+    interpolate,
     useAnimatedStyle,
+    useSharedValue,
     withSpring,
     withTiming,
-    interpolate,
 } from 'react-native-reanimated';
-import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
-import { Ionicons } from '@expo/vector-icons';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Colors } from '@/constants/theme';
+import {LinearGradient} from 'expo-linear-gradient';
+import {BlurView} from 'expo-blur';
+import {Ionicons} from '@expo/vector-icons';
+import {useColorScheme} from '@/hooks/use-color-scheme';
+import {Colors} from '@/constants/theme';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -44,6 +38,7 @@ export default function MineTaskModal({
     onComplete,
     onClose
 }: MineTaskModalProps) {
+    const { t } = useTranslation();
     const colorScheme = useColorScheme() ?? 'light';
     const colors = Colors[colorScheme] as any;
 
@@ -113,10 +108,10 @@ export default function MineTaskModal({
             success: isCompleted,
             icon: isCompleted ? 'shield-checkmark' : 'close-circle',
             color: isCompleted ? '#4CAF50' : '#F44336',
-            title: isCompleted ? '任务完成！' : '任务失败！',
+            title: isCompleted ? t('minesweeper.task.result.completed', '任务完成！') : t('minesweeper.task.result.failed', '任务失败！'),
             description: isCompleted
-                ? '顺利完成挑战！'
-                : '挑战失败了'
+                ? t('minesweeper.task.result.completedDesc', '顺利完成挑战！')
+                : t('minesweeper.task.result.failedDesc', '挑战失败了')
         };
     };
 
@@ -152,17 +147,19 @@ export default function MineTaskModal({
                                         <Text style={styles.mineEmoji}>💣</Text>
                                     </View>
                                     <Text style={[styles.headerTitle, { color: colors.homeCardTitle }]}>
-                                        踩到地雷了！
+                                        {t('minesweeper.task.hitMine', '踩到地雷了！')}
                                     </Text>
                                     <Text style={[styles.headerSubtitle, { color: '#F44336' }]}>
-                                        位置: ({task.minePosition.row + 1}, {task.minePosition.col + 1})
+                                        {t('minesweeper.task.position', '位置')}{': ('}
+                                        {task.minePosition.row + 1}{', '}{task.minePosition.col + 1}
+                                        {')'}
                                     </Text>
                                 </View>
 
                                 {/* 玩家信息 */}
                                 <View style={styles.playerSection}>
                                     <Text style={[styles.sectionTitle, { color: colors.homeCardTitle }]}>
-                                        挑战者
+                                        {t('minesweeper.task.challenger', '挑战者')}
                                     </Text>
                                     <View style={[styles.playerCard, { backgroundColor: task.playerColor + '15' }]}>
                                         <View style={[styles.playerAvatar, { backgroundColor: task.playerColor }]}>
@@ -179,7 +176,7 @@ export default function MineTaskModal({
                                 {/* 任务内容 */}
                                 <View style={styles.taskSection}>
                                     <Text style={[styles.sectionTitle, { color: colors.homeCardTitle }]}>
-                                        挑战任务
+                                        {t('minesweeper.task.challengeTask', '挑战任务')}
                                     </Text>
                                     <Text style={[styles.taskTitle, { color: colors.homeCardTitle }]}>
                                         {task.title}
@@ -224,7 +221,7 @@ export default function MineTaskModal({
                                                 end={{ x: 1, y: 1 }}
                                             >
                                                 <Ionicons name="checkmark" size={20} color="white" />
-                                                <Text style={styles.actionButtonText}>完成</Text>
+                                                <Text style={styles.actionButtonText}>{t('common.completed', '完成')}</Text>
                                             </LinearGradient>
                                         </TouchableOpacity>
 
@@ -240,7 +237,7 @@ export default function MineTaskModal({
                                                 end={{ x: 1, y: 1 }}
                                             >
                                                 <Ionicons name="close" size={20} color="white" />
-                                                <Text style={styles.actionButtonText}>未完成</Text>
+                                                <Text style={styles.actionButtonText}>{t('common.failed', '未完成')}</Text>
                                             </LinearGradient>
                                         </TouchableOpacity>
                                     </View>

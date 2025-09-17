@@ -1,7 +1,6 @@
-import {useState, useEffect} from 'react';
-import {useLocalSearchParams} from 'expo-router';
+import {useEffect, useState} from 'react';
 import {useTasksStore} from '@/store/tasksStore';
-import {TaskSet, Task} from '@/types/tasks';
+import {Task, TaskSet} from '@/types/tasks';
 
 interface GameTask {
     id: string;

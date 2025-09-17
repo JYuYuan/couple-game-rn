@@ -1,5 +1,7 @@
-import { useState, useCallback } from 'react';
-import { Alert } from 'react-native';
+import {useCallback, useState} from 'react';
+import {Alert} from 'react-native';
+import {useTranslation} from 'react-i18next';
+import {PlayerIconType} from '@/components/icons';
 
 export interface GamePlayer {
   id: number;
@@ -7,28 +9,38 @@ export interface GamePlayer {
   color: string;
   position: number;
   score: number;
-  icon: string;
+  iconType: PlayerIconType; // 改为SVG图标类型
   completedTasks: string[];
   achievements: string[];
 }
 
 const PLAYER_COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4'];
-const PLAYER_ICONS = ['✈️', '🚁', '🚀', '🛸'];
-const PLAYER_NAMES = ['玩家1', '玩家2', '玩家3', '玩家4'];
+const PLAYER_ICON_TYPES: PlayerIconType[] = ['airplane', 'helicopter', 'rocket', 'ufo'];
 
 export const useGamePlayers = (initialPlayerCount: number = 2) => {
-  const [players, setPlayers] = useState<GamePlayer[]>(() =>
-    Array.from({ length: initialPlayerCount }, (_, index) => ({
+  const { t } = useTranslation();
+
+  // 获取国际化的玩家名称
+  const getPlayerNames = useCallback(() => [
+    t('players.names.player1', '玩家1'),
+    t('players.names.player2', '玩家2'),
+    t('players.names.player3', '玩家3'),
+    t('players.names.player4', '玩家4'),
+  ], [t]);
+
+  const [players, setPlayers] = useState<GamePlayer[]>(() => {
+    const playerNames = getPlayerNames();
+    return Array.from({ length: initialPlayerCount }, (_, index) => ({
       id: index + 1,
-      name: PLAYER_NAMES[index],
+      name: playerNames[index],
       color: PLAYER_COLORS[index],
       position: 0,
       score: 0,
-      icon: PLAYER_ICONS[index],
+      iconType: PLAYER_ICON_TYPES[index],
       completedTasks: [],
       achievements: []
-    }))
-  );
+    }));
+  });
 
   const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
   const [gameStatus, setGameStatus] = useState<'waiting' | 'playing' | 'paused' | 'ended'>('waiting');
@@ -189,22 +201,40 @@ export const useGamePlayers = (initialPlayerCount: number = 2) => {
     return players.find(player => player.id !== currentPlayerId) || null;
   }, [players]);
 
+  // 更新玩家名称为国际化版本
+  const updatePlayerNames = useCallback(() => {
+    const playerNames = getPlayerNames();
+    setPlayers(prev => prev.map((player, index) => ({
+      ...player,
+      name: playerNames[index] || player.name
+    })));
+  }, [getPlayerNames]);
+
   // 显示胜利弹窗
   const showWinDialog = useCallback((winner: GamePlayer, onRestart: () => void, onExit: () => void) => {
     const ranking = getPlayerRanking();
     const winnerStats = getPlayerStats(winner.id);
 
+    const rankingText = ranking.map((player, index) =>
+      t('players.rankingItem', '{{rank}}. {{name}} (位置: {{position}}, 分数: {{score}})', {
+        rank: index + 1,
+        name: player.name,
+        position: player.position + 1,
+        score: player.score
+      })
+    ).join('\n');
+
+    const message = `${t('players.victory', '{{name}} 获得胜利！', { name: winner.name })}\n\n${t('players.finalRanking', '📊 最终排名:')}\n${rankingText}\n\n${t('players.winnerStats', '🏆 获胜者统计:')}\n${t('players.completedTasks', '✅ 完成任务: {{count}} 个', { count: winnerStats?.tasksCompleted || 0 })}\n${t('players.achievements', '🌟 获得成就: {{count}} 个', { count: winnerStats?.achievements || 0 })}`;
+
     Alert.alert(
-      '🎉 游戏结束',
-      `${winner.name} 获得胜利！\n\n📊 最终排名:\n${ranking.map((player, index) =>
-        `${index + 1}. ${player.name} (位置: ${player.position + 1}, 分数: ${player.score})`
-      ).join('\n')}\n\n🏆 获胜者统计:\n✅ 完成任务: ${winnerStats?.tasksCompleted || 0} 个\n🌟 获得成就: ${winnerStats?.achievements || 0} 个`,
+      t('players.gameEnd', '🎉 游戏结束'),
+      message,
       [
-        { text: '重新开始', onPress: onRestart },
-        { text: '退出游戏', onPress: onExit }
+        { text: t('players.restart', '重新开始'), onPress: onRestart },
+        { text: t('players.exitGame', '退出游戏'), onPress: onExit }
       ]
     );
-  }, [getPlayerRanking, getPlayerStats]);
+  }, [getPlayerRanking, getPlayerStats, t]);
 
   return {
     // 状态
@@ -220,6 +250,7 @@ export const useGamePlayers = (initialPlayerCount: number = 2) => {
     completeTask,
     addAchievement,
     getOpponentPlayer,
+    updatePlayerNames,
 
     // 游戏控制
     startGame,

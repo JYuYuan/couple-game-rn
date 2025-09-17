@@ -1,27 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import {
-    View,
-    Text,
-    Modal,
-    TouchableOpacity,
-    ScrollView,
-    StyleSheet,
-    Dimensions
-} from 'react-native';
+import React, {useEffect, useState} from 'react';
+import {Dimensions, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import Animated, {
-    useSharedValue,
     useAnimatedStyle,
-    withSpring,
+    useSharedValue,
     withSequence,
-    withTiming,
-    interpolate
+    withSpring,
+    withTiming
 } from 'react-native-reanimated';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Colors } from '@/constants/theme';
-import { GamePlayer } from '@/hooks/use-game-players';
+import {LinearGradient} from 'expo-linear-gradient';
+import {Ionicons} from '@expo/vector-icons';
+import {BlurView} from 'expo-blur';
+import {useColorScheme} from '@/hooks/use-color-scheme';
+import {Colors} from '@/constants/theme';
+import {GamePlayer} from '@/hooks/use-game-players';
+import {useTranslation} from 'react-i18next';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -55,6 +47,7 @@ export default function VictoryModal({
 }: VictoryModalProps) {
     const colorScheme = useColorScheme() ?? 'light';
     const colors = Colors[colorScheme] as any;
+    const { t } = useTranslation();
 
     const [selectedTasks, setSelectedTasks] = useState<GameTask[]>([]);
     const [showTaskSelection, setShowTaskSelection] = useState(false);
@@ -128,11 +121,11 @@ export default function VictoryModal({
 
     const getDifficultyText = (difficulty: string) => {
         switch (difficulty) {
-            case 'easy': return '简单';
-            case 'normal': return '普通';
-            case 'hard': return '困难';
-            case 'extreme': return '极限';
-            default: return '未知';
+            case 'easy': return t('taskModal.difficulty.easy', '简单');
+            case 'normal': return t('taskModal.difficulty.normal', '普通');
+            case 'hard': return t('taskModal.difficulty.hard', '困难');
+            case 'extreme': return t('taskModal.difficulty.extreme', '极限');
+            default: return t('taskModal.difficulty.unknown', '未知');
         }
     };
 
@@ -177,7 +170,7 @@ export default function VictoryModal({
                                         </View>
 
                                         <Text style={[styles.victoryTitle, { color: colors.homeCardTitle }]}>
-                                            🎉 游戏胜利！🎉
+                                            {t('victoryModal.gameWin', '🎉 游戏胜利！🎉')}
                                         </Text>
 
                                         <View style={[styles.winnerCard, { backgroundColor: winner.color + '15' }]}>
@@ -189,7 +182,7 @@ export default function VictoryModal({
                                                     {winner.name}
                                                 </Text>
                                                 <Text style={[styles.winnerSubtext, { color: colors.homeCardDescription }]}>
-                                                    恭喜获得胜利！
+                                                    {t('victoryModal.congratulations', '恭喜获得胜利！')}
                                                 </Text>
                                             </View>
                                         </View>
@@ -198,10 +191,10 @@ export default function VictoryModal({
                                     {/* 奖励说明 */}
                                     <View style={styles.rewardSection}>
                                         <Text style={[styles.rewardTitle, { color: colors.homeCardTitle }]}>
-                                            🎁 胜利者奖励
+                                            {t('victoryModal.victoryReward', '🎁 胜利者奖励')}
                                         </Text>
                                         <Text style={[styles.rewardDescription, { color: colors.homeCardDescription }]}>
-                                            作为胜利者，你可以从以下任务中选择3个作为奖励！
+                                            {t('victoryModal.rewardDescription', '作为胜利者，你可以从以下任务中选择3个作为奖励！')}
                                         </Text>
                                     </View>
 
@@ -216,7 +209,7 @@ export default function VictoryModal({
                                                 style={styles.primaryButtonGradient}
                                             >
                                                 <Ionicons name="gift" size={20} color="white" />
-                                                <Text style={styles.primaryButtonText}>选择奖励任务</Text>
+                                                <Text style={styles.primaryButtonText}>{t('victoryModal.selectRewardTasks', '选择奖励任务')}</Text>
                                             </LinearGradient>
                                         </TouchableOpacity>
 
@@ -225,7 +218,7 @@ export default function VictoryModal({
                                             onPress={onClose}
                                         >
                                             <Text style={[styles.secondaryButtonText, { color: colors.homeCardDescription }]}>
-                                                稍后选择
+                                                {t('victoryModal.selectLater', '稍后选择')}
                                             </Text>
                                         </TouchableOpacity>
                                     </View>
@@ -243,10 +236,10 @@ export default function VictoryModal({
 
                                         <View style={styles.selectionTitleContainer}>
                                             <Text style={[styles.selectionTitle, { color: colors.homeCardTitle }]}>
-                                                选择奖励任务
+                                                {t('victoryModal.selectRewardTasksTitle', '选择奖励任务')}
                                             </Text>
                                             <Text style={[styles.selectionSubtitle, { color: colors.homeCardDescription }]}>
-                                                已选择 {selectedTasks.length}/3 个任务
+                                                {t('victoryModal.selectedCount', '已选择 {{count}}/3 个任务', { count: selectedTasks.length })}
                                             </Text>
                                         </View>
                                     </View>
@@ -333,7 +326,7 @@ export default function VictoryModal({
                                             >
                                                 <Ionicons name="checkmark-circle" size={20} color="white" />
                                                 <Text style={styles.confirmButtonText}>
-                                                    确认选择 ({selectedTasks.length})
+                                                    {t('victoryModal.confirmSelection', '确认选择 ({{count}})', { count: selectedTasks.length })}
                                                 </Text>
                                             </LinearGradient>
                                         </TouchableOpacity>
@@ -344,17 +337,17 @@ export default function VictoryModal({
                                 <View style={styles.gameEndContent}>
                                     <View style={styles.gameEndHeader}>
                                         <Text style={[styles.gameEndTitle, { color: colors.homeCardTitle }]}>
-                                            🎊 任务奖励已获得！
+                                            {t('victoryModal.rewardReceived', '🎊 任务奖励已获得！')}
                                         </Text>
                                         <Text style={[styles.gameEndSubtitle, { color: colors.homeCardDescription }]}>
-                                            你已成功选择了 {selectedTasks.length} 个奖励任务
+                                            {t('victoryModal.selectedTasksCount', '你已成功选择了 {{count}} 个奖励任务', { count: selectedTasks.length })}
                                         </Text>
                                     </View>
 
                                     {/* 选中的任务列表 */}
                                     <View style={styles.selectedTasksList}>
                                         <Text style={[styles.selectedTasksTitle, { color: colors.homeCardTitle }]}>
-                                            获得的奖励任务：
+                                            {t('victoryModal.rewardTasks', '获得的奖励任务：')}
                                         </Text>
                                         {selectedTasks.map((task, index) => (
                                             <View key={task.id} style={[styles.selectedTaskItem, { backgroundColor: colors.homeBackground }]}>
@@ -379,7 +372,7 @@ export default function VictoryModal({
                                                 style={styles.gameEndButtonGradient}
                                             >
                                                 <Ionicons name="refresh" size={20} color="white" />
-                                                <Text style={styles.gameEndButtonText}>重新开始</Text>
+                                                <Text style={styles.gameEndButtonText}>{t('victoryModal.restart', '重新开始')}</Text>
                                             </LinearGradient>
                                         </TouchableOpacity>
 
@@ -392,7 +385,7 @@ export default function VictoryModal({
                                                 style={styles.gameEndButtonGradient}
                                             >
                                                 <Ionicons name="exit" size={20} color="white" />
-                                                <Text style={styles.gameEndButtonText}>退出游戏</Text>
+                                                <Text style={styles.gameEndButtonText}>{t('victoryModal.exitGame', '退出游戏')}</Text>
                                             </LinearGradient>
                                         </TouchableOpacity>
                                     </View>

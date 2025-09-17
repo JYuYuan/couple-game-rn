@@ -2,367 +2,473 @@
   "common": {
     "loading": "読み込み中...",
     "start": "開始",
-    "restart": "再開始",
+    "restart": "再開",
     "completed": "完了",
-    "failed": "失敗",
+    "failed": "未達成",
     "rollDice": "サイコロを振る",
-    "rolling": "振っています...",
+    "rolling": "サイコロを振っています...",
     "moving": "移動中...",
     "preparing": "準備中...",
-    "skipToHome": "ホームに戻る",
+    "skipToHome": "スキップしてホームに戻る",
     "cancel": "キャンセル",
     "confirm": "確認"
   },
-  "settings": {
-    "title": "設定",
-    "backToHome": "ホームに戻る",
-    "sound": {
-      "title": "サウンド設定",
-      "enabled": "有効",
-      "disabled": "無効",
-      "volume": "音量",
-      "testPlay": "テスト再生",
-      "globalMute": "グローバルミュート",
-      "names": {
-        "bgm": "バックグラウンドミュージック",
-        "rollDice": "サイコロを振る",
-        "stepDice": "駒を動かす",
-        "countDown": "カウントダウン",
-        "stopDice": "サイコロを止める"
-      }
-    },
-    "other": {
-      "title": "その他の設定",
-      "comingSoon": "その他の設定オプションは近日公開予定..."
-    },
-    "flying": {
-      "title": "ゲーム時間設定",
-      "backToGameMode": "ゲームモードに戻る",
-      "resetToDefaults": "デフォルトに戻す",
-      "basic": {
-        "title": "基本設定",
-        "defaultTaskTime": "デフォルトタスク時間",
-        "defaultTaskTimeDesc": "キーワードがマッチしない場合のデフォルト時間",
-        "smartTimeDetection": "スマート時間検出",
-        "smartTimeDetectionDesc": "タスクキーワードに基づいて自動的に時間を設定"
-      },
-      "keywords": {
-        "title": "キーワード時間設定",
-        "addNew": "新しいキーワードを追加",
-        "addNewKeyword": "キーワードを入力...",
-        "seconds": "秒",
-        "deleteKeyword": "キーワードを削除"
-      },
-      "test": {
-        "title": "キーワード検出テスト",
-        "taskContent": "テストタスク内容：",
-        "taskPlaceholder": "キーワード検出をテストするためにタスク説明を入力...",
-        "detectedTime": "検出時間",
-        "matchedKeywords": "マッチしたキーワード",
-        "detectionReason": "検出理由",
-        "noMatch": "マッチなし",
-        "tryExamples": "これらの例を試してください：",
-        "useDefault": "デフォルト時間を使用",
-        "matchedKeyword": "マッチしたキーワード",
-        "multipleKeywords": "複数のキーワードがマッチ、最長時間を使用"
-      },
-      "usage": {
-        "title": "使用方法",
-        "point1": "\"スマート時間検出\"が有効の場合、システムはタスク内のキーワードを自動的に識別し、対応する時間を設定します",
-        "point2": "タスクに複数のキーワードが含まれている場合、最長時間が使用されます",
-        "point3": "キーワードがマッチしない場合、デフォルトタスク時間が使用されます",
-        "point4": "すべての時間設定はローカルストレージに自動的に保存されます",
-        "point5": "上記のテストエリアでキーワード検出効果をプレビューできます"
-      }
-    }
-  },
-  "game": {
-    "title": "飛行チェス",
-    "subtitle": "Love Flight Chess",
-    "selectMode": "ゲームモードを選択",
-    "modeDescription": "各モードで異なるインタラクティブ体験",
-    "redTurn": " 赤プレイヤーのターン (飛行機 ✈️)",
-    "blueTurn": " 青プレイヤーのターン (ヘリコプター 🚁)",
-    "redWin": "🎉 赤プレイヤーの勝利！",
-    "blueWin": "🎉 青プレイヤーの勝利！",
-    "backToHome": "ホームに戻る",
-    "continueGameTitle": "ゲームを続ける",
-    "continueGameMessage": "未完了のゲームがあります。続きますか？",
-    "newGame": "新しいゲーム",
-    "continueGame": "ゲームを続ける",
-    "selectWinTask": "勝利タスクを選んでお祝いしましょう！",
-    "winTasksTitle": "勝利タスク選択",
-    "winTaskExecution": "勝利タスク実行",
-    "celebrationMessage": "このタスクを完了して勝利をお祝いしましょう！",
-    "findLocalGame": "前回のゲーム進行を見つけました",
-    "red": "赤側（飛行機 ✈️）",
-    "blue": "青側（ヘリコプター 🚁）",
-    "positions": "位置",
-    "gameMode": "ゲームモード",
-    "currentPlayer": "現在のプレイヤー",
-    "lastLocation": "前回の位置から再開",
-    "star": {
-      "title": "🌟 ラッキースター",
-      "subtitle": "幸運が訪れる！"
-    },
-    "collision": {
-      "title": "⚡ 衝突",
-      "subtitle": "思わぬ出会い！"
-    },
-    "trap": {
-      "title": "💥 トラップ",
-      "subtitle": "挑戦に気をつけて！"
-    }
-  },
-  "modes": {
-    "normal": {
-      "name": "ノーマル",
-      "description": "友達や初回プレイヤーに最適"
-    },
-    "love": {
-      "name": "ロマンス",
-      "description": "恋愛中のカップルに最適"
-    },
-    "couple": {
-      "name": "カップル",
-      "description": "安定した関係のカップルに最適"
-    },
-    "advanced": {
-      "name": "アドバンス",
-      "description": "より刺激を求めるカップルに"
-    },
-    "intimate": {
-      "name": "プライベート",
-      "description": "プライベート空間のみ"
-    },
-    "mixed": {
-      "name": "ミックス",
-      "description": "全モードのランダム組み合わせ"
-    },
-    "hetero": {
-      "name": "異性向け",
-      "description": "異性カップルのための特別モード"
-    },
-    "daily": {
-      "name": "日常版",
-      "description": "温かい日常生活のふれあい"
-    },
-    "food": {
-      "name": "グルメ版",
-      "description": "美食タイムの甘いふれあい"
-    },
-    "fitness": {
-      "name": "アクティブ版",
-      "description": "一緒に運動、一緒に健康"
-    },
-    "creative": {
-      "name": "クリエイティブ版",
-      "description": "創造力を活かした芸術的ふれあい"
-    },
-    "romantic": {
-      "name": "ロマンティック版",
-      "description": "ロマンチックなデートタイム"
-    },
-    "game": {
-      "name": "エンターテインメント版",
-      "description": "楽しくリラックスできるゲームふれあい"
-    },
-    "adult": {
-      "name": "大人版",
-      "description": "大人のカップル限定の親密なふれあい"
-    },
-    "master-slave-sex": {
-      "name": "ロールプレイ版",
-      "description": "特別な役割の相互作用を探求"
-    },
-    "roleplay-workplace": {
-      "name": "職場ロールプレイ",
-      "description": "様々な職場の役割と状況を体験"
-    },
-    "roleplay-fantasy": {
-      "name": "ファンタジーロールプレイ",
-      "description": "ファンタジー世界で異なるキャラクターを体験"
-    },
-    "roleplay-uniform": {
-      "name": "制服ロールプレイ",
-      "description": "様々な制服テーマのロールプレイ体験"
-    },
-    "roleplay-ancient": {
-      "name": "古装ロールプレイ", 
-      "description": "時空を超えて古代の役割と状況を体験"
-    }
-  },
   "home": {
-    "title": "カップル飛行チェス",
+    "title": "カップルゲーム",
     "subtitle": "ゲームで愛を深めよう",
     "features": {
-      "title": "ゲームの特徴",
+      "title": "ゲーム特徴",
       "classic": {
-        "title": "クラシックな遊び方",
-        "description": "伝統的な飛行チェスのルールで、簡単に遊べます"
+        "title": "クラシックプレイ",
+        "description": "伝統的な飞行机ゲームのルールで、簡単に始められる"
       },
       "interaction": {
-        "title": "カップル向けインタラクション",
-        "description": "特別にデザインされたインタラクティブなタスクで、絆を深めましょう"
+        "title": "カップルインタラクション",
+        "description": "特別にデザインされたインタラクティブタスクで、感情を深める"
       },
       "modes": {
-        "title": "様々なモード",
-        "description": "複数のゲームモードで何度でも楽しめます"
+        "title": "マルチモード",
+        "description": "多様なゲームモードで、飽きることがない"
       }
     },
+    "flyingChess": {
+      "title": "飞行机ゲーム",
+      "subtitle": "戦略対戦",
+      "description": "戦略と運の完璧な組み合わせを体験しよう"
+    },
+    "luckyWheel": {
+      "title": "ラッキーホイール",
+      "subtitle": "趣味的インタラクション",
+      "description": "運命の歯車を回そう"
+    },
+    "minesweeper": {
+      "title": "マインスイーパー対戦",
+      "subtitle": "2人対決",
+      "description": "地雷を踏んでタスクを実行、ポイントで勝敗を決めよう"
+    },
     "cta": {
-      "startGame": "ゲームを始める",
-      "subtext": "クリックして、大切な人と楽しい時間を過ごしましょう"
+      "startGame": "ゲーム開始",
+      "subtext": "好きなゲームモードを選んで始めよう"
     }
   },
-  "modeCategories": {
-    "basic": "クラシックモード",
-    "lifestyle": "ライフスタイルモード", 
-    "roleplay": "ロールプレイ",
-    "adult": "アダルトモード"
-  },
-  "customMode": {
-    "title": "カスタムモード",
-    "description": "あなた専用のゲームモードを作成",
-    "create": "モード作成",
-    "edit": "編集",
-    "delete": "削除",
-    "deleteConfirm": "このカスタムモードを削除してもよろしいですか？",
-    "creatorType": {
-      "ai": "AIタスク",
-      "type": "タスクタイプ",
-      "custom": "カスタム"
+  "minesweeper": {
+    "title": "マインスイーパー対戦",
+    "difficulty": {
+      "title": "難易度選択",
+      "easy": "イージー",
+      "medium": "ミディアム",
+      "hard": "ハード"
     },
-    "ai": {
-      "link": "キーを取得",
-      "role": "実行者の関係を入力してください：カップル、友達、兄弟",
-      "title": "AIタスク",
-      "keyword": "タスクのキーワードを入力してください：甘い、交流、面白い",
-      "number": "生成するAIタスクの数を入力してください",
-      "deepSeekKey": "DeepSeekキーを入力してください",
-      "loadTasks": "AIタスクを読み込む",
-      "fromExistingModes": "AIからタスクを生成",
-      "apiKeyRequired": "DeepSeek APIキーを入力してください",
-      "invalidTaskNumber": "1から10の間の数字を入力してください",
-      "tasksGenerated": "タスクの生成に成功しました",
-      "generationFailed": "タスクの生成に失敗しました。もう一度お試しください",
-      "defaultKeyword": "甘い、面白い、チャレンジ、交流、いたずら",
-      "template": "ランダムに${role}用のすごろくタスクプールを生成します。また、${keyword}によって生成することもできます。すべてのタスクは道具不要で完了可能です。タスク数は${count}件。すべての時間と単位はアラビア数字で統一してください（例：10秒、1分）。返すのは内容のみで、フォーマットは[\"甘い:xx\",\"交流:xx\"]のようなJSON形式で返してください"
+    "status": {
+      "waiting": "開始準備中",
+      "playing": "ゲーム進行中",
+      "finished": "ゲーム終了",
+      "currentPlayerTurn": "{{playerName}}のターン"
     },
-    "creator": {
-      "title": "カスタムモード作成",
-      "close": "閉じる",
-      "basicInfo": "基本情報",
-      "modeName": "モード名",
-      "modeDescription": "モード説明",
-      "modeNamePlaceholder": "モード名を入力",
-      "modeDescriptionPlaceholder": "このモードの特徴を説明してください",
-      "taskSelection": "タスク追加",
-      "fromExistingModes": "既存モードから選択",
-      "loadTasks": "全モードのタスクを読み込み",
-      "loading": "読み込み中...",
-      "manualAdd": "カスタムタスク追加",
-      "manualAddPlaceholder": "カスタムタスクを入力",
-      "selectedTasks": "選択済みタスク",
-      "taskCount": "個のタスク",
-      "createButton": "モード作成",
-      "cancel": "キャンセル",
-      "nameRequired": "モード名を入力してください",
-      "tasksRequired": "少なくとも1つのタスクを追加してください",
-      "subTitle": "自分専用のゲームモードを作成",
-      "baseInfo": "基本情報"
+    "stats": {
+      "cells": "マス",
+      "mines": "地雷踏破数",
+      "time": "時間",
+      "progress": "進行状況",
+      "remaining": "残り"
     },
-    "messages": {
-      "createSuccess": "カスタムモードが作成されました！",
-      "deleteSuccess": "カスタムモードが削除されました",
-      "loadTasksError": "タスクの読み込みに失敗しました。再試行してください"
-    }
-  },
-  "board": {
-    "start": "スタート",
-    "end": "ゴール",
-    "star": "ラッキー",
-    "trap": "トラップ"
-  },
-  "customModeManager": {
-    "title": "カスタムモード管理",
-    "noModes": "カスタムモードはまだありません",
-    "createFirstMode": "最初のカスタムモードを作成しましょう！",
-    "createMode": "新規作成",
-    "editMode": "編集",
-    "importMode": "インポート",
-    "exportMode": "エクスポート",
-    "modeName": "モード名",
-    "modeDescription": "説明",
-    "taskList": "タスク一覧",
-    "addTask": "タスクを追加",
-    "taskPlaceholder": "タスクの内容を入力",
-    "batchAddTasks": "一括追加",
-    "pasteFromClipboard": "クリップボードから貼り付け",
-    "save": "保存",
-    "cancel": "キャンセル",
-    "delete": "削除",
-    "edit": "編集",
-    "tasksCount": "{count}個のタスク",
-    "createdOn": "作成日: ",
-    "type": {
-      "ai": "AI生成",
-      "custom": "カスタム"
+    "players": {
+      "title": "プレイヤー状況",
+      "player1": "プレイヤー1",
+      "player2": "プレイヤー2"
     },
-    "deleteConfirm": {
-      "title": "削除の確認",
-      "message": "モード「{modeName}」を削除してもよろしいですか？この操作は元に戻せません。"
+    "game": {
+      "title": "マインスイーパー戦場",
+      "rules": {
+        "title": "ゲームルール",
+        "rule1": "2人が交互にマスをクリックして内容を明かす",
+        "rule2": "マスを長押しすると地雷をマークできる",
+        "rule3": "地雷を踏むとタスクを実行しなければならない",
+        "rule4": "マスを多く獲得したプレイヤーが勝利",
+        "rule5": "マス数が同じ場合は地雷踏破数が少ない方が勝利",
+        "rule6": "すべてのマスが明かされるとゲーム終了"
+      }
     },
-    "import": {
-      "success": "{count}個のタスクをインポートしました",
-      "invalidFile": "JSONファイル(.json)を選択してください",
-      "invalidFormat": "ファイル形式が正しくありません。必要な情報が不足しています",
-      "overwriteConfirm": {
-        "title": "上書きの確認",
-        "message": "「{name}」という名前のモードが既に存在します。上書きしますか？"
+    "task": {
+      "hitMine": "地雷を踏みました！",
+      "position": "位置",
+      "challenger": "チャレンジャー",
+      "challengeTask": "チャレンジタスク",
+      "challengeDescription": {
+        "title": "チャレンジ説明",
+        "rule1": "地雷を踏んだ後、チャレンジタスクを完了しなければならない",
+        "rule2": "タスクの完了有無はポイントに影響しない",
+        "rule3": "ポイントは獲得したマスの数に依存する"
       },
-      "successImport": "「{name}」モードを{count}個のタスクでインポートしました",
-      "importFailed": "インポートに失敗しました。ファイルの内容を確認してください",
-      "fileError": "ファイル形式エラー。有効なJSONファイルであることを確認してください",
-      "readError": "ファイルの読み込みに失敗しました。ブラウザの権限を確認してください"
+      "result": {
+        "completed": "タスク完了！",
+        "failed": "タスク失敗！",
+        "completedDesc": "チャレンジを無事に完了！",
+        "failedDesc": "チャレンジに失敗しました",
+        "continue": "ゲームを続ける..."
+      }
+    }
+  },
+  "flyingChess": {
+    "title": "飞行机ゲーム",
+    "headerBackTitle": "戻る",
+    "gameStatus": {
+      "waiting": "開始準備中",
+      "playing": "ゲーム進行中",
+      "finished": "ゲーム終了"
     },
-    "clipboard": {
-      "noTasks": "クリップボードに有効なタスクが見つかりませんでした",
-      "readError": "クリップボードの読み取りに失敗しました。ブラウザの権限を確認してください"
+    "currentPlayer": "{{playerName}}のターン",
+    "playersStatus": "プレイヤー状況",
+    "position": "位置：{{position}}",
+    "dice": {
+      "clickToRoll": "クリックしてサイコロを振る",
+      "rolling": "振っています...",
+      "moving": "コマ移動中..."
+    }
+  },
+  "wheelPoints": {
+    "title": "ホイールポイント",
+    "headerBackTitle": "戻る",
+    "gameStatus": {
+      "waiting": "開始準備中",
+      "playing": "ゲーム進行中",
+      "finished": "ゲーム終了"
     },
-    "validation": {
-      "nameRequired": "モード名を入力してください",
-      "tasksRequired": "少なくとも1つのタスクを追加してください"
+    "currentPlayer": "{{playerName}}のターン",
+    "round": "第{{round}}ラウンド",
+    "scoreRanking": "ポイントランキング",
+    "winCondition": "勝利条件：{{score}}ポイントを先に獲得する",
+    "spin": {
+      "start": "ホイールを回す",
+      "spinning": "回転中..."
+    },
+    "luckyWheel": "ラッキーホイール",
+    "wheelResult": "ホイール結果",
+    "resultMessage": "{{playerName}}が回した結果：{{result}}"
+  },
+  "simpleTaskModal": {
+    "taskChallenge": "タスクチャレンジ",
+    "completedReward": "完了報酬",
+    "points": "ポイント",
+    "chooseCompletion": "タスクの完了状況を選択してください：",
+    "completed": "完了",
+    "notCompleted": "未完了",
+    "taskCompleted": "タスク完了！",
+    "taskFailed": "タスク失敗！",
+    "earnedPoints": "{{points}}ポイント獲得",
+    "noPoints": "ポイント未獲得",
+    "updatingScore": "スコア更新中..."
+  },
+  "taskModal": {
+    "taskTypes": {
+      "trap": {
+        "title": "トラップチャレンジ",
+        "description": "トラップにかかりました！タスクを完了してから前に進めます"
+      },
+      "star": {
+        "title": "ラッキータスク",
+        "description": "ラッキーチャンスを獲得！タスクを完了して追加報酬を得よう"
+      },
+      "collision": {
+        "title": "コリジョンチャレンジ",
+        "description": "衝突が発生！チャレンジを通過して位置を決めよう"
+      }
+    },
+    "executor": "実行者",
+    "taskContent": "タスク内容",
+    "difficulty": {
+      "easy": "イージー",
+      "normal": "ノーマル",
+      "hard": "ハード",
+      "extreme": "エクストリーム",
+      "unknown": "不明"
+    },
+    "chooseCompletion": "タスクの完了状況を選択してください：",
+    "completed": "完了",
+    "notCompleted": "未完了",
+    "results": {
+      "taskCompleted": "タスク完了！",
+      "taskFailed": "タスク失敗！",
+      "luckyBonus": "ラッキーボーナス！",
+      "missedChance": "チャンスを逃しました！",
+      "successDefense": "防御成功！",
+      "collisionFailed": "コリジョン失敗！",
+      "trapReward": "報酬：3-6マス前に進む",
+      "trapPenalty": "ペナルティ：3-6マス後ろに戻る",
+      "starReward": "ラッキー報酬：3-6マス前に進む",
+      "starPenalty": "残念ペナルティ：3-6マス後ろに戻る",
+      "collisionStay": "現在の位置にとどまる",
+      "collisionStart": "スタートに戻って再開"
+    },
+    "executing": "実行中..."
+  },
+  "victoryModal": {
+    "gameWin": "🎉 ゲーム勝利！ 🎉",
+    "congratulations": "勝利おめでとう！",
+    "victoryReward": "🎁 勝利者報酬",
+    "rewardDescription": "勝利者として、以下のタスクから3つを選択して報酬として獲得できます！",
+    "selectRewardTasks": "報酬タスクを選択",
+    "selectLater": "後で選択",
+    "selectRewardTasksTitle": "報酬タスク選択",
+    "selectedCount": "{{count}}/3件選択済み",
+    "confirmSelection": "選択を確定（{{count}}件）",
+    "rewardReceived": "🎊 報酬タスクを獲得！",
+    "selectedTasksCount": "{{count}}件の報酬タスクを正常に選択しました",
+    "rewardTasks": "獲得した報酬タスク：",
+    "restart": "再開",
+    "exitGame": "ゲームを終了"
+  },
+  "customAlert": {
+    "confirm": "確定"
+  },
+  "settings": {
+    "sections": {
+      "general": "一般設定",
+      "gameSettings": "ゲーム設定",
+      "about": "アプリについて"
+    },
+    "language": {
+      "label": "言語設定",
+      "modalTitle": "言語を選択",
+      "config": {
+        "zh": "中国語",
+        "ja": "日本語",
+        "en": "英語"
+      }
+    },
+    "theme": {
+      "label": "テーマ設定",
+      "modalTitle": "テーマを選択",
+      "config": {
+        "system": "システムに追随",
+        "light": "ライトモード",
+        "dark": "ダークモード"
+      }
+    },
+    "sound": {
+      "label": "サウンド設定",
+      "value": "サウンドエフェクトON",
+      "alertTitle": "サウンド設定",
+      "alertMessage": "ゲームサウンドエフェクトは開発中です...",
+      "enabled": "有効",
+      "disabled": "無効",
+      "bgm": "BGM（背景音楽）"
+    },
+    "version": {
+      "label": "バージョン情報",
+      "alertTitle": "バージョン情報",
+      "alertMessage": "バージョン：1.0.0\nビルド日：{{buildDate}}"
+    },
+    "userAgreement": {
+      "label": "ユーザー契約",
+      "alertTitle": "ユーザー契約",
+      "alertMessage": "本アプリをご利用いただきありがとうございます。アプリの各機能を適切にご利用ください。"
+    },
+    "privacyPolicy": {
+      "label": "プライバシーポリシー",
+      "alertTitle": "プライバシーポリシー",
+      "alertMessage": "ユーザーのプライバシーを重視しています。すべてのデータはローカルに保存され、サーバーにアップロードされることはありません。"
     }
   },
   "tasks": {
-    "challenge": "タスクチャレンジ",
-    "starTask": "⭐ ラッキースタータスク",
-    "trapTask": "💣 トラップタスク",
-    "collisionTask": "💥 衝突タスク",
-    "redExecute": " 赤プレイヤーが実行",
-    "blueExecute": " 青プレイヤーが実行",
-    "completedReward": " 完了報酬：実行者が0-3マス前進",
-    "failedPenalty": "失敗ペナルティ：実行者が3-6マス後退",
-    "collisionCompletedReward": " 完了報酬：実行者がその場に留まる",
-    "collisionFailedPenalty": "失敗ペナルティ：実行者がスタートに戻る",
-    "emptyQueue": "タスクキューが空です！休憩しましょう！"
+    "title": "タスク管理",
+    "subtitle": "ゲームのタスクとカテゴリーを管理",
+    "tabs": {
+      "taskSets": "タスクセット",
+      "categories": "カテゴリー"
+    },
+    "taskSet": {
+      "type": {
+        "system": "システム",
+        "custom": "カスタム"
+      },
+      "tasks": "{{count}}件のタスク",
+      "status": {
+        "enabled": "有効",
+        "disabled": "無効"
+      }
+    },
+    "category": {
+      "taskSets": "{{count}}件のタスクセット"
+    },
+    "empty": {
+      "taskSets": "タスクセットがありません。右下のボタンをクリックして作成してください",
+      "categories": "カテゴリーがありません。右下のボタンをクリックして作成してください"
+    },
+    "delete": {
+      "taskSet": {
+        "title": "削除確認",
+        "message": "\"{{name}}\" タスクセットを削除してもよろしいですか？この操作は取り消せません。"
+      },
+      "category": {
+        "title": "削除確認",
+        "message": "\"{{name}}\" カテゴリーを削除してもよろしいですか？{{hasTaskSets}}この操作は取り消せません。",
+        "withTaskSets": "この操作と同時に、当該カテゴリー配下の{{count}}件のタスクセットも削除されます。"
+      },
+      "cancel": "キャンセル",
+      "confirm": "削除"
+    },
+    "import": {
+      "title": "インポート",
+      "error": {
+        "title": "エラー",
+        "invalidFormat": "インポートするファイル形式が不正です",
+        "invalidContent": "インポートするファイルの内容形式が不正です",
+        "failed": "インポートに失敗しました"
+      },
+      "success": {
+        "title": "成功",
+        "message": "タスクセット「{{name}}」を正常にインポートしました"
+      }
+    },
+    "export": {
+      "title": "タスクセットをエクスポート",
+      "message": "エクスポート方法を選択してください",
+      "share": "共有",
+      "saveToFile": "ファイルに保存",
+      "cancel": "キャンセル",
+      "shareTitle": "タスクセットをエクスポート：{{name}}",
+      "success": {
+        "downloaded": "ファイルをデバイスにダウンロードしました",
+        "saved": "ファイルを「{{fileName}}」に保存しました",
+        "exported": "ファイルをエクスポートしました。デバイスに保存できます"
+      },
+      "error": {
+        "title": "エラー",
+        "failed": "エクスポートに失敗しました",
+        "saveFailed": "ファイルの保存に失敗しました"
+      }
+    }
   },
-  "tips": {
-    "twoPlayers": "二人で交互に操作",
-    "faceToFace": "対面でのインタラクション",
-    "improveRelation": "関係を深める"
+  "tabs": {
+    "home": "ホーム",
+    "tasks": "タスク",
+    "settings": "設定"
   },
-  "toast": {
-    "redForward": "赤が{steps}マス前進！",
-    "blueForward": "青が{steps}マス前進！",
-    "redBackward": "赤が{steps}マス後退！",
-    "blueBackward": "青が{steps}マス後退！",
-    "redStay": "赤がタスクを完了しましたが、その場に留まります。",
-    "blueStay": "青がタスクを完了しましたが、その場に留まります。",
-    "redFailedToStart": " 赤がタスクに失敗、スタートに戻ります！",
-    "blueFailedToStart": " 青がタスクに失敗、スタートに戻ります！",
-    "redCompleted": " 赤がタスクを完了、その場に留まります！",
-    "blueCompleted": " 青がタスクを完了、その場に留まります！"
+  "systemTasks": {
+    "normal": {
+      "name": "クラシックモード",
+      "description": "カップルの日常インタラクションに適したクラシックタスク"
+    },
+    "couple": {
+      "name": "カップル専用",
+      "description": "感情を深めるためのスウィートタスク"
+    },
+    "sweet": {
+      "name": "スウィートタイム",
+      "description": "温かくロマンチックなスウィートタスク"
+    },
+    "advanced": {
+      "name": "恋愛アドバンス",
+      "description": "深いインタラクションができるアドバンスタスク"
+    },
+    "love": {
+      "name": "ロマンチックな雰囲気",
+      "description": "ロマンチックな雰囲気を作るためのタスク"
+    },
+    "mixed": {
+      "name": "ミックスモード",
+      "description": "多様な種類が組み合わさったミックスタスク"
+    },
+    "intimate": {
+      "name": "インティメイトインタラクション",
+      "description": "親密な関係を深めるためのタスク"
+    }
+  },
+  "gameMode": {
+    "flyingChess": "飞行机ゲーム - タスク選択",
+    "wheel": "ラッキーホイール - タスク選択",
+    "minesweeper": "マインスイーパー対戦 - タスク選択",
+    "default": "タスク選択",
+    "all": "すべて",
+    "empty": {
+      "title": "利用可能なゲームモードがありません",
+      "subtitle": "タスク管理ページに移動してタスクセットを追加してください",
+      "button": "タスクを追加する"
+    },
+    "taskCount": "{{count}}件のタスク",
+    "estimatedTime": {
+      "minutes": "約{{minutes}}分",
+      "hours": "約{{hours}}時間{{minutes}}分",
+      "hoursOnly": "約{{hours}}時間"
+    },
+    "startGame": "ゲーム開始"
+  },
+  "taskSetModal": {
+    "create": "タスクセットを作成",
+    "edit": "タスクセットを編集",
+    "name": "名前",
+    "description": "説明",
+    "category": "カテゴリー",
+    "taskList": "タスクリスト",
+    "addTask": "タスクを追加",
+    "paste": "ペースト",
+    "taskPlaceholder": "タスク{{index}}",
+    "namePlaceholder": "タスクセットの名前を入力してください",
+    "descriptionPlaceholder": "タスクセットの説明を入力してください（任意）",
+    "cancel": "キャンセル",
+    "save": "保存",
+    "saving": "保存中...",
+    "alerts": {
+      "nameRequired": {
+        "title": "ヒント",
+        "message": "タスクセットの名前を入力してください"
+      },
+      "tasksRequired": {
+        "title": "ヒント",
+        "message": "少なくとも1件のタスクを追加してください"
+      },
+      "saveError": {
+        "title": "エラー",
+        "message": "保存に失敗しました。再試行してください"
+      },
+      "clipboardEmpty": {
+        "title": "ヒント",
+        "message": "クリップボードは空です"
+      },
+      "clipboardNoTasks": {
+        "title": "ヒント",
+        "message": "クリップボードに有効なタスク内容がありません"
+      },
+      "pasteSuccess": {
+        "title": "成功",
+        "message": "{{count}}件のタスクを正常にペーストしました"
+      },
+      "pasteError": {
+        "title": "エラー",
+        "message": "ペーストに失敗しました。再試行してください"
+      }
+    }
+  },
+  "defaultCategories": {
+    "dailyInteraction": {
+      "name": "日常インタラクション",
+      "description": "温かい日常のインタラクションタスク"
+    },
+    "sweetTime": {
+      "name": "スウィートタイム",
+      "description": "感情を深めるためのスウィートタスク"
+    },
+    "funChallenge": {
+      "name": "ファンチャレンジ",
+      "description": "楽しいチャレンジタスク"
+    }
+  },
+  "players": {
+    "names": {
+      "player1": "プレイヤー1",
+      "player2": "プレイヤー2",
+      "player3": "プレイヤー3",
+      "player4": "プレイヤー4"
+    },
+    "gameEnd": "🎉 ゲーム終了",
+    "victory": "{{name}} の勝利！",
+    "finalRanking": "📊 最終ランキング:",
+    "rankingItem": "{{rank}}. {{name}} (位置: {{position}}, スコア: {{score}})",
+    "winnerStats": "🏆 勝者統計:",
+    "completedTasks": "✅ 完了タスク: {{count}} 個",
+    "achievements": "🌟 獲得実績: {{count}} 個",
+    "restart": "再開始",
+    "exitGame": "ゲーム終了"
   }
 }

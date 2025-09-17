@@ -1,11 +1,8 @@
 import React, {useEffect} from 'react';
-import {View, Pressable, StyleSheet, Dimensions, Platform} from 'react-native';
+import {Dimensions, Platform, Pressable, StyleSheet, View} from 'react-native';
 import {Tabs} from 'expo-router';
-import Animated, {
-    useSharedValue,
-    useAnimatedStyle,
-    withSpring,
-} from 'react-native-reanimated';
+import {useTranslation} from 'react-i18next';
+import Animated, {useAnimatedStyle, useSharedValue, withSpring,} from 'react-native-reanimated';
 import {Ionicons} from '@expo/vector-icons';
 import {BlurView} from 'expo-blur';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
@@ -118,14 +115,16 @@ const TabButton: React.FC<any> = ({icon, isFocused, onPress, onLongPress, active
 };
 
 export default function TabLayout() {
+    const { t } = useTranslation();
+
     return (
         <Tabs
             screenOptions={{headerShown: false}}
             tabBar={(props) => <CustomTabBar {...props} />}
         >
-            <Tabs.Screen name="index" options={{title: '首页'}}/>
-            <Tabs.Screen name="tasks" options={{title: '任务'}}/>
-            <Tabs.Screen name="settings" options={{title: '设置'}}/>
+            <Tabs.Screen name="index" options={{title: t('tabs.home', '首页')}}/>
+            <Tabs.Screen name="tasks" options={{title: t('tabs.tasks', '任务')}}/>
+            <Tabs.Screen name="settings" options={{title: t('tabs.settings', '设置')}}/>
         </Tabs>
     );
 }

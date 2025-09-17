@@ -1,26 +1,18 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    Alert,
-    Dimensions,
-    ScrollView,
-} from 'react-native';
-import { Stack, useRouter } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Colors } from '@/constants/theme';
+import React, {useCallback, useEffect, useState} from 'react';
+import {Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View,} from 'react-native';
+import {Stack} from 'expo-router';
+import {LinearGradient} from 'expo-linear-gradient';
+import {Ionicons} from '@expo/vector-icons';
+import {useColorScheme} from '@/hooks/use-color-scheme';
+import {Colors} from '@/constants/theme';
 
-const { width: screenWidth } = Dimensions.get('window');
+const {width: screenWidth} = Dimensions.get('window');
 
 // 扫雷游戏难度配置
 const DIFFICULTY_CONFIGS = {
-    easy: { rows: 9, cols: 9, mines: 10, name: '简单' },
-    medium: { rows: 16, cols: 16, mines: 40, name: '中等' },
-    hard: { rows: 16, cols: 30, mines: 99, name: '困难' },
+    easy: {rows: 9, cols: 9, mines: 10, name: '简单'},
+    medium: {rows: 16, cols: 16, mines: 40, name: '中等'},
+    hard: {rows: 16, cols: 30, mines: 99, name: '困难'},
 };
 
 // 格子状态
@@ -35,7 +27,6 @@ type Difficulty = keyof typeof DIFFICULTY_CONFIGS;
 type GameStatus = 'waiting' | 'playing' | 'won' | 'lost';
 
 export default function Minesweeper() {
-    const router = useRouter();
     const colorScheme = useColorScheme() ?? 'light';
     const colors = Colors[colorScheme] as any;
 
@@ -72,7 +63,7 @@ export default function Minesweeper() {
 
     // 放置地雷
     const placeMines = useCallback((firstRow: number, firstCol: number) => {
-        const newBoard = board.map(row => row.map(cell => ({ ...cell })));
+        const newBoard = board.map(row => row.map(cell => ({...cell})));
         const mines = new Set<string>();
 
         while (mines.size < config.mines) {
@@ -122,7 +113,7 @@ export default function Minesweeper() {
         if (gameStatus !== 'playing' && gameStatus !== 'waiting') return;
         if (board[row][col].isRevealed || board[row][col].isFlagged) return;
 
-        const newBoard = board.map(row => row.map(cell => ({ ...cell })));
+        const newBoard = board.map(row => row.map(cell => ({...cell})));
 
         // 第一次点击时放置地雷
         if (firstClick) {
@@ -206,7 +197,7 @@ export default function Minesweeper() {
         if (gameStatus !== 'playing' && gameStatus !== 'waiting') return;
         if (board[row][col].isRevealed) return;
 
-        const newBoard = board.map(row => row.map(cell => ({ ...cell })));
+        const newBoard = board.map(row => row.map(cell => ({...cell})));
         newBoard[row][col].isFlagged = !newBoard[row][col].isFlagged;
 
         setBoard(newBoard);
@@ -215,7 +206,7 @@ export default function Minesweeper() {
 
     // 计时器
     useEffect(() => {
-        let interval: NodeJS.Timeout;
+        let interval: number;
         if (gameStatus === 'playing') {
             interval = setInterval(() => {
                 setTimer(prev => prev + 1);
@@ -266,19 +257,27 @@ export default function Minesweeper() {
 
     const getStatusColor = () => {
         switch (gameStatus) {
-            case 'won': return '#4CAF50';
-            case 'lost': return '#F44336';
-            case 'playing': return '#FF9500';
-            default: return colors.homeCardDescription;
+            case 'won':
+                return '#4CAF50';
+            case 'lost':
+                return '#F44336';
+            case 'playing':
+                return '#FF9500';
+            default:
+                return colors.homeCardDescription;
         }
     };
 
     const getStatusText = () => {
         switch (gameStatus) {
-            case 'won': return '🎉 胜利！';
-            case 'lost': return '💥 失败！';
-            case 'playing': return '🎮 游戏中';
-            default: return '⏸️ 准备开始';
+            case 'won':
+                return '🎉 胜利！';
+            case 'lost':
+                return '💥 失败！';
+            case 'playing':
+                return '🎮 游戏中';
+            default:
+                return '⏸️ 准备开始';
         }
     };
 
@@ -299,12 +298,12 @@ export default function Minesweeper() {
                     headerBackTitle: '返回',
                 }}
             />
-            <View style={[styles.container, { backgroundColor: colors.homeBackground }]}>
+            <View style={[styles.container, {backgroundColor: colors.homeBackground}]}>
                 <LinearGradient
                     colors={[colors.homeGradientStart, colors.homeGradientMiddle, colors.homeGradientEnd]}
                     style={StyleSheet.absoluteFillObject}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
+                    start={{x: 0, y: 0}}
+                    end={{x: 1, y: 1}}
                 />
 
                 <ScrollView
@@ -313,35 +312,35 @@ export default function Minesweeper() {
                     showsVerticalScrollIndicator={false}
                 >
                     {/* 游戏状态栏 */}
-                    <View style={[styles.statusBar, { backgroundColor: colors.homeCardBackground }]}>
+                    <View style={[styles.statusBar, {backgroundColor: colors.homeCardBackground}]}>
                         <View style={styles.statusItem}>
-                            <Text style={[styles.statusLabel, { color: colors.homeCardDescription }]}>
+                            <Text style={[styles.statusLabel, {color: colors.homeCardDescription}]}>
                                 💣 剩余
                             </Text>
-                            <Text style={[styles.statusValue, { color: colors.homeCardTitle }]}>
+                            <Text style={[styles.statusValue, {color: colors.homeCardTitle}]}>
                                 {config.mines - flaggedCount}
                             </Text>
                         </View>
 
                         <View style={styles.statusItem}>
-                            <Text style={[styles.statusText, { color: getStatusColor() }]}>
+                            <Text style={[styles.statusText, {color: getStatusColor()}]}>
                                 {getStatusText()}
                             </Text>
                         </View>
 
                         <View style={styles.statusItem}>
-                            <Text style={[styles.statusLabel, { color: colors.homeCardDescription }]}>
+                            <Text style={[styles.statusLabel, {color: colors.homeCardDescription}]}>
                                 ⏱️ 时间
                             </Text>
-                            <Text style={[styles.statusValue, { color: colors.homeCardTitle }]}>
+                            <Text style={[styles.statusValue, {color: colors.homeCardTitle}]}>
                                 {formatTime(timer)}
                             </Text>
                         </View>
                     </View>
 
                     {/* 难度选择 */}
-                    <View style={[styles.difficultyContainer, { backgroundColor: colors.homeCardBackground }]}>
-                        <Text style={[styles.sectionTitle, { color: colors.homeCardTitle }]}>
+                    <View style={[styles.difficultyContainer, {backgroundColor: colors.homeCardBackground}]}>
+                        <Text style={[styles.sectionTitle, {color: colors.homeCardTitle}]}>
                             难度选择
                         </Text>
                         <View style={styles.difficultyButtons}>
@@ -363,13 +362,13 @@ export default function Minesweeper() {
                                 >
                                     <Text style={[
                                         styles.difficultyButtonText,
-                                        { color: difficulty === key ? 'white' : colors.homeCardTitle }
+                                        {color: difficulty === key ? 'white' : colors.homeCardTitle}
                                     ]}>
                                         {config.name}
                                     </Text>
                                     <Text style={[
                                         styles.difficultyInfo,
-                                        { color: difficulty === key ? 'white' : colors.homeCardDescription }
+                                        {color: difficulty === key ? 'white' : colors.homeCardDescription}
                                     ]}>
                                         {config.rows}×{config.cols} · {config.mines}💣
                                     </Text>
@@ -379,8 +378,8 @@ export default function Minesweeper() {
                     </View>
 
                     {/* 游戏板 */}
-                    <View style={[styles.gameBoard, { backgroundColor: colors.homeCardBackground }]}>
-                        <View style={[styles.boardContainer, { width: cellSize * config.cols }]}>
+                    <View style={[styles.gameBoard, {backgroundColor: colors.homeCardBackground}]}>
+                        <View style={[styles.boardContainer, {width: cellSize * config.cols}]}>
                             {board.map((row, rowIndex) => (
                                 <View key={rowIndex} style={styles.boardRow}>
                                     {row.map((cell, colIndex) => (
@@ -425,28 +424,28 @@ export default function Minesweeper() {
                     {/* 控制按钮 */}
                     <View style={styles.controlContainer}>
                         <TouchableOpacity
-                            style={[styles.controlButton, { backgroundColor: '#10B981' }]}
+                            style={[styles.controlButton, {backgroundColor: '#10B981'}]}
                             onPress={restartGame}
                             activeOpacity={0.8}
                         >
                             <LinearGradient
                                 colors={['#34D399', '#10B981']}
                                 style={styles.controlButtonGradient}
-                                start={{ x: 0, y: 0 }}
-                                end={{ x: 1, y: 1 }}
+                                start={{x: 0, y: 0}}
+                                end={{x: 1, y: 1}}
                             >
-                                <Ionicons name="refresh" size={20} color="white" />
+                                <Ionicons name="refresh" size={20} color="white"/>
                                 <Text style={styles.controlButtonText}>重新开始</Text>
                             </LinearGradient>
                         </TouchableOpacity>
                     </View>
 
                     {/* 游戏说明 */}
-                    <View style={[styles.instructionsContainer, { backgroundColor: colors.homeCardBackground }]}>
-                        <Text style={[styles.sectionTitle, { color: colors.homeCardTitle }]}>
+                    <View style={[styles.instructionsContainer, {backgroundColor: colors.homeCardBackground}]}>
+                        <Text style={[styles.sectionTitle, {color: colors.homeCardTitle}]}>
                             游戏说明
                         </Text>
-                        <Text style={[styles.instructionText, { color: colors.homeCardDescription }]}>
+                        <Text style={[styles.instructionText, {color: colors.homeCardDescription}]}>
                             • 点击格子揭示内容{'\n'}
                             • 长按格子标记地雷{'\n'}
                             • 数字表示周围地雷数量{'\n'}

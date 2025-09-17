@@ -12,6 +12,7 @@ export interface Player {
     color: string;
     position: number;
     score: number;
+    iconType?: string; // 添加图标类型，可选以保持向后兼容
     isAI?: boolean;
 }
 

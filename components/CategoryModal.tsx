@@ -1,19 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  Modal,
-  TextInput,
-  TouchableOpacity,
-  ScrollView,
-  StyleSheet,
-  Alert,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Colors } from '@/constants/theme';
-import { TaskCategory } from '@/types/tasks';
-import { useTasksStore } from '@/store/tasksStore';
+import React, {useEffect, useState} from 'react';
+import {Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View,} from 'react-native';
+import {Ionicons} from '@expo/vector-icons';
+import {useColorScheme} from '@/hooks/use-color-scheme';
+import {Colors} from '@/constants/theme';
+import {TaskCategory} from '@/types/tasks';
+import {useTasksStore} from '@/store/tasksStore';
 
 interface CategoryModalProps {
   visible: boolean;

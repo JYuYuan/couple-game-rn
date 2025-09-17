@@ -1,24 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import {
-    View,
-    Text,
-    Modal,
-    TouchableOpacity,
-    StyleSheet,
-    Dimensions,
-} from 'react-native';
+import React, {useEffect, useState} from 'react';
+import {Dimensions, Modal, StyleSheet, Text, TouchableOpacity, View,} from 'react-native';
+import {useTranslation} from 'react-i18next';
 import Animated, {
-    useSharedValue,
+    interpolate,
     useAnimatedStyle,
+    useSharedValue,
     withSpring,
     withTiming,
-    interpolate,
 } from 'react-native-reanimated';
-import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
-import { Ionicons } from '@expo/vector-icons';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Colors } from '@/constants/theme';
+import {LinearGradient} from 'expo-linear-gradient';
+import {BlurView} from 'expo-blur';
+import {Ionicons} from '@expo/vector-icons';
+import {useColorScheme} from '@/hooks/use-color-scheme';
+import {Colors} from '@/constants/theme';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -42,6 +36,7 @@ export default function SimpleTaskModal({
     onComplete,
     onClose
 }: SimpleTaskModalProps) {
+    const { t } = useTranslation();
     const colorScheme = useColorScheme() ?? 'light';
     const colors = Colors[colorScheme] as any;
 
@@ -111,10 +106,10 @@ export default function SimpleTaskModal({
             success: isCompleted,
             icon: isCompleted ? 'checkmark-circle' : 'close-circle',
             color: isCompleted ? '#4CAF50' : '#FF6B6B',
-            title: isCompleted ? '任务完成！' : '任务失败！',
+            title: isCompleted ? t('simpleTaskModal.taskCompleted', '任务完成！') : t('simpleTaskModal.taskFailed', '任务失败！'),
             description: isCompleted
-                ? `获得 ${task.points} 积分`
-                : '未获得积分'
+                ? t('simpleTaskModal.earnedPoints', '获得 {{points}} 积分', { points: task.points })
+                : t('simpleTaskModal.noPointsEarned', '未获得积分')
         };
     };
 
@@ -154,7 +149,7 @@ export default function SimpleTaskModal({
                                         />
                                     </View>
                                     <Text style={[styles.headerTitle, { color: colors.homeCardTitle }]}>
-                                        任务挑战
+                                        {t('simpleTaskModal.taskChallenge', '任务挑战')}
                                     </Text>
                                 </View>
 
@@ -173,12 +168,12 @@ export default function SimpleTaskModal({
                                     {/* 积分显示 */}
                                     <View style={styles.pointsSection}>
                                         <Text style={[styles.pointsLabel, { color: colors.homeCardDescription }]}>
-                                            完成奖励
+                                            {t('simpleTaskModal.completedReward', '完成奖励')}
                                         </Text>
                                         <View style={styles.pointsBadge}>
                                             <Ionicons name="diamond" size={16} color="#FFD700" />
                                             <Text style={styles.pointsText}>
-                                                {task.points} 积分
+                                                {t('simpleTaskModal.pointsAmount', '{{points}} 积分', { points: task.points })}
                                             </Text>
                                         </View>
                                     </View>
@@ -187,7 +182,7 @@ export default function SimpleTaskModal({
                                 {/* 选择按钮 */}
                                 <View style={styles.actionSection}>
                                     <Text style={[styles.actionPrompt, { color: colors.homeCardTitle }]}>
-                                        请选择任务完成情况：
+                                        {t('simpleTaskModal.chooseCompletion', '请选择任务完成情况：')}
                                     </Text>
 
                                     <View style={styles.actionButtons}>
@@ -203,7 +198,7 @@ export default function SimpleTaskModal({
                                                 end={{ x: 1, y: 1 }}
                                             >
                                                 <Ionicons name="checkmark" size={20} color="white" />
-                                                <Text style={styles.actionButtonText}>完成</Text>
+                                                <Text style={styles.actionButtonText}>{t('simpleTaskModal.completed', '完成')}</Text>
                                             </LinearGradient>
                                         </TouchableOpacity>
 
@@ -219,7 +214,7 @@ export default function SimpleTaskModal({
                                                 end={{ x: 1, y: 1 }}
                                             >
                                                 <Ionicons name="close" size={20} color="white" />
-                                                <Text style={styles.actionButtonText}>未完成</Text>
+                                                <Text style={styles.actionButtonText}>{t('simpleTaskModal.notCompleted', '未完成')}</Text>
                                             </LinearGradient>
                                         </TouchableOpacity>
                                     </View>
@@ -247,7 +242,7 @@ export default function SimpleTaskModal({
 
                                     <View style={styles.resultFooter}>
                                         <Text style={[styles.resultFooterText, { color: colors.homeCardDescription }]}>
-                                            正在更新积分...
+                                            {t('simpleTaskModal.updatingScore', '正在更新积分...')}
                                         </Text>
                                     </View>
                                 </View>

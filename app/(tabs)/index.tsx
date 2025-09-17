@@ -1,5 +1,5 @@
 import React from 'react';
-import {Pressable, StyleSheet, Text, View} from 'react-native';
+import {Pressable, ScrollView, StyleSheet, Text, View} from 'react-native';
 import {useRouter} from 'expo-router';
 import {useTranslation} from 'react-i18next';
 import Animated, {
@@ -194,7 +194,11 @@ export default function Home() {
             </View>
 
             {/* 主内容 */}
-            <View style={styles.contentContainer}>
+            <ScrollView
+                style={styles.contentContainer}
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+            >
                 {/* 标题区域 */}
                 <Animated.View style={[styles.headerContainer, floatingStyle]}>
                     <View style={styles.logoContainer}>
@@ -231,7 +235,7 @@ export default function Home() {
                         </View>
                     </BlurView>
                 </View>
-            </View>
+            </ScrollView>
         </View>
     );
 }
@@ -267,9 +271,11 @@ const styles = StyleSheet.create({
     },
     contentContainer: {
         flex: 1,
+    },
+    scrollContent: {
         paddingHorizontal: 20,
         paddingTop: 80,
-        paddingBottom: 40,
+        paddingBottom: 120,
     },
     headerContainer: {
         alignItems: 'center',

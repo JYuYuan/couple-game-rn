@@ -1,20 +1,15 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    Dimensions,
-    ScrollView,
-} from 'react-native';
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Colors } from '@/constants/theme';
-import { useGameTasks } from '@/hooks/use-game-tasks';
-import MineTaskModal, { MineTaskData } from '@/components/MineTaskModal';
+import React, {useCallback, useEffect, useState} from 'react';
+import {Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View,} from 'react-native';
+import {Stack, useLocalSearchParams, useRouter} from 'expo-router';
+import {useTranslation} from 'react-i18next';
+import {LinearGradient} from 'expo-linear-gradient';
+import {useColorScheme} from '@/hooks/use-color-scheme';
+import {Colors} from '@/constants/theme';
+import {useGameTasks} from '@/hooks/use-game-tasks';
+import MineTaskModal, {MineTaskData} from '@/components/MineTaskModal';
 import VictoryModal from '@/components/VictoryModal';
+import {PlayerAvatar} from '@/components/PlayerAvatar';
+import {PlayerIconType} from '@/components/icons';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -39,6 +34,7 @@ interface Player {
     id: number;
     name: string;
     color: string;
+    iconType: PlayerIconType;
     cellsRevealed: number; // 获得的格子数
     minesHit: number;
 }
@@ -49,6 +45,7 @@ type GameStatus = 'waiting' | 'playing' | 'finished';
 export default function MinesweeperBattle() {
     const router = useRouter();
     const params = useLocalSearchParams();
+    const { t } = useTranslation();
     const colorScheme = useColorScheme() ?? 'light';
     const colors = Colors[colorScheme] as any;
 
@@ -65,8 +62,8 @@ export default function MinesweeperBattle() {
 
     // 玩家设置
     const [players] = useState<Player[]>([
-        { id: 1, name: '玩家1', color: '#5E5CE6', cellsRevealed: 0, minesHit: 0 },
-        { id: 2, name: '玩家2', color: '#FF6482', cellsRevealed: 0, minesHit: 0 },
+        { id: 1, name: t('minesweeper.players.player1', '玩家1'), color: '#5E5CE6', iconType: 'airplane', cellsRevealed: 0, minesHit: 0 },
+        { id: 2, name: t('minesweeper.players.player2', '玩家2'), color: '#FF6482', iconType: 'helicopter', cellsRevealed: 0, minesHit: 0 },
     ]);
 
     // 任务弹窗状态
@@ -406,7 +403,7 @@ export default function MinesweeperBattle() {
         <>
             <Stack.Screen
                 options={{
-                    title: `${gameTasks.selectedTaskSet?.name || ""}-扫雷对战`,
+                    title: `${gameTasks.selectedTaskSet?.name || ""}-${t('minesweeper.title', '扫雷对战')}`,
                     headerShown: true,
                     headerStyle: {
                         backgroundColor: colors.homeBackground,
@@ -416,7 +413,7 @@ export default function MinesweeperBattle() {
                         fontWeight: '600',
                         fontSize: 18,
                     },
-                    headerBackTitle: '返回',
+                    headerBackTitle: t('common.back', '返回'),
                 }}
             />
             <View style={[styles.container, { backgroundColor: colors.homeBackground }]}>
@@ -436,12 +433,12 @@ export default function MinesweeperBattle() {
                     <View style={[styles.statusBar, { backgroundColor: colors.homeCardBackground }]}>
                         <View style={styles.statusLeft}>
                             <Text style={[styles.statusTitle, { color: colors.homeCardTitle }]}>
-                                {gameStatus === 'waiting' ? '准备开始' :
-                                    gameStatus === 'playing' ? '游戏进行中' : '游戏结束'}
+                                {gameStatus === 'waiting' ? t('minesweeper.status.waiting', '准备开始') :
+                                    gameStatus === 'playing' ? t('minesweeper.status.playing', '游戏进行中') : t('minesweeper.status.finished', '游戏结束')}
                             </Text>
                             {gameStatus === 'playing' && (
                                 <Text style={[styles.currentPlayerText, { color: currentPlayer.color }]}>
-                                    轮到 {currentPlayer.name}
+                                    {t('minesweeper.status.currentPlayerTurn', '轮到 {{playerName}}', { playerName: currentPlayer.name })}
                                 </Text>
                             )}
                         </View>
@@ -451,14 +448,14 @@ export default function MinesweeperBattle() {
                                 ⏱️ {formatTime(timer)}
                             </Text>
                             <Text style={[styles.progressText, { color: colors.homeCardDescription }]}>
-                                进度: {revealedCells}/{config.rows * config.cols - config.mines}
+                                {t('minesweeper.stats.progress', '进度')}: {revealedCells}/{config.rows * config.cols - config.mines}
                             </Text>
                         </View>
                     </View>
 
                     {/* 玩家信息 */}
                     <View style={[styles.playersInfo, { backgroundColor: colors.homeCardBackground }]}>
-                        <Text style={[styles.sectionTitle, { color: colors.homeCardTitle }]}>玩家状态</Text>
+                        <Text style={[styles.sectionTitle, { color: colors.homeCardTitle }]}>{t('minesweeper.players.title', '玩家状态')}</Text>
                         <View style={styles.playersGrid}>
                             {players.map((player, index) => (
                                 <View
@@ -472,15 +469,17 @@ export default function MinesweeperBattle() {
                                         }
                                     ]}
                                 >
-                                    <View style={[styles.playerAvatar, { backgroundColor: player.color }]}>
-                                        <Text style={styles.playerAvatarText}>{player.name.charAt(0)}</Text>
-                                    </View>
+                                    <PlayerAvatar
+                                        iconType={player.iconType}
+                                        color={player.color}
+                                        size={32}
+                                    />
                                     <View style={styles.playerInfo}>
                                         <Text style={[styles.playerName, { color: colors.homeCardTitle }]}>
                                             {player.name}
                                         </Text>
                                         <Text style={[styles.playerStats, { color: colors.homeCardDescription }]}>
-                                            格子: {player.cellsRevealed} | 踩雷: {player.minesHit}
+                                            {t('minesweeper.stats.cells', '格子')}: {player.cellsRevealed} | {t('minesweeper.stats.mines', '踩雷')}: {player.minesHit}
                                         </Text>
                                     </View>
                                 </View>
@@ -492,7 +491,7 @@ export default function MinesweeperBattle() {
                     {gameStatus === 'waiting' && (
                         <View style={[styles.difficultyContainer, { backgroundColor: colors.homeCardBackground }]}>
                             <Text style={[styles.sectionTitle, { color: colors.homeCardTitle }]}>
-                                难度选择
+                                {t('minesweeper.difficulty.title', '难度选择')}
                             </Text>
                             <View style={styles.difficultyButtons}>
                                 {Object.entries(DIFFICULTY_CONFIGS).map(([key, config]) => (
@@ -512,7 +511,7 @@ export default function MinesweeperBattle() {
                                             styles.difficultyButtonText,
                                             { color: difficulty === key ? 'white' : colors.homeCardTitle }
                                         ]}>
-                                            {config.name}
+                                            {t(`minesweeper.difficulty.${key}`, config.name)}
                                         </Text>
                                         <Text style={[
                                             styles.difficultyInfo,
@@ -530,7 +529,7 @@ export default function MinesweeperBattle() {
                     {gameStatus !== 'waiting' && (
                         <View style={[styles.gameBoard, { backgroundColor: colors.homeCardBackground }]}>
                             <Text style={[styles.sectionTitle, { color: colors.homeCardTitle }]}>
-                                扫雷战场
+                                {t('minesweeper.game.title', '扫雷战场')}
                             </Text>
                             <View style={[styles.boardContainer, { width: cellSize * config.cols }]}>
                                 {board.map((row, rowIndex) => (
@@ -575,15 +574,15 @@ export default function MinesweeperBattle() {
                     {/* 游戏说明 */}
                     <View style={[styles.instructionsContainer, { backgroundColor: colors.homeCardBackground }]}>
                         <Text style={[styles.sectionTitle, { color: colors.homeCardTitle }]}>
-                            游戏规则
+                            {t('minesweeper.game.rules.title', '游戏规则')}
                         </Text>
                         <Text style={[styles.instructionText, { color: colors.homeCardDescription }]}>
-                            • 双人轮流点击格子揭示内容{'\n'}
-                            • 长按格子可以标记地雷{'\n'}
-                            • 踩到地雷需要执行任务{'\n'}
-                            • 获得格子数多的玩家获胜{'\n'}
-                            • 格子数相同则踩雷少者胜{'\n'}
-                            • 所有格子揭示完毕游戏结束
+                            • {t('minesweeper.game.rules.rule1', '双人轮流点击格子揭示内容')}{'\n'}
+                            • {t('minesweeper.game.rules.rule2', '长按格子可以标记地雷')}{'\n'}
+                            • {t('minesweeper.game.rules.rule3', '踩到地雷需要执行任务')}{'\n'}
+                            • {t('minesweeper.game.rules.rule4', '获得格子数多的玩家获胜')}{'\n'}
+                            • {t('minesweeper.game.rules.rule5', '格子数相同则踩雷少者胜')}{'\n'}
+                            • {t('minesweeper.game.rules.rule6', '所有格子揭示完毕游戏结束')}
                         </Text>
                     </View>
                 </ScrollView>
@@ -682,18 +681,6 @@ const styles = StyleSheet.create({
         padding: 10,
         borderRadius: 8,
         gap: 10,
-    },
-    playerAvatar: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    playerAvatarText: {
-        color: 'white',
-        fontSize: 14,
-        fontWeight: '700',
     },
     playerInfo: {
         flex: 1,

@@ -1,5 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View,} from 'react-native';
+import {useTranslation} from 'react-i18next';
 import {Ionicons} from '@expo/vector-icons';
 import {useColorScheme} from '@/hooks/use-color-scheme';
 import {Colors} from '@/constants/theme';
@@ -18,6 +19,7 @@ export const TaskSetModal: React.FC<TaskSetModalProps> = ({
   onClose,
   taskSet = null,
 }) => {
+  const { t } = useTranslation();
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme] as any;
 
@@ -52,12 +54,18 @@ export const TaskSetModal: React.FC<TaskSetModalProps> = ({
 
   const handleSave = async () => {
     if (!formData.name.trim()) {
-      Alert.alert('提示', '请输入任务集名称');
+      Alert.alert(
+        t('taskSetModal.alerts.nameRequired.title', '提示'),
+        t('taskSetModal.alerts.nameRequired.message', '请输入任务集名称')
+      );
       return;
     }
 
     if (formData.tasks.every(task => !task.trim())) {
-      Alert.alert('提示', '请至少添加一个任务');
+      Alert.alert(
+        t('taskSetModal.alerts.tasksRequired.title', '提示'),
+        t('taskSetModal.alerts.tasksRequired.message', '请至少添加一个任务')
+      );
       return;
     }
 
@@ -86,7 +94,10 @@ export const TaskSetModal: React.FC<TaskSetModalProps> = ({
 
       onClose();
     } catch {
-      Alert.alert('错误', '保存失败，请重试');
+      Alert.alert(
+        t('taskSetModal.alerts.saveError.title', '错误'),
+        t('taskSetModal.alerts.saveError.message', '保存失败，请重试')
+      );
     } finally {
       setLoading(false);
     }
@@ -119,7 +130,10 @@ export const TaskSetModal: React.FC<TaskSetModalProps> = ({
       const clipboardText = await Clipboard.getStringAsync();
 
       if (!clipboardText.trim()) {
-        Alert.alert('提示', '剪切板为空');
+        Alert.alert(
+          t('taskSetModal.alerts.clipboardEmpty.title', '提示'),
+          t('taskSetModal.alerts.clipboardEmpty.message', '剪切板为空')
+        );
         return;
       }
 
@@ -130,7 +144,10 @@ export const TaskSetModal: React.FC<TaskSetModalProps> = ({
         .filter(task => task.length > 0);
 
       if (pastedTasks.length === 0) {
-        Alert.alert('提示', '剪切板中没有有效的任务内容');
+        Alert.alert(
+          t('taskSetModal.alerts.clipboardNoTasks.title', '提示'),
+          t('taskSetModal.alerts.clipboardNoTasks.message', '剪切板中没有有效的任务内容')
+        );
         return;
       }
 
@@ -148,9 +165,15 @@ export const TaskSetModal: React.FC<TaskSetModalProps> = ({
         }));
       }
 
-      Alert.alert('成功', `已粘贴 ${pastedTasks.length} 个任务`);
+      Alert.alert(
+        t('taskSetModal.alerts.pasteSuccess.title', '成功'),
+        t('taskSetModal.alerts.pasteSuccess.message', '已粘贴 {{count}} 个任务', {count: pastedTasks.length})
+      );
     } catch (error) {
-      Alert.alert('错误', '粘贴失败，请重试');
+      Alert.alert(
+        t('taskSetModal.alerts.pasteError.title', '错误'),
+        t('taskSetModal.alerts.pasteError.message', '粘贴失败，请重试')
+      );
     }
   };
 
@@ -161,7 +184,7 @@ export const TaskSetModal: React.FC<TaskSetModalProps> = ({
         <View style={[styles.modal, { backgroundColor: colors.modalBackground }]}>
           <View style={styles.header}>
             <Text style={[styles.title, { color: colors.settingsText }]}>
-              {taskSet ? '编辑任务集' : '创建任务集'}
+              {taskSet ? t('taskSetModal.edit', '编辑任务集') : t('taskSetModal.create', '创建任务集')}
             </Text>
             <TouchableOpacity onPress={onClose}>
               <Ionicons name="close" size={24} color={colors.settingsSecondaryText} />
@@ -170,7 +193,7 @@ export const TaskSetModal: React.FC<TaskSetModalProps> = ({
 
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
             <View style={styles.section}>
-              <Text style={[styles.label, { color: colors.settingsText }]}>名称</Text>
+              <Text style={[styles.label, { color: colors.settingsText }]}>{t('taskSetModal.name', '名称')}</Text>
               <TextInput
                 style={[styles.input, {
                   backgroundColor: colors.settingsCardBackground,
@@ -179,13 +202,13 @@ export const TaskSetModal: React.FC<TaskSetModalProps> = ({
                 }]}
                 value={formData.name}
                 onChangeText={(text) => setFormData(prev => ({ ...prev, name: text }))}
-                placeholder="输入任务集名称"
+                placeholder={t('taskSetModal.namePlaceholder', '输入任务集名称')}
                 placeholderTextColor={colors.settingsSecondaryText}
               />
             </View>
 
             <View style={styles.section}>
-              <Text style={[styles.label, { color: colors.settingsText }]}>描述</Text>
+              <Text style={[styles.label, { color: colors.settingsText }]}>{t('taskSetModal.description', '描述')}</Text>
               <TextInput
                 style={[styles.input, {
                   backgroundColor: colors.settingsCardBackground,
@@ -195,7 +218,7 @@ export const TaskSetModal: React.FC<TaskSetModalProps> = ({
                 }]}
                 value={formData.description}
                 onChangeText={(text) => setFormData(prev => ({ ...prev, description: text }))}
-                placeholder="输入任务集描述（可选）"
+                placeholder={t('taskSetModal.descriptionPlaceholder', '输入任务集描述（可选）')}
                 placeholderTextColor={colors.settingsSecondaryText}
                 multiline
                 textAlignVertical="top"
@@ -203,7 +226,7 @@ export const TaskSetModal: React.FC<TaskSetModalProps> = ({
             </View>
 
             <View style={styles.section}>
-              <Text style={[styles.label, { color: colors.settingsText }]}>分类</Text>
+              <Text style={[styles.label, { color: colors.settingsText }]}>{t('taskSetModal.category', '分类')}</Text>
               <View style={[styles.pickerContainer, {
                 backgroundColor: colors.settingsCardBackground,
                 borderColor: colors.settingsCardBorder,
@@ -233,21 +256,21 @@ export const TaskSetModal: React.FC<TaskSetModalProps> = ({
 
             <View style={styles.section}>
               <View style={styles.taskHeader}>
-                <Text style={[styles.label, { color: colors.settingsText }]}>任务列表</Text>
+                <Text style={[styles.label, { color: colors.settingsText }]}>{t('taskSetModal.taskList', '任务列表')}</Text>
                 <View style={styles.taskHeaderButtons}>
                   <TouchableOpacity
                     style={[styles.addButton, { backgroundColor: colors.settingsAccent + '20' }]}
                     onPress={addTask}
                   >
                     <Ionicons name="add" size={20} color={colors.settingsAccent} />
-                    <Text style={[styles.addButtonText, { color: colors.settingsAccent }]}>添加任务</Text>
+                    <Text style={[styles.addButtonText, { color: colors.settingsAccent }]}>{t('taskSetModal.addTask', '添加任务')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.pasteButton, { backgroundColor: '#4ECDC4' + '20' }]}
                     onPress={pasteFromClipboard}
                   >
                     <Ionicons name="clipboard" size={20} color="#4ECDC4" />
-                    <Text style={[styles.pasteButtonText, { color: '#4ECDC4' }]}>粘贴</Text>
+                    <Text style={[styles.pasteButtonText, { color: '#4ECDC4' }]}>{t('taskSetModal.paste', '粘贴')}</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -262,7 +285,7 @@ export const TaskSetModal: React.FC<TaskSetModalProps> = ({
                     }]}
                     value={task}
                     onChangeText={(text) => updateTask(index, text)}
-                    placeholder={`任务 ${index + 1}`}
+                    placeholder={t('taskSetModal.taskPlaceholder', '任务 {{index}}', {index: index + 1})}
                     placeholderTextColor={colors.settingsSecondaryText}
                     multiline
                   />
@@ -284,7 +307,7 @@ export const TaskSetModal: React.FC<TaskSetModalProps> = ({
               style={[styles.button, styles.cancelButton, { backgroundColor: colors.settingsCardBackground }]}
               onPress={onClose}
             >
-              <Text style={[styles.buttonText, { color: colors.settingsSecondaryText }]}>取消</Text>
+              <Text style={[styles.buttonText, { color: colors.settingsSecondaryText }]}>{t('taskSetModal.cancel', '取消')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.button, styles.saveButton, { backgroundColor: colors.settingsAccent }]}
@@ -292,7 +315,7 @@ export const TaskSetModal: React.FC<TaskSetModalProps> = ({
               disabled={loading}
             >
               <Text style={[styles.buttonText, { color: 'white' }]}>
-                {loading ? '保存中...' : '保存'}
+                {loading ? t('taskSetModal.saving', '保存中...') : t('taskSetModal.save', '保存')}
               </Text>
             </TouchableOpacity>
           </View>

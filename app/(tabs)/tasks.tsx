@@ -1,16 +1,16 @@
 import React, {useEffect, useState} from 'react';
 import {
     Alert,
+    Animated,
+    Dimensions,
+    PanResponder,
+    Platform,
     ScrollView,
     Share,
     StyleSheet,
     Text,
     TouchableOpacity,
-    View,
-    Platform,
-    PanResponder,
-    Animated,
-    Dimensions
+    View
 } from 'react-native';
 import {Ionicons} from '@expo/vector-icons';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
@@ -26,7 +26,7 @@ import {Language} from '@/utils/systemTasks';
 import i18n from '@/i18n';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
-import {CustomAlert, AlertButton} from '@/components/CustomAlert';
+import {AlertButton, CustomAlert} from '@/components/CustomAlert';
 
 const TaskSettings: React.FC = () => {
     const insets = useSafeAreaInsets();
@@ -52,6 +52,7 @@ const TaskSettings: React.FC = () => {
         deleteCategory,
         toggleTaskSetActive,
         initializeDefaultData,
+        updateCategoriesI18n,
         loadSystemTasks,
         exportTaskSet,
         importTaskSet,
@@ -124,23 +125,52 @@ const TaskSettings: React.FC = () => {
     useEffect(() => {
         const initializeData = async () => {
             initializeDefaultData();
+
+            // 等待i18n准备好后更新分类的国际化文本
+            updateCategoriesI18n(() => [
+                {
+                    id: '1',
+                    name: t('defaultCategories.dailyInteraction.name', '日常互动'),
+                    description: t('defaultCategories.dailyInteraction.description', '温馨日常的互动任务'),
+                    color: '#FF6B6B',
+                    icon: 'heart',
+                    createdAt: new Date(),
+                },
+                {
+                    id: '2',
+                    name: t('defaultCategories.sweetTime.name', '甜蜜时光'),
+                    description: t('defaultCategories.sweetTime.description', '增进感情的甜蜜任务'),
+                    color: '#4ECDC4',
+                    icon: 'gift',
+                    createdAt: new Date(),
+                },
+                {
+                    id: '3',
+                    name: t('defaultCategories.funChallenge.name', '趣味挑战'),
+                    description: t('defaultCategories.funChallenge.description', '有趣的挑战任务'),
+                    color: '#45B7D1',
+                    icon: 'game-controller',
+                    createdAt: new Date(),
+                }
+            ]);
+
             // 根据当前i18n语言加载系统任务
             const currentLanguage = i18n.language as Language;
             await loadSystemTasks(currentLanguage);
         };
 
         initializeData();
-    }, []);
+    }, [t]); // 依赖t函数，确保在国际化准备好后执行
 
 
     const handleDeleteTaskSet = (taskSet: TaskSet) => {
         setConfirmAlertData({
-            title: '删除确认',
-            message: `确定要删除任务集 "${taskSet.name}" 吗？此操作无法撤销。`,
+            title: t('common.deleteConfirm', '删除确认'),
+            message: t('tasks.deleteTaskSet.message', '确定要删除任务集 "{{name}}" 吗？此操作无法撤销。', {name: taskSet.name}),
             buttons: [
-                {text: '取消', style: 'cancel'},
+                {text: t('common.cancel', '取消'), style: 'cancel'},
                 {
-                    text: '删除',
+                    text: t('common.delete', '删除'),
                     style: 'destructive',
                     onPress: () => deleteTaskSet(taskSet.id),
                 },
@@ -153,12 +183,15 @@ const TaskSettings: React.FC = () => {
         const taskCount = taskSets.filter(set => set.categoryId === category.id).length;
 
         setConfirmAlertData({
-            title: '删除确认',
-            message: `确定要删除分类 "${category.name}" 吗？${taskCount > 0 ? `这将同时删除该分类下的 ${taskCount} 个任务集。` : ''}此操作无法撤销。`,
+            title: t('common.deleteConfirm', '删除确认'),
+            message: t('tasks.deleteCategory.message', '确定要删除分类 "{{name}}" 吗？{{warning}}此操作无法撤销。', {
+                name: category.name,
+                warning: taskCount > 0 ? t('tasks.deleteCategory.warning', '这将同时删除该分类下的 {{count}} 个任务集。', {count: taskCount}) : ''
+            }),
             buttons: [
-                {text: '取消', style: 'cancel'},
+                {text: t('common.cancel', '取消'), style: 'cancel'},
                 {
-                    text: '删除',
+                    text: t('common.delete', '删除'),
                     style: 'destructive',
                     onPress: () => deleteCategory(category.id),
                 },
@@ -186,20 +219,20 @@ const TaskSettings: React.FC = () => {
 
                     // 验证数据格式
                     if (!importData.tasks || !Array.isArray(importData.tasks)) {
-                        showAlert('错误', '导入的文件格式不正确');
+                        showAlert(t('common.error', '错误'), t('tasks.import.error.invalidFormat', '导入的文件格式不正确'));
                         return;
                     }
 
                     // 使用store的importTaskSet方法
                     importTaskSet(importData);
 
-                    showAlert('成功', `已成功导入任务集: ${importData.name || '未命名任务集'}`);
+                    showAlert(t('common.success', '成功'), t('tasks.import.success', '已成功导入任务集: {{name}}', {name: importData.name || t('tasks.import.unnamedTaskSet', '未命名任务集')}));
                 } catch (parseError) {
-                    showAlert('错误', '导入的文件内容格式不正确');
+                    showAlert(t('common.error', '错误'), t('tasks.import.error.invalidContent', '导入的文件内容格式不正确'));
                 }
             }
         } catch (error) {
-            showAlert('错误', '导入失败');
+            showAlert(t('common.error', '错误'), t('tasks.import.error.failed', '导入失败'));
         }
     };
 
@@ -223,21 +256,21 @@ const TaskSettings: React.FC = () => {
 
                 // 设置自定义对话框数据
                 setExportAlertData({
-                    title: '导出任务集',
-                    message: '请选择导出方式',
+                    title: t('tasks.export.title', '导出任务集'),
+                    message: t('tasks.export.message', '请选择导出方式'),
                     buttons: [
-                        {text: '取消', style: 'cancel'},
+                        {text: t('common.cancel', '取消'), style: 'cancel'},
                         {
-                            text: '分享',
+                            text: t('tasks.export.share', '分享'),
                             onPress: async () => {
                                 await Share.share({
                                     message: jsonString,
-                                    title: `导出任务集: ${exportData.name}`,
+                                    title: t('tasks.export.shareTitle', '导出任务集: {{name}}', {name: exportData.name}),
                                 });
                             }
                         },
                         {
-                            text: '保存到文件',
+                            text: t('tasks.export.saveToFile', '保存到文件'),
                             onPress: async () => {
                                 await saveToFile(exportData.name, jsonString);
                             }
@@ -247,7 +280,7 @@ const TaskSettings: React.FC = () => {
                 setShowExportAlert(true);
             }
         } catch {
-            showAlert('错误', '导出失败');
+            showAlert(t('common.error', '错误'), t('tasks.export.error', '导出失败'));
         }
     };
 
@@ -269,7 +302,7 @@ const TaskSettings: React.FC = () => {
                 document.body.removeChild(link);
                 URL.revokeObjectURL(url);
 
-                showAlert('成功', '文件已下载到您的设备');
+                showAlert(t('common.success', '成功'), t('tasks.export.success.downloaded', '文件已下载到您的设备'));
             } else {
                 // 移动端使用expo文件系统
                 const file = new FileSystem.File(FileSystem.Paths.cache, fileName);
@@ -279,21 +312,21 @@ const TaskSettings: React.FC = () => {
 
                 // 检查是否支持分享
                 if (!(await Sharing.isAvailableAsync())) {
-                    showAlert('成功', `文件已保存到: ${fileName}`);
+                    showAlert(t('common.success', '成功'), t('tasks.export.success.saved', '文件已保存到: {{fileName}}', {fileName}));
                     return;
                 }
 
                 // 分享文件
                 await Sharing.shareAsync(file.uri, {
                     mimeType: 'application/json',
-                    dialogTitle: '保存任务集文件',
+                    dialogTitle: t('tasks.export.dialogTitle', '保存任务集文件'),
                 });
 
-                showAlert('成功', '文件已导出并可以保存到您的设备');
+                showAlert(t('common.success', '成功'), t('tasks.export.success.exported', '文件已导出并可以保存到您的设备'));
             }
         } catch (error) {
             console.error('保存文件失败:', error);
-            showAlert('错误', '保存文件失败');
+            showAlert(t('common.error', '错误'), t('tasks.export.error.saveFailed', '保存文件失败'));
         }
     };
 
@@ -309,7 +342,7 @@ const TaskSettings: React.FC = () => {
                             style={[styles.typeBadge, {backgroundColor: taskSet.type === 'system' ? colors.settingsAccent + '20' : '#FF9500' + '20'}]}>
                             <Text
                                 style={[styles.typeText, {color: taskSet.type === 'system' ? colors.settingsAccent : '#FF9500'}]}>
-                                {taskSet.type === 'system' ? '系统' : '自定义'}
+                                {taskSet.type === 'system' ? t('tasks.taskSet.type.system', '系统') : t('tasks.taskSet.type.custom', '自定义')}
                             </Text>
                         </View>
                     </View>
@@ -325,7 +358,7 @@ const TaskSettings: React.FC = () => {
                     <View style={styles.infoRow}>
                         <Ionicons name="list" size={16} color={colors.homeCardDescription}/>
                         <Text style={[styles.infoText, {color: colors.homeCardDescription}]}>
-                            {taskSet.tasks.length} 个任务
+                            {t('tasks.taskSet.tasks', '{{count}} 个任务', {count: taskSet.tasks.length})}
                         </Text>
                     </View>
                     {category && (
@@ -349,7 +382,7 @@ const TaskSettings: React.FC = () => {
                             color={taskSet.isActive ? '#4ECDC4' : colors.homeCardArrow}
                         />
                         <Text style={[styles.actionText, {color: taskSet.isActive ? '#4ECDC4' : colors.homeCardArrow}]}>
-                            {taskSet.isActive ? '已启用' : '已禁用'}
+                            {taskSet.isActive ? t('tasks.taskSet.status.enabled', '已启用') : t('tasks.taskSet.status.disabled', '已禁用')}
                         </Text>
                     </TouchableOpacity>
 
@@ -403,7 +436,7 @@ const TaskSettings: React.FC = () => {
                             </Text>
                         )}
                         <Text style={[styles.infoText, {color: colors.homeCardDescription}]}>
-                            {taskCount} 个任务集
+                            {t('tasks.category.taskSets', '{{count}} 个任务集', {count: taskCount})}
                         </Text>
                     </View>
                     <View style={styles.categoryActions}>
@@ -433,10 +466,11 @@ const TaskSettings: React.FC = () => {
             {/* 头部 */}
             <View style={[styles.header, {paddingTop: insets.top + 20}]}>
                 <View style={styles.headerContent}>
-                    <View>
-                        <Text style={[styles.headerTitle, {color: colors.homeTitle}]}>任务管理</Text>
+                    <View style={styles.headerTextContainer}>
+                        <Text
+                            style={[styles.headerTitle, {color: colors.homeTitle}]}>{t('tasks.title', '任务管理')}</Text>
                         <Text style={[styles.headerSubtitle, {color: colors.homeSubtitle}]}>
-                            管理你的游戏任务和分类
+                            {t('tasks.subtitle', '管理你的游戏任务和分类')}
                         </Text>
                     </View>
                     {activeTab === 'taskSets' && (
@@ -445,7 +479,7 @@ const TaskSettings: React.FC = () => {
                             onPress={handleImportTaskSet}
                         >
                             <Ionicons name="download" size={20} color="white"/>
-                            <Text style={styles.importButtonText}>导入</Text>
+                            <Text style={styles.importButtonText}>{t('tasks.import.title', '导入')}</Text>
                         </TouchableOpacity>
                     )}
                 </View>
@@ -469,7 +503,7 @@ const TaskSettings: React.FC = () => {
                         styles.tabText,
                         {color: activeTab === 'taskSets' ? colors.settingsAccent : colors.homeCardDescription}
                     ]}>
-                        任务集({taskSets.length})
+                        {t('tasks.tabs.taskSets', '任务集')}({taskSets.length})
                     </Text>
                 </TouchableOpacity>
 
@@ -486,7 +520,7 @@ const TaskSettings: React.FC = () => {
                         styles.tabText,
                         {color: activeTab === 'categories' ? colors.settingsAccent : colors.homeCardDescription}
                     ]}>
-                        分类({categories.length})
+                        {t('tasks.tabs.categories', '分类')}({categories.length})
                     </Text>
                 </TouchableOpacity>
             </View>
@@ -502,7 +536,7 @@ const TaskSettings: React.FC = () => {
                             <View style={styles.emptyState}>
                                 <Ionicons name="document-text-outline" size={48} color={colors.homeCardDescription}/>
                                 <Text style={[styles.emptyText, {color: colors.homeCardDescription}]}>
-                                    暂无任务集，点击右下角按钮创建
+                                    {t('tasks.empty.taskSets', '暂无任务集，点击右下角按钮创建')}
                                 </Text>
                             </View>
                         )}
@@ -516,7 +550,7 @@ const TaskSettings: React.FC = () => {
                             <View style={styles.emptyState}>
                                 <Ionicons name="folder-outline" size={48} color={colors.homeCardDescription}/>
                                 <Text style={[styles.emptyText, {color: colors.homeCardDescription}]}>
-                                    暂无分类，点击右下角按钮创建
+                                    {t('tasks.empty.categories', '暂无分类，点击右下角按钮创建')}
                                 </Text>
                             </View>
                         )}
@@ -604,7 +638,11 @@ const styles = StyleSheet.create({
     headerContent: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'flex-start',
+        alignItems: 'center',
+    },
+    headerTextContainer: {
+        flex: 1,
+        marginRight: 16,
     },
     importButton: {
         flexDirection: 'row',
