@@ -13,6 +13,9 @@ on:
         required: true
         default: 'v1.0.0'
 
+env:
+  EAS_SKIP_AUTO_FINGERPRINT: 1  # 可选，跳过 fingerprint 加速构建
+
 jobs:
   build-android:
     runs-on: ubuntu-latest
@@ -47,33 +50,39 @@ jobs:
 
       - name: Build Android APK with EAS
         run: |
-          # 使用 EAS Build 构建 Android APK
-          npx eas build --platform android --profile preview --no-wait
+          mkdir -p android-apk
+          npx eas build --platform android --profile preview --no-wait --non-interactive
 
-          # 等待构建完成
           echo "等待 Android 构建完成..."
-          while true; do
-            BUILD_STATUS=$(npx eas build:list --platform=android --limit=1 --json | jq -r '.[0].status')
-            echo "构建状态: $BUILD_STATUS"
-
+          RETRY_COUNT=0
+          MAX_RETRY=120
+          while [ $RETRY_COUNT -lt $MAX_RETRY ]; do
+            npx eas build:list --platform=android --limit=1 --json > build-android.json
+            BUILD_STATUS=$(jq -r '.[0].status // empty' build-android.json)
             if [ "$BUILD_STATUS" = "FINISHED" ]; then
-              BUILD_ID=$(npx eas build:list --platform=android --limit=1 --json | jq -r '.[0].id')
-              DOWNLOAD_URL=$(npx eas build:list --platform=android --limit=1 --json | jq -r '.[0].artifacts.buildUrl')
-              echo "下载 Android APK..."
-              wget -O couple-game.apk "$DOWNLOAD_URL"
+              DOWNLOAD_URL=$(jq -r '.[0].artifacts.buildUrl' build-android.json)
+              wget -O android-apk/couple-game.apk "$DOWNLOAD_URL"
+              echo "Android APK 下载完成"
               break
             elif [ "$BUILD_STATUS" = "ERRORED" ]; then
               echo "Android 构建失败"
               exit 1
+            else
+              echo "当前状态: $BUILD_STATUS，等待 60 秒..."
+              sleep 60
+              RETRY_COUNT=$((RETRY_COUNT+1))
             fi
-            sleep 60
           done
+          if [ $RETRY_COUNT -eq $MAX_RETRY ]; then
+            echo "等待 Android 构建超时"
+            exit 1
+          fi
 
       - name: Upload Android APK
         uses: actions/upload-artifact@v4
         with:
           name: android-apk
-          path: couple-game.apk
+          path: android-apk/couple-game.apk
 
   build-ios:
     runs-on: macos-latest
@@ -97,35 +106,41 @@ jobs:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
-      - name: Build iOS IPA with EAS (unsigned)
+      - name: Build iOS IPA with EAS
         run: |
-          # 使用 EAS Build 构建无签名 iOS IPA
-          npx eas build --platform ios --profile preview --non-interactive --no-wait
+          mkdir -p ios-ipa-unsigned
+          npx eas build --platform ios --profile preview --no-wait --non-interactive
 
-          # 等待构建完成
           echo "等待 iOS 构建完成..."
-          while true; do
-            BUILD_STATUS=$(npx eas build:list --platform=ios --limit=1 --json | jq -r '.[0].status')
-            echo "构建状态: $BUILD_STATUS"
-
+          RETRY_COUNT=0
+          MAX_RETRY=120
+          while [ $RETRY_COUNT -lt $MAX_RETRY ]; do
+            npx eas build:list --platform=ios --limit=1 --json > build-ios.json
+            BUILD_STATUS=$(jq -r '.[0].status // empty' build-ios.json)
             if [ "$BUILD_STATUS" = "FINISHED" ]; then
-              BUILD_ID=$(npx eas build:list --platform=ios --limit=1 --json | jq -r '.[0].id')
-              DOWNLOAD_URL=$(npx eas build:list --platform=ios --limit=1 --json | jq -r '.[0].artifacts.buildUrl')
-              echo "下载 iOS IPA..."
-              wget -O couple-game-unsigned.ipa "$DOWNLOAD_URL"
+              DOWNLOAD_URL=$(jq -r '.[0].artifacts.buildUrl' build-ios.json)
+              wget -O ios-ipa-unsigned/couple-game-unsigned.ipa "$DOWNLOAD_URL"
+              echo "iOS IPA 下载完成"
               break
             elif [ "$BUILD_STATUS" = "ERRORED" ]; then
               echo "iOS 构建失败"
               exit 1
+            else
+              echo "当前状态: $BUILD_STATUS，等待 60 秒..."
+              sleep 60
+              RETRY_COUNT=$((RETRY_COUNT+1))
             fi
-            sleep 60
           done
+          if [ $RETRY_COUNT -eq $MAX_RETRY ]; then
+            echo "等待 iOS 构建超时"
+            exit 1
+          fi
 
-      - name: Upload iOS IPA (unsigned)
+      - name: Upload iOS IPA
         uses: actions/upload-artifact@v4
         with:
           name: ios-ipa-unsigned
-          path: couple-game-unsigned.ipa
+          path: ios-ipa-unsigned/couple-game-unsigned.ipa
 
   build-web:
     runs-on: ubuntu-latest
@@ -145,14 +160,15 @@ jobs:
       - name: Build web
         run: |
           npx expo export --platform web
+          mkdir -p web-build
           cd dist
-          zip -r ../couple-game-web.zip .
+          zip -r ../web-build/couple-game-web.zip .
 
       - name: Upload Web build
         uses: actions/upload-artifact@v4
         with:
           name: web-build
-          path: couple-game-web.zip
+          path: web-build/couple-game-web.zip
 
   create-release:
     needs: [build-android, build-ios, build-web]
@@ -172,7 +188,6 @@ jobs:
           elif [ "${{ github.ref_type }}" = "tag" ]; then
             echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
           else
-            # 对于 main 分支推送，使用时间戳作为版本号
             TIMESTAMP=$(date +"%Y%m%d-%H%M%S")
             COMMIT_SHORT=$(echo ${{ github.sha }} | cut -c1-7)
             echo "version=dev-${TIMESTAMP}-${COMMIT_SHORT}" >> $GITHUB_OUTPUT
@@ -190,9 +205,9 @@ jobs:
             ## 🎮 情侣游戏 ${{ steps.version.outputs.version }}
 
             ### 📱 下载链接
-            - **Android APK**: 下载 `couple-game-android.apk` 文件
-            - **iOS IPA (无签名)**: 下载 `couple-game-ios-unsigned.ipa` 文件，需要自行签名
-            - **Web版本**: 下载 `couple-game-web.zip` 并解压到 Web 服务器
+            - **Android APK**: couple-game-android.apk
+            - **iOS IPA (无签名)**: couple-game-ios-unsigned.ipa
+            - **Web版本**: couple-game-web.zip
 
             ### 🚀 本次更新
             ${{ github.ref_type == 'tag' && '- 正式版本发布' || '- 开发版本构建' }}
@@ -200,10 +215,6 @@ jobs:
             - 提交哈希: ${{ github.sha }}
             - 分支: ${{ github.ref_name }}
 
-            ### 📋 安装说明
-            **Android**: 直接安装 APK 文件
-            **iOS**: 下载无签名 IPA，使用 Xcode 或其他工具签名后安装
-            **Web**: 解压 zip 文件并部署到 Web 服务器
           draft: false
           prerelease: ${{ github.ref_type != 'tag' }}
 
@@ -239,11 +250,7 @@ jobs:
 
       - name: Notify completion
         run: |
-          if [ "${{ github.ref_type }}" = "tag" ]; then
-            echo "🎉 正式版本 Release ${{ steps.version.outputs.version }} 创建成功！"
-          else
-            echo "🚀 开发版本 Release ${{ steps.version.outputs.version }} 创建成功！"
-          fi
+          echo "🎉 Release ${{ steps.version.outputs.version }} 创建成功！"
           echo "📱 Android APK: couple-game-android.apk"
           echo "🍎 iOS IPA (无签名): couple-game-ios-unsigned.ipa"
           echo "🌐 Web版本: couple-game-web.zip"
