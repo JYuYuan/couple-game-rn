@@ -10,7 +10,10 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.coupleup.game"
+      "bundleIdentifier": "com.coupleup.game",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -58,6 +61,12 @@
         "projectId": "6360c8ec-915d-40b7-ad9b-35a34b90a968"
       }
     },
-    "owner": "jiangyuyu"
+    "owner": "jiangyuyu",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/6360c8ec-915d-40b7-ad9b-35a34b90a968"
+    }
   }
 }

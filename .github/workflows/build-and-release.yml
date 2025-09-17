@@ -48,7 +48,7 @@ jobs:
       - name: Build Android APK with EAS
         run: |
           # 使用 EAS Build 构建 Android APK
-          npx eas build --platform android --profile preview --non-interactive --no-wait
+          npx eas build --platform android --profile preview --no-wait
 
           # 等待构建完成
           echo "等待 Android 构建完成..."
