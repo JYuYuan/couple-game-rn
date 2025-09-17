@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/theme';
 import WheelOfFortune, { WheelOfFortuneRef } from '@/components/WheelOfFortune';
-import TaskModal, { TaskModalData } from '@/components/TaskModal';
+import SimpleTaskModal, { SimpleTaskData } from '@/components/SimpleTaskModal';
 import VictoryModal from '@/components/VictoryModal';
 import { CustomAlert } from '@/components/CustomAlert';
 import { useGameTasks } from '@/hooks/use-game-tasks';
@@ -39,17 +39,17 @@ export default function WheelPointsGame() {
         completeTask,
         checkWinCondition,
         applyWheelResult,
-        getOpponentPlayer,
-        spinWheel,
         generateRandomScore,
         isGameActive
     } = wheelGame;
 
     // 游戏状态
     const [isSpinning, setIsSpinning] = useState(false);
-    const [showTaskModal, setShowTaskModal] = useState(false);
-    const [taskModalData, setTaskModalData] = useState<TaskModalData | null>(null);
     const [pendingWheelResult, setPendingWheelResult] = useState<WheelResult | null>(null);
+
+    // 简单任务弹窗状态
+    const [showSimpleTaskModal, setShowSimpleTaskModal] = useState(false);
+    const [simpleTaskData, setSimpleTaskData] = useState<SimpleTaskData | null>(null);
 
     // 胜利弹窗状态
     const [showVictoryModal, setShowVictoryModal] = useState(false);
@@ -63,6 +63,13 @@ export default function WheelPointsGame() {
         buttons: { text: string; onPress: () => void; style?: 'default' | 'cancel' | 'destructive' }[];
     }>({ title: '', message: '', buttons: [] });
 
+    // 进入页面时自动开始游戏
+    useEffect(() => {
+        if (gameStatus === 'waiting' && gameTasks.selectedTaskSet) {
+            startGame();
+        }
+    }, [gameStatus, gameTasks.selectedTaskSet, startGame]);
+
     // 处理胜利
     const handleVictory = (victoryPlayer: WheelPlayer) => {
         console.log('游戏胜利！获胜者:', victoryPlayer.name, '分数:', victoryPlayer.score);
@@ -70,39 +77,13 @@ export default function WheelPointsGame() {
         setShowVictoryModal(true);
     };
 
-    // 处理胜利奖励任务选择
-    const handleVictoryTasksSelected = (selectedTasks: any[]) => {
-        console.log('获胜者选择的奖励任务:', selectedTasks);
-    };
-
-    // 重新开始游戏
-    const handleRestartGame = () => {
-        setShowVictoryModal(false);
-        handleResetGame();
-    };
-
-    // 退出游戏
-    const handleExitGame = () => {
-        setShowVictoryModal(false);
-        router.back();
-    };
-
-    // 关闭胜利弹窗
-    const handleCloseVictoryModal = () => {
-        setShowVictoryModal(false);
-    };
-
-    // 开始游戏
-    const handleStartGame = () => {
-        startGame();
-    };
 
     // 重置游戏
     const handleResetGame = () => {
         resetGame();
         setIsSpinning(false);
-        setShowTaskModal(false);
-        setTaskModalData(null);
+        setShowSimpleTaskModal(false);
+        setSimpleTaskData(null);
         setPendingWheelResult(null);
     };
 
@@ -158,39 +139,35 @@ export default function WheelPointsGame() {
             return;
         }
 
-        const taskData: TaskModalData = {
+        // 生成随机积分 (1-10分)
+        const randomScore = generateRandomScore();
+
+        const simpleTask: SimpleTaskData = {
             id: task.id,
             title: task.title,
-            description: task.description || '',
-            type: 'star', // 转盘游戏中所有任务都是随机任务
-            executor: 'current',
-            category: task.category,
-            difficulty: task.difficulty,
-            triggerPlayerId: triggerPlayerId,
-            executorPlayerId: triggerPlayerId
+            description: task.description,
+            points: randomScore
         };
 
-        setTaskModalData(taskData);
-        setShowTaskModal(true);
+        setSimpleTaskData(simpleTask);
+        setShowSimpleTaskModal(true);
     };
 
     // 处理任务完成结果
     const handleTaskComplete = (completed: boolean) => {
-        if (!taskModalData || !pendingWheelResult) return;
+        if (!simpleTaskData || !pendingWheelResult) return;
 
-        const executorPlayerId = taskModalData.executorPlayerId!;
+        const executorPlayerId = currentPlayer?.id;
+        if (!executorPlayerId) return;
 
-        // 生成随机积分 (1-10分)
-        const randomScore = generateRandomScore();
+        console.log(`任务完成: 执行者=${executorPlayerId}, 完成=${completed}, 积分=${simpleTaskData.points}`);
 
-        console.log(`任务完成: 执行者=${executorPlayerId}, 完成=${completed}, 随机分数=${randomScore}`);
-
-        // 应用任务奖惩：完成获得随机分数，失败扣减一半
-        completeTask(executorPlayerId, taskModalData.id, randomScore, completed);
+        // 应用任务奖惩：完成获得积分，失败扣减一半
+        completeTask(executorPlayerId, simpleTaskData.id, simpleTaskData.points, completed);
 
         // 关闭弹窗并重置状态
-        setShowTaskModal(false);
-        setTaskModalData(null);
+        setShowSimpleTaskModal(false);
+        setSimpleTaskData(null);
         setPendingWheelResult(null);
 
         // 任务完成后检查胜利条件并切换玩家
@@ -356,69 +333,15 @@ export default function WheelPointsGame() {
                             />
                         </View>
                     </View>
-
-                    {/* 游戏控制 */}
-                    <View style={styles.gameControls}>
-                        {gameStatus === 'waiting' ? (
-                            <TouchableOpacity
-                                style={[styles.controlButton, { backgroundColor: colors.settingsAccent }]}
-                                onPress={handleStartGame}
-                            >
-                                <LinearGradient
-                                    colors={['#4CAF50', '#66BB6A']}
-                                    style={styles.controlButtonGradient}
-                                    start={{ x: 0, y: 0 }}
-                                    end={{ x: 1, y: 1 }}
-                                >
-                                    <Ionicons name="play" size={20} color="white" />
-                                    <Text style={styles.controlButtonText}>开始游戏</Text>
-                                </LinearGradient>
-                            </TouchableOpacity>
-                        ) : (
-                            <View style={styles.controlButtons}>
-                                <TouchableOpacity
-                                    style={[styles.controlButton, styles.smallButton]}
-                                    onPress={handleResetGame}
-                                >
-                                    <LinearGradient
-                                        colors={['#FF9500', '#FFB74D']}
-                                        style={styles.controlButtonGradient}
-                                        start={{ x: 0, y: 0 }}
-                                        end={{ x: 1, y: 1 }}
-                                    >
-                                        <Ionicons name="refresh" size={16} color="white" />
-                                        <Text style={[styles.controlButtonText, styles.smallButtonText]}>重新开始</Text>
-                                    </LinearGradient>
-                                </TouchableOpacity>
-
-                                <TouchableOpacity
-                                    style={[styles.controlButton, styles.smallButton]}
-                                    onPress={() => router.back()}
-                                >
-                                    <LinearGradient
-                                        colors={['#FF6B6B', '#FF8A80']}
-                                        style={styles.controlButtonGradient}
-                                        start={{ x: 0, y: 0 }}
-                                        end={{ x: 1, y: 1 }}
-                                    >
-                                        <Ionicons name="exit" size={16} color="white" />
-                                        <Text style={[styles.controlButtonText, styles.smallButtonText]}>退出游戏</Text>
-                                    </LinearGradient>
-                                </TouchableOpacity>
-                            </View>
-                        )}
-                    </View>
                 </ScrollView>
             </View>
 
-            {/* 任务弹窗 */}
-            <TaskModal
-                visible={showTaskModal}
-                task={taskModalData}
-                currentPlayer={currentPlayer}
-                opponentPlayer={currentPlayer ? getOpponentPlayer(currentPlayer.id) : null}
+            {/* 简单任务弹窗 */}
+            <SimpleTaskModal
+                visible={showSimpleTaskModal}
+                task={simpleTaskData}
                 onComplete={handleTaskComplete}
-                onClose={() => setShowTaskModal(false)}
+                onClose={() => setShowSimpleTaskModal(false)}
             />
 
             {/* 胜利弹窗 */}
@@ -429,10 +352,13 @@ export default function WheelPointsGame() {
                     position: 0 // 转盘游戏不需要位置，设为默认值
                 } : null}
                 availableTasks={gameTasks.currentTasks}
-                onTasksSelected={handleVictoryTasksSelected}
-                onRestart={handleRestartGame}
-                onExit={handleExitGame}
-                onClose={handleCloseVictoryModal}
+                onTasksSelected={() => {}}
+                onRestart={() => setShowVictoryModal(false)}
+                onExit={() => {
+                    setShowVictoryModal(false);
+                    router.back();
+                }}
+                onClose={() => setShowVictoryModal(false)}
             />
 
             {/* 自定义弹窗 */}
@@ -510,30 +436,30 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
     playersInfo: {
-        padding: 16,
+        padding: 12,
         borderRadius: 12,
-        marginBottom: 16,
+        marginBottom: 12,
     },
     sectionTitle: {
         fontSize: 16,
         fontWeight: '700',
-        marginBottom: 12,
+        marginBottom: 8,
     },
     winCondition: {
         fontSize: 14,
         fontWeight: '500',
-        marginBottom: 12,
+        marginBottom: 8,
         textAlign: 'center',
     },
     playersGrid: {
-        gap: 12,
+        gap: 8,
     },
     playerCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        padding: 12,
+        padding: 10,
         borderRadius: 8,
-        gap: 12,
+        gap: 10,
     },
     playerAvatar: {
         width: 40,
@@ -588,38 +514,6 @@ const styles = StyleSheet.create({
     wheelContainer: {
         alignItems: 'center',
         justifyContent: 'center',
-        paddingVertical: 20,
-    },
-    gameControls: {
-        alignItems: 'center',
-    },
-    controlButtons: {
-        flexDirection: 'row',
-        gap: 12,
-        width: '100%',
-    },
-    controlButton: {
-        borderRadius: 12,
-        overflow: 'hidden',
-        flex: 1,
-    },
-    smallButton: {
-        flex: 0.5,
-    },
-    controlButtonGradient: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: 14,
-        paddingHorizontal: 10,
-        gap: 8,
-    },
-    controlButtonText: {
-        color: 'white',
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    smallButtonText: {
-        fontSize: 14,
+        paddingVertical: 12,
     },
 });

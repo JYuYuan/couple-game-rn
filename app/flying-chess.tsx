@@ -55,6 +55,13 @@ export default function FlyingChessGame() {
     // 棋盘数据
     const [boardPath, setBoardPath] = useState<PathCell[]>([]);
 
+    // 进入页面时自动开始游戏
+    useEffect(() => {
+        if (gameStatus === 'waiting' && gameTasks.selectedTaskSet && boardPath.length > 0) {
+            startGame();
+        }
+    }, [gameStatus, gameTasks.selectedTaskSet, boardPath.length, startGame]);
+
     // 初始化棋盘
     useEffect(() => {
         const newBoard = createBoardPath();
@@ -77,31 +84,6 @@ export default function FlyingChessGame() {
         setShowVictoryModal(true);
     };
 
-    // 处理胜利奖励任务选择
-    const handleVictoryTasksSelected = (selectedTasks: any[]) => {
-        console.log('获胜者选择的奖励任务:', selectedTasks);
-        // 这里可以将选中的任务保存到获胜者的记录中
-        // 可以调用相应的API或更新本地存储
-        // 选择完任务后不关闭弹窗，而是显示游戏结束选项
-    };
-
-    // 重新开始游戏
-    const handleRestartGame = () => {
-        setShowVictoryModal(false);
-        handleResetGame();
-    };
-
-    // 退出游戏
-    const handleExitGame = () => {
-        setShowVictoryModal(false);
-        router.back();
-    };
-
-    // 关闭胜利弹窗
-    const handleCloseVictoryModal = () => {
-        setShowVictoryModal(false);
-        // 可以选择重置游戏或返回上一页
-    };
 
     // 检查格子类型并触发任务
     const checkCellAndTriggerTask = (playerId: number, position: number) => {
@@ -236,9 +218,6 @@ export default function FlyingChessGame() {
         }, 500);
     };
 
-    const handleStartGame = () => {
-        startGame();
-    };
 
 
     const rollDice = () => {
@@ -484,58 +463,6 @@ export default function FlyingChessGame() {
                             }}
                         />
                     </View>
-
-                    {/* 游戏控制 */}
-                    <View style={styles.gameControls}>
-                        {gameStatus === 'waiting' ? (
-                            <TouchableOpacity
-                                style={[styles.controlButton, {backgroundColor: colors.settingsAccent}]}
-                                onPress={handleStartGame}
-                            >
-                                <LinearGradient
-                                    colors={['#4CAF50', '#66BB6A']}
-                                    style={styles.controlButtonGradient}
-                                    start={{x: 0, y: 0}}
-                                    end={{x: 1, y: 1}}
-                                >
-                                    <Ionicons name="play" size={20} color="white"/>
-                                    <Text style={styles.controlButtonText}>开始游戏</Text>
-                                </LinearGradient>
-                            </TouchableOpacity>
-                        ) : (
-                            <View style={styles.controlButtons}>
-                                <TouchableOpacity
-                                    style={[styles.controlButton, styles.smallButton]}
-                                    onPress={handleResetGame}
-                                >
-                                    <LinearGradient
-                                        colors={['#FF9500', '#FFB74D']}
-                                        style={styles.controlButtonGradient}
-                                        start={{x: 0, y: 0}}
-                                        end={{x: 1, y: 1}}
-                                    >
-                                        <Ionicons name="refresh" size={16} color="white"/>
-                                        <Text style={[styles.controlButtonText, styles.smallButtonText]}>重新开始</Text>
-                                    </LinearGradient>
-                                </TouchableOpacity>
-
-                                <TouchableOpacity
-                                    style={[styles.controlButton, styles.smallButton]}
-                                    onPress={() => router.back()}
-                                >
-                                    <LinearGradient
-                                        colors={['#FF6B6B', '#FF8A80']}
-                                        style={styles.controlButtonGradient}
-                                        start={{x: 0, y: 0}}
-                                        end={{x: 1, y: 1}}
-                                    >
-                                        <Ionicons name="exit" size={16} color="white"/>
-                                        <Text style={[styles.controlButtonText, styles.smallButtonText]}>退出游戏</Text>
-                                    </LinearGradient>
-                                </TouchableOpacity>
-                            </View>
-                        )}
-                    </View>
                 </ScrollView>
             </View>
 
@@ -554,10 +481,13 @@ export default function FlyingChessGame() {
                 visible={showVictoryModal}
                 winner={winner}
                 availableTasks={gameTasks.currentTasks}
-                onTasksSelected={handleVictoryTasksSelected}
-                onRestart={handleRestartGame}
-                onExit={handleExitGame}
-                onClose={handleCloseVictoryModal}
+                onTasksSelected={() => {}}
+                onRestart={() => setShowVictoryModal(false)}
+                onExit={() => {
+                    setShowVictoryModal(false);
+                    router.back();
+                }}
+                onClose={() => setShowVictoryModal(false)}
             />
         </>
     );
@@ -571,16 +501,16 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     contentContainer: {
-        padding: 20,
-        paddingBottom: 100,
+        padding: 16,
+        paddingBottom: 80,
     },
     statusBar: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        padding: 16,
+        padding: 12,
         borderRadius: 12,
-        marginBottom: 16,
+        marginBottom: 12,
     },
     statusLeft: {
         flex: 1,
@@ -641,24 +571,24 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     playersInfo: {
-        padding: 16,
+        padding: 12,
         borderRadius: 12,
-        marginBottom: 16,
+        marginBottom: 12,
     },
     sectionTitle: {
         fontSize: 16,
         fontWeight: '700',
-        marginBottom: 12,
+        marginBottom: 8,
     },
     playersGrid: {
         flexDirection: 'row',
-        gap: 12,
+        gap: 8,
     },
     playerCard: {
         flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
-        padding: 12,
+        padding: 10,
         borderRadius: 8,
         gap: 8,
     },
@@ -687,40 +617,7 @@ const styles = StyleSheet.create({
     },
     boardSection: {
         borderRadius: 12,
-        marginBottom: 16,
+        marginBottom: 12,
         overflow: 'hidden',
-    },
-    gameControls: {
-        alignItems: 'center',
-    },
-    controlButtons: {
-        flexDirection: 'row',
-        gap: 12,
-        width: '100%',
-    },
-    controlButton: {
-        borderRadius: 12,
-        overflow: 'hidden',
-
-        flex: 1,
-    },
-    smallButton: {
-        flex: 0.5,
-    },
-    controlButtonGradient: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: 14,
-        paddingHorizontal: 10,
-        gap: 8,
-    },
-    controlButtonText: {
-        color: 'white',
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    smallButtonText: {
-        fontSize: 14,
     },
 });
