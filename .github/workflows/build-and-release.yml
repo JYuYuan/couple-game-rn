@@ -1,11 +1,11 @@
 name: Build and Release
 
 on:
+  # 方式一：push tag 时触发
   push:
     tags:
       - 'v*'
-    branches:
-      - main
+  # 方式二：手动触发
   workflow_dispatch:
     inputs:
       version:
@@ -13,245 +13,36 @@ on:
         required: true
         default: 'v1.0.0'
 
-env:
-  EAS_SKIP_AUTO_FINGERPRINT: 1  # 可选，跳过 fingerprint 加速构建
-
 jobs:
-  build-android:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'yarn'
-
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
-
-      - name: Setup Expo and EAS
-        uses: expo/expo-github-action@v8
-        with:
-          expo-version: latest
-          eas-version: latest
-          token: ${{ secrets.EXPO_TOKEN }}
-
-      - name: Build Android APK with EAS
-        run: |
-          mkdir -p android-apk
-          npx eas build --platform android --profile preview --no-wait --non-interactive
-
-          echo "等待 Android 构建完成..."
-          RETRY_COUNT=0
-          MAX_RETRY=120
-          while [ $RETRY_COUNT -lt $MAX_RETRY ]; do
-            npx eas build:list --platform=android --limit=1 --json > build-android.json
-            BUILD_STATUS=$(jq -r '.[0].status // empty' build-android.json)
-            if [ "$BUILD_STATUS" = "FINISHED" ]; then
-              DOWNLOAD_URL=$(jq -r '.[0].artifacts.buildUrl' build-android.json)
-              wget -O android-apk/couple-game.apk "$DOWNLOAD_URL"
-              echo "Android APK 下载完成"
-              break
-            elif [ "$BUILD_STATUS" = "ERRORED" ]; then
-              echo "Android 构建失败"
-              exit 1
-            else
-              echo "当前状态: $BUILD_STATUS，等待 60 秒..."
-              sleep 60
-              RETRY_COUNT=$((RETRY_COUNT+1))
-            fi
-          done
-          if [ $RETRY_COUNT -eq $MAX_RETRY ]; then
-            echo "等待 Android 构建超时"
-            exit 1
-          fi
-
-      - name: Upload Android APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: android-apk
-          path: android-apk/couple-game.apk
-
-  build-ios:
-    runs-on: macos-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'yarn'
-
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
-
-      - name: Setup Expo and EAS
-        uses: expo/expo-github-action@v8
-        with:
-          expo-version: latest
-          eas-version: latest
-          token: ${{ secrets.EXPO_TOKEN }}
-
-      - name: Build iOS IPA with EAS
-        run: |
-          mkdir -p ios-ipa-unsigned
-          npx eas build --platform ios --profile preview --no-wait --non-interactive
-
-          echo "等待 iOS 构建完成..."
-          RETRY_COUNT=0
-          MAX_RETRY=120
-          while [ $RETRY_COUNT -lt $MAX_RETRY ]; do
-            npx eas build:list --platform=ios --limit=1 --json > build-ios.json
-            BUILD_STATUS=$(jq -r '.[0].status // empty' build-ios.json)
-            if [ "$BUILD_STATUS" = "FINISHED" ]; then
-              DOWNLOAD_URL=$(jq -r '.[0].artifacts.buildUrl' build-ios.json)
-              wget -O ios-ipa-unsigned/couple-game-unsigned.ipa "$DOWNLOAD_URL"
-              echo "iOS IPA 下载完成"
-              break
-            elif [ "$BUILD_STATUS" = "ERRORED" ]; then
-              echo "iOS 构建失败"
-              exit 1
-            else
-              echo "当前状态: $BUILD_STATUS，等待 60 秒..."
-              sleep 60
-              RETRY_COUNT=$((RETRY_COUNT+1))
-            fi
-          done
-          if [ $RETRY_COUNT -eq $MAX_RETRY ]; then
-            echo "等待 iOS 构建超时"
-            exit 1
-          fi
-
-      - name: Upload iOS IPA
-        uses: actions/upload-artifact@v4
-        with:
-          name: ios-ipa-unsigned
-          path: ios-ipa-unsigned/couple-game-unsigned.ipa
-
-  build-web:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'yarn'
-
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
-
-      - name: Build web
-        run: |
-          npx expo export --platform web
-          mkdir -p web-build
-          cd dist
-          zip -r ../web-build/couple-game-web.zip .
-
-      - name: Upload Web build
-        uses: actions/upload-artifact@v4
-        with:
-          name: web-build
-          path: web-build/couple-game-web.zip
-
   create-release:
-    needs: [build-android, build-ios, build-web]
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      # 1️⃣ 获取仓库代码
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
+      # 2️⃣ 设置 GitHub CLI
+      - name: Set up GitHub CLI
+        uses: cli/gh-action@v2
 
-      - name: Get version
-        id: version
+      # 3️⃣ 获取版本号
+      - name: Determine release tag
+        id: get_tag
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
-          elif [ "${{ github.ref_type }}" = "tag" ]; then
-            echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "tag=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
           else
-            TIMESTAMP=$(date +"%Y%m%d-%H%M%S")
-            COMMIT_SHORT=$(echo ${{ github.sha }} | cut -c1-7)
-            echo "version=dev-${TIMESTAMP}-${COMMIT_SHORT}" >> $GITHUB_OUTPUT
+            echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
           fi
 
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ steps.version.outputs.version }}
-          release_name: Release ${{ steps.version.outputs.version }}
-          body: |
-            ## 🎮 情侣游戏 ${{ steps.version.outputs.version }}
-
-            ### 📱 下载链接
-            - **Android APK**: couple-game-android.apk
-            - **iOS IPA (无签名)**: couple-game-ios-unsigned.ipa
-            - **Web版本**: couple-game-web.zip
-
-            ### 🚀 本次更新
-            ${{ github.ref_type == 'tag' && '- 正式版本发布' || '- 开发版本构建' }}
-            - 提交信息: ${{ github.event.head_commit.message }}
-            - 提交哈希: ${{ github.sha }}
-            - 分支: ${{ github.ref_name }}
-
-          draft: false
-          prerelease: ${{ github.ref_type != 'tag' }}
-
-      - name: Upload Android APK to Release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./android-apk/couple-game.apk
-          asset_name: couple-game-android.apk
-          asset_content_type: application/vnd.android.package-archive
-
-      - name: Upload iOS IPA to Release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./ios-ipa-unsigned/couple-game-unsigned.ipa
-          asset_name: couple-game-ios-unsigned.ipa
-          asset_content_type: application/octet-stream
-
-      - name: Upload Web build to Release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./web-build/couple-game-web.zip
-          asset_name: couple-game-web.zip
-          asset_content_type: application/zip
-
-      - name: Notify completion
+      # 4️⃣ 创建 release
+      - name: Create GitHub Release
         run: |
-          echo "🎉 Release ${{ steps.version.outputs.version }} 创建成功！"
-          echo "📱 Android APK: couple-game-android.apk"
-          echo "🍎 iOS IPA (无签名): couple-game-ios-unsigned.ipa"
-          echo "🌐 Web版本: couple-game-web.zip"
-          echo "📝 提交信息: ${{ github.event.head_commit.message }}"
+          echo "Creating release ${{ steps.get_tag.outputs.tag }}"
+          gh release create "${{ steps.get_tag.outputs.tag }}" \
+            --title "${{ steps.get_tag.outputs.tag }}" \
+            --notes "Automatic release from GitHub Actions." \
+            --draft=false \
+            --prerelease=false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
