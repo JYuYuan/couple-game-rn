@@ -34,10 +34,6 @@ jobs:
       - name: Cache Java
         uses: actions/cache@v4
         id: cache-java
-        with:
-          path: /opt/hostedtoolcache/Java_Temurin
-          key: java-17-temurin-${{ runner.os }}
-          restore-keys: java-17-temurin-
 
       - name: Setup Java
         if: steps.cache-java.outputs.cache-hit != 'true'
@@ -50,12 +46,6 @@ jobs:
       - name: Cache Android SDK
         uses: actions/cache@v4
         id: cache-android
-        with:
-          path: |
-            /opt/android-sdk
-            ~/.android
-          key: android-sdk-34-${{ runner.os }}
-          restore-keys: android-sdk-34-
 
       - name: Setup Android SDK
         if: steps.cache-android.outputs.cache-hit != 'true'
@@ -72,12 +62,7 @@ jobs:
       - name: Cache Expo CLI
         uses: actions/cache@v4
         id: cache-expo
-        with:
-          path: |
-            ~/.npm
-            ~/.expo
-          key: expo-${{ runner.os }}-${{ hashFiles('app.json', 'app.config.*') }}
-          restore-keys: expo-${{ runner.os }}-
+
 
       - name: Setup Expo
         if: steps.cache-expo.outputs.cache-hit != 'true'
