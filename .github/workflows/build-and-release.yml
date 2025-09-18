@@ -148,6 +148,7 @@ jobs:
           npx eas build --platform android --profile preview --local --non-interactive
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          ORG_GRADLE_JVMARGS: "-Xmx4g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8"
 
       # 1️⃣1️⃣ 查找生成的 APK 文件
       - name: Find APK file
