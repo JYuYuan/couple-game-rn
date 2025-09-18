@@ -8,7 +8,10 @@
       "developmentClient": true,
       "distribution": "internal",
       "channel": "development",
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "ORG_GRADLE_JVMARGS": "-Xmx4096m -XX:MaxMetaspaceSize=1024m -Dfile.encoding=UTF-8"
+      }
     },
     "preview": {
       "distribution": "internal",
