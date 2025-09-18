@@ -1,4 +1,4 @@
-name: Build and Release
+name: Build and Release (Debug Version)
 
 on:
   # 方式一：push tag 时触发
@@ -18,63 +18,35 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=2048m -Dorg.gradle.daemon=false
+      EXPO_NO_DOTENV: 1
+      CI: false  # 禁用 CI 模式，模拟本地环境
     steps:
       # 1️⃣ 获取仓库代码
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2️⃣ 设置 Node.js 环境
+      # 2️⃣ 设置 Node.js 环境（匹配你的本地版本）
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'yarn'
+          node-version: '20'  # 确保这个版本与你本地一致
 
-      # 3️⃣ 缓存 Java 环境
-      - name: Cache Java
-        uses: actions/cache@v4
-        id: cache-java
-        with:
-          path: |
-            ~/.m2/repository
-            /opt/hostedtoolcache/Java_Temurin-Hotspot
-          key: java-17-temurin-${{ runner.os }}
-          restore-keys: |
-            java-17-temurin-
-            java-17-
-
-      # 3️⃣.1 设置 Java 环境（仅在缓存未命中时）
+      # 3️⃣ 设置 Java 环境
       - name: Setup Java
-        if: steps.cache-java.outputs.cache-hit != 'true'
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      # 4️⃣ 缓存 Android SDK
-      - name: Cache Android SDK
-        uses: actions/cache@v4
-        id: cache-android
-        with:
-          path: |
-            ${{ env.ANDROID_HOME }}
-            ~/.android
-          key: android-sdk-34-${{ runner.os }}
-          restore-keys: |
-            android-sdk-34-
-            android-sdk-
-
-      # 4️⃣.1 设置 Android SDK（仅在缓存未命中时）
+      # 4️⃣ 设置 Android SDK
       - name: Setup Android SDK
-        if: steps.cache-android.outputs.cache-hit != 'true'
         uses: android-actions/setup-android@v3
         with:
           api-level: 34
           build-tools: 34.0.0
 
-      # 4️⃣.5 Accept Android licenses（仅在缓存未命中时）
+      # 4️⃣.5 Accept Android licenses
       - name: Accept Android licenses
-        if: steps.cache-android.outputs.cache-hit != 'true'
         run: yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
       # 4️⃣.6 设置环境变量
@@ -82,78 +54,92 @@ jobs:
         run: |
           echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
           echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> $GITHUB_ENV
-
-      # 4️⃣.7 缓存 Expo CLI
-      - name: Cache Expo CLI
-        uses: actions/cache@v4
-        id: cache-expo
-        with:
-          path: |
-            ~/.npm
-            ~/.expo
-          key: expo-${{ runner.os }}-${{ hashFiles('app.json', 'expo.json', 'app.config.*') }}
-          restore-keys: |
-            expo-${{ runner.os }}-
-
-      # 4️⃣.8 设置 Expo CLI
-      - name: Setup Expo
-        uses: expo/expo-github-action@v8
-        with:
-          expo-version: latest
-          token: ${{ secrets.EXPO_TOKEN }}
-
-      # 4️⃣.9 缓存依赖安装状态
-      - name: Cache dependencies
-        uses: actions/cache@v4
-        id: cache-deps
-        with:
-          path: |
-            node_modules
-            ~/.cache/yarn
-          key: deps-${{ runner.os }}-${{ hashFiles('package.json', 'yarn.lock') }}
-          restore-keys: |
-            deps-${{ runner.os }}-
-
-      # 5️⃣ 安装全局工具
-      - name: Install global tools
+          echo "PATH=$PATH:$ANDROID_HOME/emulator:$ANDROID_HOME/tools:$ANDROID_HOME/tools/bin:$ANDROID_HOME/platform-tools" >> $GITHUB_ENV
+      # 5️⃣ 显示本地环境信息（用于对比）
+      - name: Show environment info for comparison
         run: |
-          # 检查 yarn 是否已安装
-          if ! command -v yarn &> /dev/null; then
-            echo "Installing yarn..."
-            npm install -g yarn
-          else
-            echo "Yarn already installed: $(yarn --version)"
-          fi
-          
-          # 安装 EAS CLI
-          if ! command -v eas &> /dev/null; then
-            echo "Installing eas-cli..."
-            npm install -g eas-cli
-          else
-            echo "EAS CLI already installed: $(eas --version)"
-          fi
-
-      # 5️⃣.1 安装依赖（仅在缓存未命中时）
-      - name: Install dependencies
-        if: steps.cache-deps.outputs.cache-hit != 'true'
-        run: yarn install --frozen-lockfile
-
-      # 5️⃣.5 显示缓存状态
-      - name: Show cache status
-        run: |
-          echo "📋 缓存状态报告:"
-          echo "Java 缓存命中: ${{ steps.cache-java.outputs.cache-hit }}"
-          echo "Android SDK 缓存命中: ${{ steps.cache-android.outputs.cache-hit }}"
-          echo "依赖缓存命中: ${{ steps.cache-deps.outputs.cache-hit }}"
-          echo "Expo 缓存命中: ${{ steps.cache-expo.outputs.cache-hit }}"
-          echo ""
-          echo "🔧 工具版本:"
+          echo "🔍 请对比以下信息与你的本地环境："
           echo "Node.js: $(node --version)"
           echo "NPM: $(npm --version)"
-          echo "Yarn: $(yarn --version)"
-          echo "EAS CLI: $(eas --version)"
-
-      # 9️⃣ 获取版本号
+          echo "当前目录: $(pwd)"
+          echo "目录内容:"
+          ls -la
+          echo ""
+          echo "package.json 内容:"
+          cat package.json
+          echo ""
+          echo "检查 eas.json:"
+          cat eas.json || echo "eas.json 不存在"
+          echo ""
+          echo "检查 app.json:"
+          cat app.json || echo "app.json 不存在"
+          echo ""
+          echo "检查 app.config.js:"
+          cat app.config.js || echo "app.config.js 不存在"
+      # 6️⃣ 完全清理并重新安装（模拟本地环境）
+      - name: Clean install (like local)
+        run: |
+          # 完全清理
+          rm -rf node_modules
+          rm -rf .expo
+          rm -rf android/build
+          rm -rf ios/build
+          rm -f yarn.lock
+          rm -f package-lock.json
+          
+          # 使用 yarn 安装（如果你本地用 yarn）
+          npm install -g yarn
+          yarn install
+          
+          # 或者使用 npm（如果你本地用 npm）
+          # npm install
+      # 7️⃣ 安装全局工具（使用与本地相同的版本）
+      - name: Install global tools
+        run: |
+          # 安装 eas-cli（检查你本地的版本）
+          npm list -g eas-cli || true
+          npm install -g eas-cli@latest
+          
+          # 安装 expo-cli（如果需要）
+          npm install -g expo-cli@latest
+          
+          echo "已安装的全局包:"
+          npm list -g --depth=0
+      # 8️⃣ 设置 Expo（使用本地相同的方式）
+      - name: Setup Expo
+        run: |
+          # 如果你本地需要登录
+          if [ -n "${{ secrets.EXPO_TOKEN }}" ]; then
+            npx expo login --non-interactive -u ${{ secrets.EXPO_USERNAME }} || true
+          fi
+      # 9️⃣ 调试：检查所有依赖
+      - name: Debug - Check all dependencies
+        run: |
+          echo "📦 检查 node_modules 中的 expo 相关包:"
+          ls -la node_modules | grep expo || true
+          echo ""
+          echo "检查 expo-router:"
+          ls -la node_modules/expo-router || echo "expo-router 未找到"
+          echo ""
+          echo "package.json 中的依赖:"
+          cat package.json | jq '.dependencies' || cat package.json
+      # 🔟 尝试运行 expo config（调试用）
+      - name: Debug - Run expo config
+        run: |
+          echo "🔍 尝试运行 expo config..."
+          npx expo config --type public || {
+            echo "❌ expo config 失败，尝试其他方法..."
+            npx expo config || true
+          }
+      # 1️⃣1️⃣ 预构建（使用本地相同的命令）
+      - name: Prebuild (like local)
+        run: |
+          echo "📦 预构建..."
+          # 如果你本地使用这个命令
+          npx expo prebuild --platform android --clean
+          
+          # 或者如果你本地不需要预构建，跳过这步
+      # 1️⃣2️⃣ 获取版本号
       - name: Determine release tag
         id: get_tag
         run: |
@@ -162,27 +148,41 @@ jobs:
           else
             echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
           fi
-
-      # 🔟 本地构建 APK
-      - name: Build APK locally
+      # 1️⃣3️⃣ 构建 APK（使用与本地完全相同的命令）
+      - name: Build APK (exact local command)
         run: |
-          echo "🏗️ 开始本地构建 APK..."
-          npx eas build --platform android --profile preview --local --non-interactive
+          echo "🏗️ 开始构建..."
+          echo "请确保以下命令与你本地使用的完全一致："
+          
+          # 创建输出目录
+          mkdir -p ./build
+          
+          # 使用你本地的确切命令
+          # 选项 1: 如果你本地使用 eas build
+          eas build --platform android --profile preview --local --non-interactive --output ./build/app.apk
+          
+          # 选项 2: 如果你本地使用 expo build
+          # npx expo build:android -t apk
+          
+          # 选项 3: 如果你本地使用 gradle
+          # cd android && ./gradlew assembleRelease
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          EAS_BUILD_SKIP_CREDENTIALS_CHECK: 1
+          EAS_NO_VCS_IGNORE_CHECK: 1
 
-      # 1️⃣1️⃣ 查找生成的 APK 文件
+      # 后续步骤保持不变...
       - name: Find APK file
         id: find_apk
         run: |
-          APK_FILE=$(find . -name "*.apk" -type f | head -1)
+          APK_FILE=$(find . -name "*.apk" -type f ! -path "./node_modules/*" | head -1)
           if [ -z "$APK_FILE" ]; then
             echo "❌ 未找到 APK 文件"
+            find . -type f -name "*.apk"
             exit 1
           fi
           echo "apk_path=$APK_FILE" >> $GITHUB_OUTPUT
           echo "apk_name=$(basename $APK_FILE)" >> $GITHUB_OUTPUT
-          echo "✅ 找到 APK 文件: $APK_FILE"
 
       # 1️⃣2️⃣ 创建 release 并上传 APK
       - name: Create GitHub Release and Upload APK
