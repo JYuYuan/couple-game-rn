@@ -1,8 +1,8 @@
 import React from 'react';
-import { AirplaneIcon } from './AirplaneIcon';
-import { HelicopterIcon } from './HelicopterIcon';
-import { RocketIcon } from './RocketIcon';
-import { UFOIcon } from './UFOIcon';
+import {AirplaneIcon} from './AirplaneIcon';
+import {HelicopterIcon} from './HelicopterIcon';
+import {RocketIcon} from './RocketIcon';
+import {UFOIcon} from './UFOIcon';
 
 export type PlayerIconType = 'airplane' | 'helicopter' | 'rocket' | 'ufo';
 

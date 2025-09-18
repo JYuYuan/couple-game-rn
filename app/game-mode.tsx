@@ -13,7 +13,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import {LinearGradient} from 'expo-linear-gradient';
 import {Ionicons} from '@expo/vector-icons';
-import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useColorScheme} from '@/hooks/use-color-scheme';
 import {Colors} from '@/constants/theme';
 import {useTasksStore} from '@/store/tasksStore';
