@@ -41,7 +41,21 @@
       "Bash(npx eas build --platform android --profile preview)",
       "Bash(npx eas build --platform android --profile preview --local)",
       "Bash(npm install @babel/core --save-dev)",
-      "Bash(npm install @types/node --save-dev)"
+      "Bash(npm install @types/node --save-dev)",
+      "Bash(java -version)",
+      "Bash(echo $JAVA_HOME)",
+      "Bash(/usr/libexec/java_home -V)",
+      "Bash(export JAVA_HOME=\"/Library/Java/JavaVirtualMachines/jdk-11.0.2.jdk/Contents/Home\")",
+      "Bash(npm install @expo/metro-runtime@^6.1.2 --save-dev)",
+      "Bash(export JAVA_HOME=\"/Library/Java/JavaVirtualMachines/jdk-20.jdk/Contents/Home\")",
+      "Bash(export NODE_ENV=production)",
+      "Bash(brew install openjdk@17)",
+      "Bash(brew --prefix openjdk@17)",
+      "Bash(export JAVA_HOME=\"/opt/homebrew/opt/openjdk@17\")",
+      "Bash(echo $ANDROID_HOME)",
+      "Read(//Users/dompling/Library/Android/sdk/**)",
+      "Read(//opt/**)",
+      "Bash(export ANDROID_HOME=\"$HOME/Library/Android/sdk\")"
     ],
     "deny": [],
     "ask": []
