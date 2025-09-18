@@ -14,18 +14,55 @@ on:
         default: 'v1.0.0'
 
 jobs:
-  create-release:
+  build-and-release:
     runs-on: ubuntu-latest
     steps:
       # 1️⃣ 获取仓库代码
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2️⃣ 设置 GitHub CLI
-      - name: Set up GitHub CLI
-        uses: cli/gh-action@v2
+      # 2️⃣ 设置 Node.js 环境
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
 
-      # 3️⃣ 获取版本号
+      # 3️⃣ 设置 Java 环境
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      # 4️⃣ 设置 Android SDK
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          api-level: 34
+          build-tools: 34.0.0
+
+      # 5️⃣ 安装依赖
+      - name: Install dependencies
+        run: npm ci
+
+      # 6️⃣ 设置 Expo CLI
+      - name: Setup Expo
+        uses: expo/expo-github-action@v8
+        with:
+          expo-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      # 7️⃣ 类型检查
+      - name: TypeScript check
+        run: npx tsc --noEmit --skipLibCheck
+
+      # 8️⃣ 代码规范检查
+      - name: ESLint check
+        run: npx eslint . --ext .js,.jsx,.ts,.tsx
+        continue-on-error: true
+
+      # 9️⃣ 获取版本号
       - name: Determine release tag
         id: get_tag
         run: |
@@ -35,14 +72,62 @@ jobs:
             echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
           fi
 
-      # 4️⃣ 创建 release
-      - name: Create GitHub Release
+      # 🔟 本地构建 APK
+      - name: Build APK locally
         run: |
-          echo "Creating release ${{ steps.get_tag.outputs.tag }}"
+          echo "🏗️ 开始本地构建 APK..."
+          npx eas build --platform android --profile preview --local --non-interactive --no-wait
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+      # 1️⃣1️⃣ 查找生成的 APK 文件
+      - name: Find APK file
+        id: find_apk
+        run: |
+          APK_FILE=$(find . -name "*.apk" -type f | head -1)
+          if [ -z "$APK_FILE" ]; then
+            echo "❌ 未找到 APK 文件"
+            exit 1
+          fi
+          echo "apk_path=$APK_FILE" >> $GITHUB_OUTPUT
+          echo "apk_name=$(basename $APK_FILE)" >> $GITHUB_OUTPUT
+          echo "✅ 找到 APK 文件: $APK_FILE"
+
+      # 1️⃣2️⃣ 设置 GitHub CLI
+      - name: Set up GitHub CLI
+        uses: cli/gh-action@v2
+
+      # 1️⃣3️⃣ 创建 release 并上传 APK
+      - name: Create GitHub Release and Upload APK
+        run: |
+          echo "📦 创建 release ${{ steps.get_tag.outputs.tag }}"
+
+          # 生成 release notes
+          RELEASE_NOTES="🚀 **Couple Game RN ${{ steps.get_tag.outputs.tag }}**
+
+          ## 📱 安装说明
+          下载 \`${{ steps.find_apk.outputs.apk_name }}\` 文件并安装到 Android 设备
+
+          ## 🔧 构建信息
+          - 构建时间: $(date -u '+%Y-%m-%d %H:%M:%S UTC')
+          - Node.js: $(node --version)
+          - 平台: Android
+          - 构建方式: 本地构建
+
+          ## 📋 更新内容
+          请查看最近的提交记录了解详细更新内容。
+
+          ---
+          🤖 此版本由 GitHub Actions 自动构建"
+
+          # 创建 release
           gh release create "${{ steps.get_tag.outputs.tag }}" \
-            --title "${{ steps.get_tag.outputs.tag }}" \
-            --notes "Automatic release from GitHub Actions." \
+            "${{ steps.find_apk.outputs.apk_path }}" \
+            --title "🎮 Couple Game RN ${{ steps.get_tag.outputs.tag }}" \
+            --notes "$RELEASE_NOTES" \
             --draft=false \
             --prerelease=false
+
+          echo "✅ Release 创建成功！"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
