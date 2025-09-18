@@ -48,7 +48,7 @@ export const useAudioManager = (): AudioManager => {
                         }
                     );
                     sound = bgmSound;
-                } catch (audioError) {
+                } catch {
                     console.log('BGM file not found, audio manager will work without background music');
                     return; // 如果音频文件不存在，直接返回
                 }

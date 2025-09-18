@@ -1,4 +1,4 @@
-import i18n from 'i18next';
+import {createInstance} from 'i18next';
 import {initReactI18next} from 'react-i18next';
 import * as Localization from 'expo-localization';
 import {getStorage} from '@/utils/storage';
@@ -6,6 +6,9 @@ import {getStorage} from '@/utils/storage';
 import en from './locales/en.json';
 import zh from './locales/zh.json';
 import ja from './locales/ja.json';
+
+// 创建 i18n 实例
+const i18n = createInstance();
 
 const resources = {
     en: {translation: en},
