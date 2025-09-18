@@ -163,7 +163,7 @@ jobs:
           
           # 使用你本地的确切命令
           # 选项 1: 如果你本地使用 eas build
-          eas build --platform android --profile preview --local --non-interactive --output ./build/app.apk
+          eas build --platform android --profile preview --local --non-interactive --output ./build/couple-game.apk
           
           # 选项 2: 如果你本地使用 expo build
           # npx expo build:android -t apk
