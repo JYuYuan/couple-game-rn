@@ -1,11 +1,10 @@
 name: Build and Release
 
 on:
-  # 方式一：push tag 时触发
-  push:
-    tags:
-      - 'v*'
-  # 方式二：手动触发
+  workflow_run:
+    workflows: ["Prepare Build Environment"]   # 指定依赖的 workflow 名字
+    types:
+      - completed
   workflow_dispatch:
     inputs:
       version:
@@ -15,6 +14,7 @@ on:
 
 jobs:
   build-and-release:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
       # 1️⃣ 获取仓库代码
