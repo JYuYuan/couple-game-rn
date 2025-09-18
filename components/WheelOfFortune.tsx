@@ -77,7 +77,6 @@ const WheelOfFortune = forwardRef<WheelOfFortuneRef, WheelOfFortuneProps>(
 
         const renderSegment = (reward: typeof WHEEL_REWARDS[0], index: number) => {
             const startAngle = index * SEGMENT_ANGLE;
-            const endAngle = (index + 1) * SEGMENT_ANGLE;
 
             return (
                 <View

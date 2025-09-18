@@ -15,7 +15,7 @@ import {Colors} from '@/constants/theme';
 import {GamePlayer} from '@/hooks/use-game-players';
 import {useTranslation} from 'react-i18next';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 interface GameTask {
     id: string;
