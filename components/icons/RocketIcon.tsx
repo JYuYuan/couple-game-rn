@@ -1,5 +1,5 @@
 import React from 'react';
-import Svg, { Path, Circle, G, Ellipse } from 'react-native-svg';
+import Svg, {Circle, G, Path} from 'react-native-svg';
 
 interface RocketIconProps {
   size?: number;

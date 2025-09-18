@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import { PlayerIcon, PlayerIconType } from './icons';
+import {StyleSheet, View} from 'react-native';
+import {PlayerIcon, PlayerIconType} from './icons';
 
 interface PlayerAvatarProps {
   iconType: PlayerIconType;
