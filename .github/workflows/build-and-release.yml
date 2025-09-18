@@ -145,10 +145,10 @@ jobs:
       - name: Build APK locally
         run: |
           echo "🏗️ 开始本地构建 APK..."
-          npx eas build --platform android --profile preview --local --non-interactive
+          export ORG_GRADLE_JVMARGS="-Xmx4g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8"
+          npx eas build --platform android --profile preview --local --non-interactive -- --no-daemon
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-          ORG_GRADLE_JVMARGS: "-Xmx4g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8"
 
       # 1️⃣1️⃣ 查找生成的 APK 文件
       - name: Find APK file
