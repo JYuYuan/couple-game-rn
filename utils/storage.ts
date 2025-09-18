@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import {Platform} from "react-native";
 
 // 创建单例存储实例，避免重复初始化
 let storageInstance: any = null;
@@ -8,7 +9,7 @@ export const getStorage = () => {
         return storageInstance;
     }
 
-    if (typeof window !== "undefined") {
+    if (Platform.OS === "web") {
         // Web 端
         storageInstance = localStorage;
     } else {
