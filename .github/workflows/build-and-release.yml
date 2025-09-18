@@ -26,36 +26,110 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
+          cache: 'yarn'
 
-      # 3️⃣ 设置 Java 环境
+      # 3️⃣ 缓存 Java 环境
+      - name: Cache Java
+        uses: actions/cache@v4
+        id: cache-java
+        with:
+          path: |
+            ~/.m2/repository
+            /opt/hostedtoolcache/Java_Temurin-Hotspot
+          key: java-17-temurin-${{ runner.os }}
+          restore-keys: |
+            java-17-temurin-
+            java-17-
+
+      # 3️⃣.1 设置 Java 环境（仅在缓存未命中时）
       - name: Setup Java
+        if: steps.cache-java.outputs.cache-hit != 'true'
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      # 4️⃣ 设置 Android SDK
+      # 4️⃣ 缓存 Android SDK
+      - name: Cache Android SDK
+        uses: actions/cache@v4
+        id: cache-android
+        with:
+          path: |
+            ${{ env.ANDROID_HOME }}
+            ~/.android
+          key: android-sdk-34-${{ runner.os }}
+          restore-keys: |
+            android-sdk-34-
+            android-sdk-
+
+      # 4️⃣.1 设置 Android SDK（仅在缓存未命中时）
       - name: Setup Android SDK
+        if: steps.cache-android.outputs.cache-hit != 'true'
         uses: android-actions/setup-android@v3
         with:
           api-level: 34
           build-tools: 34.0.0
 
-      # 4️⃣.5 Accept Android licenses
+      # 4️⃣.5 Accept Android licenses（仅在缓存未命中时）
       - name: Accept Android licenses
+        if: steps.cache-android.outputs.cache-hit != 'true'
         run: yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
-      # 5️⃣ 安装依赖
-      - name: Install dependencies
-        run: npm ci
+      # 4️⃣.8 缓存依赖安装状态
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        id: cache-deps
+        with:
+          path: |
+            node_modules
+            ~/.cache/yarn
+          key: deps-${{ runner.os }}-${{ hashFiles('package.json', 'yarn.lock') }}
+          restore-keys: |
+            deps-${{ runner.os }}-
 
-      # 6️⃣ 设置 Expo CLI
+      # 4️⃣.9 安装 Yarn（仅在依赖缓存未命中时）
+      - name: Install Yarn
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        run: npm install -g yarn
+
+      # 5️⃣ 安装依赖（仅在缓存未命中时）
+      - name: Install dependencies
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        run: yarn install --frozen-lockfile
+
+      # 5️⃣.5 显示缓存状态
+      - name: Show cache status
+        run: |
+          echo "📋 缓存状态报告:"
+          echo "Java 缓存命中: ${{ steps.cache-java.outputs.cache-hit }}"
+          echo "Android SDK 缓存命中: ${{ steps.cache-android.outputs.cache-hit }}"
+          echo "依赖缓存命中: ${{ steps.cache-deps.outputs.cache-hit }}"
+          echo "Expo 缓存命中: ${{ steps.cache-expo.outputs.cache-hit }}"
+
+      # 6️⃣ 缓存 Expo CLI
+      - name: Cache Expo CLI
+        uses: actions/cache@v4
+        id: cache-expo
+        with:
+          path: |
+            ~/.npm
+            ~/.expo
+          key: expo-${{ runner.os }}-${{ hashFiles('app.json', 'expo.json', 'app.config.*') }}
+          restore-keys: |
+            expo-${{ runner.os }}-
+
+      # 6️⃣.1 设置 Expo CLI（仅在缓存未命中时）
       - name: Setup Expo
         uses: expo/expo-github-action@v8
         with:
           expo-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
+
+      # 6️⃣.2 设置环境变量
+      - name: Setup environment variables
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
+          echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> $GITHUB_ENV
 
       # 7️⃣ 类型检查
       - name: TypeScript check
