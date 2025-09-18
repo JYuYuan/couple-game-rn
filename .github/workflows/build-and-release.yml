@@ -30,11 +30,6 @@ jobs:
           node-version: '22'
           cache: 'yarn'
 
-      # 3️⃣ Java 缓存
-      - name: Cache Java
-        uses: actions/cache@v4
-        id: cache-java
-
       - name: Setup Java
         if: steps.cache-java.outputs.cache-hit != 'true'
         uses: actions/setup-java@v4
@@ -42,10 +37,6 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      # 4️⃣ Android SDK 缓存
-      - name: Cache Android SDK
-        uses: actions/cache@v4
-        id: cache-android
 
       - name: Setup Android SDK
         if: steps.cache-android.outputs.cache-hit != 'true'
@@ -58,11 +49,6 @@ jobs:
         if: steps.cache-android.outputs.cache-hit != 'true'
         run: yes | /opt/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
-      # 5️⃣ Expo CLI 缓存
-      - name: Cache Expo CLI
-        uses: actions/cache@v4
-        id: cache-expo
-
 
       - name: Setup Expo
         if: steps.cache-expo.outputs.cache-hit != 'true'
@@ -71,16 +57,6 @@ jobs:
           expo-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
-      # 6️⃣ 缓存依赖
-      - name: Cache dependencies
-        uses: actions/cache@v4
-        id: cache-deps
-        with:
-          path: |
-            node_modules
-            ~/.cache/yarn
-          key: deps-${{ runner.os }}-${{ hashFiles('package.json', 'yarn.lock') }}
-          restore-keys: deps-${{ runner.os }}-
 
       - name: Install Yarn
         if: steps.cache-deps.outputs.cache-hit != 'true'
