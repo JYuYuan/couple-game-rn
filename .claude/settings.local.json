@@ -63,7 +63,18 @@
       "Bash(brew install eas-cli)",
       "Bash(yarn global add eas-cli)",
       "Bash(yarn add --dev @expo/cli eas-cli)",
-      "Bash(./node_modules/.bin/eas build --platform android --profile preview --local)"
+      "Bash(./node_modules/.bin/eas build --platform android --profile preview --local)",
+      "Bash(npx expo start --clear)",
+      "Bash(rm -rf .expo)",
+      "Bash(rm -rf node_modules/.cache)",
+      "Bash(node scripts/generate-icons.js)",
+      "Bash(brew install imagemagick)",
+      "Bash(cp \"/Users/dompling/Desktop/GIT/couple-game-rn/assets/images/ios/AppIcon.appiconset/icon-1024.png\" \"/Users/dompling/Desktop/GIT/couple-game-rn/assets/images/icon.png\")",
+      "Bash(magick \"/Users/dompling/Desktop/GIT/couple-game-rn/assets/images/ios/AppIcon.appiconset/icon-1024.png\" -resize 432x432 \"/Users/dompling/Desktop/GIT/couple-game-rn/assets/images/android-icon-foreground.png\")",
+      "Bash(magick -size 432x432 xc:\"#E6F4FE\" \"/Users/dompling/Desktop/GIT/couple-game-rn/assets/images/android-icon-background.png\")",
+      "Bash(magick \"/Users/dompling/Desktop/GIT/couple-game-rn/assets/images/ios/AppIcon.appiconset/icon-1024.png\" -resize 432x432 -colorspace Gray -threshold 50% \"/Users/dompling/Desktop/GIT/couple-game-rn/assets/images/android-icon-monochrome.png\")",
+      "Bash(magick \"/Users/dompling/Desktop/GIT/couple-game-rn/assets/images/ios/AppIcon.appiconset/icon-1024.png\" -resize 32x32 \"/Users/dompling/Desktop/GIT/couple-game-rn/assets/images/favicon.png\")",
+      "Bash(magick \"/Users/dompling/Desktop/GIT/couple-game-rn/assets/images/ios/AppIcon.appiconset/icon-1024.png\" -resize 200x200 \"/Users/dompling/Desktop/GIT/couple-game-rn/assets/images/splash-icon.png\")"
     ],
     "deny": [],
     "ask": []
