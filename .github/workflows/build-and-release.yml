@@ -1,9 +1,11 @@
 name: Build and Release
 
 on:
-  workflow_run:
-    workflows: ["Prepare Build Environment"]
-    types: [completed]
+  # 方式一：push tag 时触发
+  push:
+    tags:
+      - 'v*'
+  # 方式二：手动触发
   workflow_dispatch:
     inputs:
       version:
@@ -16,56 +18,116 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=2048m -Dorg.gradle.daemon=false
-
     steps:
-      # 1️⃣ Checkout
+      # 1️⃣ 获取仓库代码
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          submodules: true
 
-      # 2️⃣ Node + Yarn
+      # 2️⃣ 设置 Node.js 环境
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'yarn'
 
-      # 3️⃣ Java
+      # 3️⃣ 缓存 Java 环境
+      - name: Cache Java
+        uses: actions/cache@v4
+        id: cache-java
+        with:
+          path: |
+            ~/.m2/repository
+            /opt/hostedtoolcache/Java_Temurin-Hotspot
+          key: java-17-temurin-${{ runner.os }}
+          restore-keys: |
+            java-17-temurin-
+            java-17-
+      # 3️⃣.1 设置 Java 环境（仅在缓存未命中时）
       - name: Setup Java
+        if: steps.cache-java.outputs.cache-hit != 'true'
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      # 4️⃣ Android SDK
+      # 4️⃣ 缓存 Android SDK
+      - name: Cache Android SDK
+        uses: actions/cache@v4
+        id: cache-android
+        with:
+          path: |
+            ${{ env.ANDROID_HOME }}
+            ~/.android
+          key: android-sdk-34-${{ runner.os }}
+          restore-keys: |
+            android-sdk-34-
+            android-sdk-
+      # 4️⃣.1 设置 Android SDK（仅在缓存未命中时）
       - name: Setup Android SDK
+        if: steps.cache-android.outputs.cache-hit != 'true'
         uses: android-actions/setup-android@v3
         with:
           api-level: 34
           build-tools: 34.0.0
 
+      # 4️⃣.5 Accept Android licenses（仅在缓存未命中时）
       - name: Accept Android licenses
-        run: yes | sdkmanager --licenses || true
+        if: steps.cache-android.outputs.cache-hit != 'true'
+        run: yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
-      # 5️⃣ Expo CLI
+      # 4️⃣.8 缓存依赖安装状态
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        id: cache-deps
+        with:
+          path: |
+            node_modules
+            ~/.cache/yarn
+          key: deps-${{ runner.os }}-${{ hashFiles('package.json', 'yarn.lock') }}
+          restore-keys: |
+            deps-${{ runner.os }}-
+      # 4️⃣.9 安装 Yarn（仅在依赖缓存未命中时）
+      - name: Install Yarn
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        run: npm install -g yarn
+
+      # 5️⃣ 安装依赖（仅在缓存未命中时）
+      - name: Install dependencies
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        run: yarn install --frozen-lockfile
+
+      # 5️⃣.5 显示缓存状态
+      - name: Show cache status
+        run: |
+          echo "📋 缓存状态报告:"
+          echo "Java 缓存命中: ${{ steps.cache-java.outputs.cache-hit }}"
+          echo "Android SDK 缓存命中: ${{ steps.cache-android.outputs.cache-hit }}"
+          echo "依赖缓存命中: ${{ steps.cache-deps.outputs.cache-hit }}"
+          echo "Expo 缓存命中: ${{ steps.cache-expo.outputs.cache-hit }}"
+      # 6️⃣ 缓存 Expo CLI
+      - name: Cache Expo CLI
+        uses: actions/cache@v4
+        id: cache-expo
+        with:
+          path: |
+            ~/.npm
+            ~/.expo
+          key: expo-${{ runner.os }}-${{ hashFiles('app.json', 'expo.json', 'app.config.*') }}
+          restore-keys: |
+            expo-${{ runner.os }}-
+      # 6️⃣.1 设置 Expo CLI（仅在缓存未命中时）
       - name: Setup Expo
         uses: expo/expo-github-action@v8
         with:
           expo-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
-      # 6️⃣ Install dependencies
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
-
-      # 7️⃣ Android SDK env
-      - name: Setup Android environment
+      # 6️⃣.2 设置环境变量
+      - name: Setup environment variables
         run: |
-          echo "ANDROID_HOME=/usr/local/lib/android/sdk" >> $GITHUB_ENV
-          echo "ANDROID_SDK_ROOT=/usr/local/lib/android/sdk" >> $GITHUB_ENV
-
-      # 8️⃣ Determine release tag
+          echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
+          echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> $GITHUB_ENV
+      # 9️⃣ 获取版本号
       - name: Determine release tag
         id: get_tag
         run: |
@@ -73,8 +135,8 @@ jobs:
             echo "tag=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
           else
             echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-
-      # 9️⃣ Build APK locally
+          fi
+      # 🔟 本地构建 APK
       - name: Build APK locally
         run: |
           echo "🏗️ 开始本地构建 APK..."
@@ -82,12 +144,11 @@ jobs:
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
-      # 🔟 Find APK
+      # 1️⃣1️⃣ 查找生成的 APK 文件
       - name: Find APK file
         id: find_apk
         run: |
-          # 支持 monorepo 多路径
-          APK_FILE=$(find apps/*/android app/android packages/*/android -name "*.apk" -type f | head -1)
+          APK_FILE=$(find . -name "*.apk" -type f | head -1)
           if [ -z "$APK_FILE" ]; then
             echo "❌ 未找到 APK 文件"
             exit 1
@@ -95,30 +156,32 @@ jobs:
           echo "apk_path=$APK_FILE" >> $GITHUB_OUTPUT
           echo "apk_name=$(basename $APK_FILE)" >> $GITHUB_OUTPUT
           echo "✅ 找到 APK 文件: $APK_FILE"
+      # 1️⃣2️⃣ 设置 GitHub CLI (内置，无需额外action)
 
-      # 1️⃣1️⃣ GitHub Release
+      # 1️⃣3️⃣ 创建 release 并上传 APK
       - name: Create GitHub Release and Upload APK
         run: |
           echo "📦 创建 release ${{ steps.get_tag.outputs.tag }}"
+          # 生成 release notes
           RELEASE_NOTES="🚀 **卿轻游 ${{ steps.get_tag.outputs.tag }}**
-
           ## 📱 安装说明
           下载 \`${{ steps.find_apk.outputs.apk_name }}\` 文件并安装到 Android 设备
-
           ## 🔧 构建信息
           - 构建时间: $(date -u '+%Y-%m-%d %H:%M:%S UTC')
           - Node.js: $(node --version)
           - 平台: Android
           - 构建方式: 本地构建
-
+          ## 📋 更新内容
+          请查看最近的提交记录了解详细更新内容。
           ---
           🤖 此版本由 GitHub Actions 自动构建"
-
+          # 创建 release
           gh release create "${{ steps.get_tag.outputs.tag }}" \
             "${{ steps.find_apk.outputs.apk_path }}" \
             --title "🎮 卿轻游 ${{ steps.get_tag.outputs.tag }}" \
             --notes "$RELEASE_NOTES" \
             --draft=false \
             --prerelease=false
+          echo "✅ Release 创建成功！"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
