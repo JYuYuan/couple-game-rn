@@ -16,7 +16,6 @@ jobs:
   build-and-release:
     runs-on: ubuntu-latest
     env:
-      ORG_GRADLE_PROJECT_reactNativeArchitectures: x86_64
       GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=2048m -Dorg.gradle.daemon=false
     steps:
       # 1️⃣ 获取仓库代码
