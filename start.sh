@@ -4,7 +4,7 @@
 # 作者: Claude
 # 日期: $(date '+%Y-%m-%d')
 
-echo "🚀 正在启动 Couple Game RN 应用..."
+echo "🚀 正在启动 卿轻游 应用..."
 
 # 设置环境变量
 export JAVA_HOME="/opt/homebrew/opt/openjdk@17"

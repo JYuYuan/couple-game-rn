@@ -170,7 +170,7 @@ jobs:
           echo "📦 创建 release ${{ steps.get_tag.outputs.tag }}"
 
           # 生成 release notes
-          RELEASE_NOTES="🚀 **Couple Game RN ${{ steps.get_tag.outputs.tag }}**
+          RELEASE_NOTES="🚀 **卿轻游 ${{ steps.get_tag.outputs.tag }}**
 
           ## 📱 安装说明
           下载 \`${{ steps.find_apk.outputs.apk_name }}\` 文件并安装到 Android 设备
@@ -190,7 +190,7 @@ jobs:
           # 创建 release
           gh release create "${{ steps.get_tag.outputs.tag }}" \
             "${{ steps.find_apk.outputs.apk_path }}" \
-            --title "🎮 Couple Game RN ${{ steps.get_tag.outputs.tag }}" \
+            --title "🎮 卿轻游 ${{ steps.get_tag.outputs.tag }}" \
             --notes "$RELEASE_NOTES" \
             --draft=false \
             --prerelease=false
