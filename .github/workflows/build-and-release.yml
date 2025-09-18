@@ -89,7 +89,7 @@ jobs:
       # 4️⃣.9 安装 Yarn（仅在依赖缓存未命中时）
       - name: Install Yarn
         if: steps.cache-deps.outputs.cache-hit != 'true'
-        run: npm install -g yarn
+        run: npm install -g yarn eas-cli
 
       # 5️⃣ 安装依赖（仅在缓存未命中时）
       - name: Install dependencies
