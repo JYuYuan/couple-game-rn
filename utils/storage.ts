@@ -9,7 +9,7 @@ export const getStorage = () => {
         return storageInstance;
     }
 
-    if (Platform.OS === "web") {
+    if (Platform.OS === "web" && typeof window !== "undefined") {
         // Web 端
         storageInstance = localStorage;
     } else {

@@ -55,7 +55,12 @@
       "Bash(echo $ANDROID_HOME)",
       "Read(//Users/dompling/Library/Android/sdk/**)",
       "Read(//opt/**)",
-      "Bash(export ANDROID_HOME=\"$HOME/Library/Android/sdk\")"
+      "Bash(export ANDROID_HOME=\"$HOME/Library/Android/sdk\")",
+      "Bash(adb devices)",
+      "Bash(export PATH=\"$ANDROID_HOME/platform-tools:$PATH\")",
+      "Bash(npx expo run:android)",
+      "Bash(chmod +x /Users/dompling/Desktop/GIT/couple-game-rn/start.sh)",
+      "Bash(chmod +x /Users/dompling/Desktop/GIT/couple-game-rn/build.sh)"
     ],
     "deny": [],
     "ask": []
