@@ -59,14 +59,11 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
-      # 7️⃣ Android SDK env + local.properties
+      # 7️⃣ Android SDK env
       - name: Setup Android environment
         run: |
-          echo "ANDROID_HOME=/opt/android-sdk" >> $GITHUB_ENV
-          echo "ANDROID_SDK_ROOT=/opt/android-sdk" >> $GITHUB_ENV
-          # 如果你的 Android 项目在子目录，如 apps/expo-go/android
-          mkdir -p apps/expo-go/android
-          echo "sdk.dir=/opt/android-sdk" > apps/expo-go/android/local.properties
+          echo "ANDROID_HOME=/usr/local/lib/android/sdk" >> $GITHUB_ENV
+          echo "ANDROID_SDK_ROOT=/usr/local/lib/android/sdk" >> $GITHUB_ENV
 
       # 8️⃣ Determine release tag
       - name: Determine release tag
