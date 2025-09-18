@@ -145,7 +145,7 @@ jobs:
         run: |
           echo "🏗️ 开始本地构建 APK..."
           export ORG_GRADLE_JVMARGS="-Xmx4g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8"
-          npx eas build --platform android --profile preview --local --non-interactive  -- --no-daemon=false
+          npx eas build --platform android --profile preview --local --non-interactive
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
