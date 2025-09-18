@@ -501,7 +501,10 @@ export default function FlyingChessGame() {
                 winner={winner}
                 availableTasks={gameTasks.currentTasks}
                 onTasksSelected={() => {}}
-                onRestart={() => setShowVictoryModal(false)}
+                onRestart={() => {
+                    handleResetGame();
+                    setShowVictoryModal(false);
+                }}
                 onExit={() => {
                     setShowVictoryModal(false);
                     router.back();

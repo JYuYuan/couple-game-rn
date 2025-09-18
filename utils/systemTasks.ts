@@ -22,6 +22,8 @@ import advancedJa from '@/assets/tasks/ja/advanced.json';
 import loveJa from '@/assets/tasks/ja/love.json';
 import mixedJa from '@/assets/tasks/ja/mixed.json';
 import intimateJa from '@/assets/tasks/ja/intimate.json';
+
+import { TaskCategory, TaskSet } from '@/types/tasks';
 import i18n from '@/i18n';
 
 

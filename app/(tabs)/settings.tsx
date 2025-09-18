@@ -7,12 +7,10 @@ import {useTranslation} from 'react-i18next';
 import {LanguageMode, ThemeMode} from '@/types/settings';
 import {useColorScheme} from '@/hooks/use-color-scheme';
 import {Colors} from '@/constants/theme';
-import {useAudioManager} from '@/hooks/use-audio-manager';
 
 const Settings: React.FC = () => {
     const insets = useSafeAreaInsets();
     const {themeMode, languageMode, soundSettings, setThemeMode, setLanguageMode, setSoundSettings} = useSettingsStore();
-    const audioManager = useAudioManager();
     const {t, i18n} = useTranslation();
     const [showLanguageModal, setShowLanguageModal] = useState(false);
     const [showThemeModal, setShowThemeModal] = useState(false);

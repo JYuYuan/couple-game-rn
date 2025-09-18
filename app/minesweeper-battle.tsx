@@ -558,6 +558,7 @@ export default function MinesweeperBattle() {
                                                         width: cellSize,
                                                         height: cellSize,
                                                         backgroundColor: getCellBackgroundColor(cell, colors),
+                                                        borderColor: getCellBorderColor(cell, colors),
                                                     }
                                                 ]}
                                                 onPress={() => revealCell(rowIndex, colIndex)}

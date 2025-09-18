@@ -227,11 +227,11 @@ const TaskSettings: React.FC = () => {
                     importTaskSet(importData);
 
                     showAlert(t('common.success', '成功'), t('tasks.import.success', '已成功导入任务集: {{name}}', {name: importData.name || t('tasks.import.unnamedTaskSet', '未命名任务集')}));
-                } catch (parseError) {
+                } catch {
                     showAlert(t('common.error', '错误'), t('tasks.import.error.invalidContent', '导入的文件内容格式不正确'));
                 }
             }
-        } catch (error) {
+        } catch {
             showAlert(t('common.error', '错误'), t('tasks.import.error.failed', '导入失败'));
         }
     };

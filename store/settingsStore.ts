@@ -2,6 +2,7 @@ import {create} from "zustand";
 import {createJSONStorage, persist} from "zustand/middleware";
 import {LanguageMode, SettingsState, SoundSettings, ThemeMode} from '@/types/settings';
 import {getStorage} from "@/utils/storage";
+import {TasksState} from "@/types/tasks";
 
 const defaultSoundSettings: SoundSettings = {
     globalMute: false,
@@ -9,7 +10,8 @@ const defaultSoundSettings: SoundSettings = {
     bgmEnabled: true,
 };
 
-let settingsStoreInstance: any = null;
+type SettingsStoreType = () => SettingsState;
+let settingsStoreInstance: SettingsStoreType | null = null;
 
 export const useSettingsStore = (() => {
     if (settingsStoreInstance) {
@@ -26,7 +28,7 @@ export const useSettingsStore = (() => {
                 setLanguageMode: (languageMode: LanguageMode) => set({languageMode}),
                 setSoundSettings: (settings: Partial<SoundSettings>) =>
                     set((state) => ({
-                        soundSettings: { ...state.soundSettings, ...settings }
+                        soundSettings: {...state.soundSettings, ...settings}
                     })),
                 reset: () => set({
                     themeMode: "system" as ThemeMode,

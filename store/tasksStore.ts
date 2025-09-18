@@ -65,9 +65,11 @@ const defaultCategories = staticDefaultCategories;
 
 const defaultTaskSets: TaskSet[] = [];
 
-let tasksStoreInstance: any = null;
+type TasksStoreType = () => TasksState;
 
-export const useTasksStore = (() => {
+let tasksStoreInstance: TasksStoreType | null = null;
+
+export const useTasksStore: TasksStoreType = (() => {
     if (tasksStoreInstance) {
         return tasksStoreInstance;
     }

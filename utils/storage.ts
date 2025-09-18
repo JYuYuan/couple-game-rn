@@ -1,45 +1,22 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-// 创建单例存储实例，避免重复初始化
-let storageInstance: any = null;
-
 export const getStorage = () => {
-    if (storageInstance) {
-        return storageInstance;
-    }
-
     if (typeof window !== "undefined") {
         // Web 端
-        storageInstance = localStorage;
-    } else {
-        // React Native
-        storageInstance = {
-            getItem: async (name: string) => {
-                try {
-                    return await AsyncStorage.getItem(name);
-                } catch (error) {
-                    console.error('Storage getItem error:', error);
-                    return null;
-                }
-            },
-            setItem: async (name: string, value: string) => {
-                try {
-                    await AsyncStorage.setItem(name, value);
-                } catch (error) {
-                    console.error('Storage setItem error:', error);
-                }
-            },
-            removeItem: async (name: string) => {
-                try {
-                    await AsyncStorage.removeItem(name);
-                } catch (error) {
-                    console.error('Storage removeItem error:', error);
-                }
-            },
-        };
+        return localStorage;
     }
-
-    return storageInstance;
+    // React Native
+    return {
+        getItem: async (name: string) => {
+            return await AsyncStorage.getItem(name);
+        },
+        setItem: async (name: string, value: string) => {
+            await AsyncStorage.setItem(name, value);
+        },
+        removeItem: async (name: string) => {
+            await AsyncStorage.removeItem(name);
+        },
+    };
 };
 
 const storage = getStorage();

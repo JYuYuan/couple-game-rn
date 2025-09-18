@@ -31,7 +31,9 @@
       "Bash(node -pe \"JSON.parse(require(''fs'').readFileSync(''i18n/locales/zh.json'', ''utf8''))\")",
       "Bash(npx tsc --noEmit --skipLibCheck)",
       "Bash(npx expo install expo-av)",
-      "Bash(npx expo install react-native-svg)"
+      "Bash(npx expo install react-native-svg)",
+      "Bash(npx eslint . --ext .js,.jsx,.ts,.tsx)",
+      "Bash(npx eslint \"app/(tabs)/settings.tsx\" \"app/(tabs)/tasks.tsx\" \"app/flying-chess.tsx\" \"store/tasksStore.ts\")"
     ],
     "deny": [],
     "ask": []
