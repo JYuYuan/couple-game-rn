@@ -2,9 +2,8 @@ name: Build and Release
 
 on:
   workflow_run:
-    workflows: ["Prepare Build Environment"]   # 依赖的 workflow 名字
-    types:
-      - completed
+    workflows: ["Prepare Build Environment"]
+    types: [completed]
   workflow_dispatch:
     inputs:
       version:
@@ -19,36 +18,27 @@ jobs:
       GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=2048m -Dorg.gradle.daemon=false
 
     steps:
-      # 1️⃣ 获取仓库代码
+      # 1️⃣ Checkout
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          submodules: true
 
-      # 2️⃣ 缓存 Node.js + Yarn
+      # 2️⃣ Node + Yarn
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'yarn'
 
-      # 3️⃣ 缓存 Gradle
-      - name: Cache Gradle
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            gradle-${{ runner.os }}-
-
-      # 4️⃣ 安装 Java
+      # 3️⃣ Java
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      # 5️⃣ 安装 Android SDK
+      # 4️⃣ Android SDK
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
         with:
@@ -58,26 +48,27 @@ jobs:
       - name: Accept Android licenses
         run: yes | sdkmanager --licenses || true
 
-      # 6️⃣ 缓存 Expo CLI
+      # 5️⃣ Expo CLI
       - name: Setup Expo
         uses: expo/expo-github-action@v8
         with:
           expo-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
-      # 7️⃣ 安装依赖
+      # 6️⃣ Install dependencies
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
-      # 8️⃣ 设置环境变量 + 修复 local.properties
-      - name: Fix Android SDK location
+      # 7️⃣ Android SDK env + local.properties
+      - name: Setup Android environment
         run: |
           echo "ANDROID_HOME=/opt/android-sdk" >> $GITHUB_ENV
           echo "ANDROID_SDK_ROOT=/opt/android-sdk" >> $GITHUB_ENV
-          mkdir -p android
-          echo "sdk.dir=/opt/android-sdk" > ./android/local.properties
+          # 如果你的 Android 项目在子目录，如 apps/expo-go/android
+          mkdir -p apps/expo-go/android
+          echo "sdk.dir=/opt/android-sdk" > apps/expo-go/android/local.properties
 
-      # 9️⃣ 获取版本号
+      # 8️⃣ Determine release tag
       - name: Determine release tag
         id: get_tag
         run: |
@@ -85,9 +76,8 @@ jobs:
             echo "tag=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
           else
             echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-          fi
 
-      # 🔟 本地构建 APK
+      # 9️⃣ Build APK locally
       - name: Build APK locally
         run: |
           echo "🏗️ 开始本地构建 APK..."
@@ -95,11 +85,12 @@ jobs:
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
-      # 1️⃣1️⃣ 查找生成的 APK 文件
+      # 🔟 Find APK
       - name: Find APK file
         id: find_apk
         run: |
-          APK_FILE=$(find . -name "*.apk" -type f | head -1)
+          # 支持 monorepo 多路径
+          APK_FILE=$(find apps/*/android app/android packages/*/android -name "*.apk" -type f | head -1)
           if [ -z "$APK_FILE" ]; then
             echo "❌ 未找到 APK 文件"
             exit 1
@@ -108,11 +99,10 @@ jobs:
           echo "apk_name=$(basename $APK_FILE)" >> $GITHUB_OUTPUT
           echo "✅ 找到 APK 文件: $APK_FILE"
 
-      # 1️⃣2️⃣ 创建 Release 并上传 APK
+      # 1️⃣1️⃣ GitHub Release
       - name: Create GitHub Release and Upload APK
         run: |
           echo "📦 创建 release ${{ steps.get_tag.outputs.tag }}"
-
           RELEASE_NOTES="🚀 **卿轻游 ${{ steps.get_tag.outputs.tag }}**
 
           ## 📱 安装说明
