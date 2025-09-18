@@ -33,7 +33,15 @@
       "Bash(npx expo install expo-av)",
       "Bash(npx expo install react-native-svg)",
       "Bash(npx eslint . --ext .js,.jsx,.ts,.tsx)",
-      "Bash(npx eslint \"app/(tabs)/settings.tsx\" \"app/(tabs)/tasks.tsx\" \"app/flying-chess.tsx\" \"store/tasksStore.ts\")"
+      "Bash(npx eslint \"app/(tabs)/settings.tsx\" \"app/(tabs)/tasks.tsx\" \"app/flying-chess.tsx\" \"store/tasksStore.ts\")",
+      "Bash(node --version)",
+      "Bash(npm --version)",
+      "Bash(npx expo --version)",
+      "Bash(npx eas --version)",
+      "Bash(npx eas build --platform android --profile preview)",
+      "Bash(npx eas build --platform android --profile preview --local)",
+      "Bash(npm install @babel/core --save-dev)",
+      "Bash(npm install @types/node --save-dev)"
     ],
     "deny": [],
     "ask": []
