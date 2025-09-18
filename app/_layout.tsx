@@ -4,12 +4,11 @@ import {GestureHandlerRootView} from "react-native-gesture-handler";
 import {useEffect} from "react";
 import {useAudioManager} from "@/hooks/use-audio-manager";
 import {useSettingsStore} from "@/store";
-import "../global.css";
 import "@/i18n";
 
 export default function RootLayout() {
     const audioManager = useAudioManager();
-    const { soundSettings } = useSettingsStore();
+    const {soundSettings} = useSettingsStore();
 
     // 自动播放背景音乐
     useEffect(() => {
