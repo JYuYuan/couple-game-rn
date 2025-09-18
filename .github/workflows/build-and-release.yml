@@ -1,4 +1,4 @@
-name: Build and Release (Debug Version)
+name: Build and Release
 
 on:
   # 方式一：push tag 时触发
