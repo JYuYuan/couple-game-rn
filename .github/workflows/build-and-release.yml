@@ -42,6 +42,10 @@ jobs:
           api-level: 34
           build-tools: 34.0.0
 
+      # 4️⃣.5 Accept Android licenses
+      - name: Accept Android licenses
+        run: yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+
       # 5️⃣ 安装依赖
       - name: Install dependencies
         run: npm ci
@@ -76,7 +80,7 @@ jobs:
       - name: Build APK locally
         run: |
           echo "🏗️ 开始本地构建 APK..."
-          npx eas build --platform android --profile preview --local --non-interactive --no-wait
+          npx eas build --platform android --profile preview --local --non-interactive
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
@@ -93,9 +97,7 @@ jobs:
           echo "apk_name=$(basename $APK_FILE)" >> $GITHUB_OUTPUT
           echo "✅ 找到 APK 文件: $APK_FILE"
 
-      # 1️⃣2️⃣ 设置 GitHub CLI
-      - name: Set up GitHub CLI
-        uses: cli/gh-action@v2
+      # 1️⃣2️⃣ 设置 GitHub CLI (内置，无需额外action)
 
       # 1️⃣3️⃣ 创建 release 并上传 APK
       - name: Create GitHub Release and Upload APK
