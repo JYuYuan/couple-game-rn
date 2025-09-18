@@ -38,7 +38,6 @@ export default function WheelPointsGame() {
         startGame,
         resetGame,
         nextPlayer,
-        updatePlayerScore,
         completeTask,
         checkWinCondition,
         applyWheelResult,
@@ -358,7 +357,10 @@ export default function WheelPointsGame() {
                 } : null}
                 availableTasks={gameTasks.currentTasks}
                 onTasksSelected={() => {}}
-                onRestart={() => setShowVictoryModal(false)}
+                onRestart={() => {
+                    handleResetGame();
+                    setShowVictoryModal(false);
+                }}
                 onExit={() => {
                     setShowVictoryModal(false);
                     router.back();

@@ -169,7 +169,7 @@ export const TaskSetModal: React.FC<TaskSetModalProps> = ({
         t('taskSetModal.alerts.pasteSuccess.title', '成功'),
         t('taskSetModal.alerts.pasteSuccess.message', '已粘贴 {{count}} 个任务', {count: pastedTasks.length})
       );
-    } catch (error) {
+    } catch {
       Alert.alert(
         t('taskSetModal.alerts.pasteError.title', '错误'),
         t('taskSetModal.alerts.pasteError.message', '粘贴失败，请重试')

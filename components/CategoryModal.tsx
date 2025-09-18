@@ -87,7 +87,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
       }
 
       onClose();
-    } catch (error) {
+    } catch {
       Alert.alert('错误', '保存失败，请重试');
     } finally {
       setLoading(false);
