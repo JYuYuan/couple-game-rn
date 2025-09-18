@@ -45,7 +45,7 @@ export const Colors = {
     homeGradientEnd: '#F2F2F7',
     homeTitle: '#1C1C1E',
     homeSubtitle: '#8E8E93',
-    homeCardBackground: 'rgba(255, 255, 255, 0.6)',
+    homeCardBackground: 'rgba(255, 255, 255, 0.95)',
     homeCardBorder:  '#8E8E93',
     homeCardTitle: '#1C1C1E',
     homeCardDescription: '#8E8E93',
