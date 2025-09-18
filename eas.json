@@ -9,9 +9,9 @@
       "distribution": "internal",
       "channel": "development",
       "autoIncrement": true,
-      "env": {
-        "ORG_GRADLE_JVMARGS": "-Xmx4096m -XX:MaxMetaspaceSize=1024m -Dfile.encoding=UTF-8"
-      }
+    "env": {
+  "ORG_GRADLE_JVMARGS": "-Xmx4g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8"
+}
     },
     "preview": {
       "distribution": "internal",
