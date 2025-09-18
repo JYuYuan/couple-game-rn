@@ -42,6 +42,7 @@ jobs:
           restore-keys: |
             java-17-temurin-
             java-17-
+
       # 3️⃣.1 设置 Java 环境（仅在缓存未命中时）
       - name: Setup Java
         if: steps.cache-java.outputs.cache-hit != 'true'
@@ -62,6 +63,7 @@ jobs:
           restore-keys: |
             android-sdk-34-
             android-sdk-
+
       # 4️⃣.1 设置 Android SDK（仅在缓存未命中时）
       - name: Setup Android SDK
         if: steps.cache-android.outputs.cache-hit != 'true'
@@ -75,7 +77,32 @@ jobs:
         if: steps.cache-android.outputs.cache-hit != 'true'
         run: yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
-      # 4️⃣.8 缓存依赖安装状态
+      # 4️⃣.6 设置环境变量
+      - name: Setup environment variables
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
+          echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> $GITHUB_ENV
+
+      # 4️⃣.7 缓存 Expo CLI
+      - name: Cache Expo CLI
+        uses: actions/cache@v4
+        id: cache-expo
+        with:
+          path: |
+            ~/.npm
+            ~/.expo
+          key: expo-${{ runner.os }}-${{ hashFiles('app.json', 'expo.json', 'app.config.*') }}
+          restore-keys: |
+            expo-${{ runner.os }}-
+
+      # 4️⃣.8 设置 Expo CLI
+      - name: Setup Expo
+        uses: expo/expo-github-action@v8
+        with:
+          expo-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      # 4️⃣.9 缓存依赖安装状态
       - name: Cache dependencies
         uses: actions/cache@v4
         id: cache-deps
@@ -86,12 +113,27 @@ jobs:
           key: deps-${{ runner.os }}-${{ hashFiles('package.json', 'yarn.lock') }}
           restore-keys: |
             deps-${{ runner.os }}-
-      # 4️⃣.9 安装 Yarn（仅在依赖缓存未命中时）
-      - name: Install Yarn
-        if: steps.cache-deps.outputs.cache-hit != 'true'
-        run: npm install -g yarn eas-cli
 
-      # 5️⃣ 安装依赖（仅在缓存未命中时）
+      # 5️⃣ 安装全局工具
+      - name: Install global tools
+        run: |
+          # 检查 yarn 是否已安装
+          if ! command -v yarn &> /dev/null; then
+            echo "Installing yarn..."
+            npm install -g yarn
+          else
+            echo "Yarn already installed: $(yarn --version)"
+          fi
+          
+          # 安装 EAS CLI
+          if ! command -v eas &> /dev/null; then
+            echo "Installing eas-cli..."
+            npm install -g eas-cli
+          else
+            echo "EAS CLI already installed: $(eas --version)"
+          fi
+
+      # 5️⃣.1 安装依赖（仅在缓存未命中时）
       - name: Install dependencies
         if: steps.cache-deps.outputs.cache-hit != 'true'
         run: yarn install --frozen-lockfile
@@ -104,29 +146,13 @@ jobs:
           echo "Android SDK 缓存命中: ${{ steps.cache-android.outputs.cache-hit }}"
           echo "依赖缓存命中: ${{ steps.cache-deps.outputs.cache-hit }}"
           echo "Expo 缓存命中: ${{ steps.cache-expo.outputs.cache-hit }}"
-      # 6️⃣ 缓存 Expo CLI
-      - name: Cache Expo CLI
-        uses: actions/cache@v4
-        id: cache-expo
-        with:
-          path: |
-            ~/.npm
-            ~/.expo
-          key: expo-${{ runner.os }}-${{ hashFiles('app.json', 'expo.json', 'app.config.*') }}
-          restore-keys: |
-            expo-${{ runner.os }}-
-      # 6️⃣.1 设置 Expo CLI（仅在缓存未命中时）
-      - name: Setup Expo
-        uses: expo/expo-github-action@v8
-        with:
-          expo-version: latest
-          token: ${{ secrets.EXPO_TOKEN }}
+          echo ""
+          echo "🔧 工具版本:"
+          echo "Node.js: $(node --version)"
+          echo "NPM: $(npm --version)"
+          echo "Yarn: $(yarn --version)"
+          echo "EAS CLI: $(eas --version)"
 
-      # 6️⃣.2 设置环境变量
-      - name: Setup environment variables
-        run: |
-          echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
-          echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> $GITHUB_ENV
       # 9️⃣ 获取版本号
       - name: Determine release tag
         id: get_tag
@@ -136,6 +162,7 @@ jobs:
           else
             echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
           fi
+
       # 🔟 本地构建 APK
       - name: Build APK locally
         run: |
@@ -156,25 +183,30 @@ jobs:
           echo "apk_path=$APK_FILE" >> $GITHUB_OUTPUT
           echo "apk_name=$(basename $APK_FILE)" >> $GITHUB_OUTPUT
           echo "✅ 找到 APK 文件: $APK_FILE"
-      # 1️⃣2️⃣ 设置 GitHub CLI (内置，无需额外action)
 
-      # 1️⃣3️⃣ 创建 release 并上传 APK
+      # 1️⃣2️⃣ 创建 release 并上传 APK
       - name: Create GitHub Release and Upload APK
         run: |
           echo "📦 创建 release ${{ steps.get_tag.outputs.tag }}"
+          
           # 生成 release notes
           RELEASE_NOTES="🚀 **卿轻游 ${{ steps.get_tag.outputs.tag }}**
+
           ## 📱 安装说明
           下载 \`${{ steps.find_apk.outputs.apk_name }}\` 文件并安装到 Android 设备
+
           ## 🔧 构建信息
           - 构建时间: $(date -u '+%Y-%m-%d %H:%M:%S UTC')
           - Node.js: $(node --version)
           - 平台: Android
           - 构建方式: 本地构建
+
           ## 📋 更新内容
           请查看最近的提交记录了解详细更新内容。
+
           ---
           🤖 此版本由 GitHub Actions 自动构建"
+
           # 创建 release
           gh release create "${{ steps.get_tag.outputs.tag }}" \
             "${{ steps.find_apk.outputs.apk_path }}" \
@@ -182,6 +214,7 @@ jobs:
             --notes "$RELEASE_NOTES" \
             --draft=false \
             --prerelease=false
+
           echo "✅ Release 创建成功！"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
