@@ -15,6 +15,9 @@ on:
 jobs:
   build-and-release:
     runs-on: ubuntu-latest
+    env:
+      ORG_GRADLE_PROJECT_reactNativeArchitectures: x86_64
+      GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=2048m -Dorg.gradle.daemon=false
     steps:
       # 1️⃣ 获取仓库代码
       - name: Checkout repository
@@ -24,7 +27,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'yarn'
 
       # 3️⃣ Java 缓存
@@ -122,7 +125,6 @@ jobs:
       - name: Build APK locally
         run: |
           echo "🏗️ 开始本地构建 APK..."
-          export ORG_GRADLE_JVMARGS="-Xmx4g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8"
           npx eas build --platform android --profile preview --local --non-interactive
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
