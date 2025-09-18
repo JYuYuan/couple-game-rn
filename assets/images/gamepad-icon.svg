@@ -1,0 +1,147 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- 紫蓝白渐变背景 -->
+    <radialGradient id="bgGradient" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#6366f1;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" />
+    </radialGradient>
+
+    <!-- C字母渐变 -->
+    <linearGradient id="letterGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#f1f5f9;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#e2e8f0;stop-opacity:1" />
+    </linearGradient>
+
+    <!-- 小手柄渐变 -->
+    <linearGradient id="miniGamepadGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#fbbf24;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f59e0b;stop-opacity:1" />
+    </linearGradient>
+
+    <!-- 按钮渐变 -->
+    <radialGradient id="buttonGradient" cx="50%" cy="30%" r="70%">
+      <stop offset="0%" style="stop-color:#10b981;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#059669;stop-opacity:1" />
+    </radialGradient>
+
+    <!-- 方向键渐变 -->
+    <linearGradient id="dpadGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1d4ed8;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- 背景圆形 -->
+  <circle cx="512" cy="512" r="512" fill="url(#bgGradient)"/>
+
+  <!-- C字母主体 -->
+  <g transform="translate(512, 512)">
+    <!-- C字母外轮廓 -->
+    <path d="M 120 -280
+             C 200 -280, 260 -220, 260 -140
+             L 260 -100
+             C 260 -120, 240 -140, 220 -140
+             L 180 -140
+             C 160 -140, 140 -120, 140 -100
+             L 140 100
+             C 140 120, 160 140, 180 140
+             L 220 140
+             C 240 140, 260 120, 260 100
+             L 260 140
+             C 260 220, 200 280, 120 280
+             C 40 280, -20 220, -20 140
+             L -20 -140
+             C -20 -220, 40 -280, 120 -280
+             Z"
+          fill="url(#letterGradient)"
+          stroke="#cbd5e1"
+          stroke-width="8"/>
+
+    <!-- C字母内部空心部分 -->
+    <path d="M 120 -180
+             C 80 -180, 60 -160, 60 -120
+             L 60 120
+             C 60 160, 80 180, 120 180
+             C 140 180, 160 170, 160 150
+             L 160 110
+             C 160 130, 140 140, 120 140
+             C 100 140, 80 120, 80 100
+             L 80 -100
+             C 80 -120, 100 -140, 120 -140
+             C 140 -140, 160 -130, 160 -110
+             L 160 -150
+             C 160 -170, 140 -180, 120 -180
+             Z"
+          fill="url(#bgGradient)"/>
+
+    <!-- 迷你游戏手柄 (在C字母中央) -->
+    <g transform="translate(40, 0) scale(0.35)">
+      <!-- 手柄主体 -->
+      <path d="M -80 -30
+               C -80 -50, -60 -60, -40 -60
+               L 40 -60
+               C 60 -60, 80 -50, 80 -30
+               L 80 20
+               C 80 40, 100 50, 120 40
+               C 140 30, 150 10, 150 -10
+               C 150 -30, 140 -50, 120 -60
+               C 100 -70, 80 -60, 80 -30
+               L 80 20
+               C 80 40, 60 60, 40 60
+               L -40 60
+               C -60 60, -80 40, -80 20
+               L -80 -30
+               Z"
+            fill="url(#miniGamepadGradient)"
+            stroke="#f59e0b"
+            stroke-width="2"/>
+
+      <!-- 右手柄 -->
+      <ellipse cx="120" cy="-10" rx="15" ry="25" fill="url(#miniGamepadGradient)" stroke="#f59e0b" stroke-width="1"/>
+
+      <!-- 左手柄 -->
+      <ellipse cx="-120" cy="-10" rx="15" ry="25" fill="url(#miniGamepadGradient)" stroke="#f59e0b" stroke-width="1"/>
+
+      <!-- 方向键 (左边) -->
+      <g transform="translate(-40, -5)">
+        <!-- 垂直条 -->
+        <rect x="-3" y="-10" width="6" height="20" fill="url(#dpadGradient)" rx="2"/>
+        <!-- 水平条 -->
+        <rect x="-10" y="-3" width="20" height="6" fill="url(#dpadGradient)" rx="2"/>
+      </g>
+
+      <!-- 动作按钮 (右边) -->
+      <g transform="translate(40, -10)">
+        <!-- 上按钮 -->
+        <circle cx="0" cy="-12" r="6" fill="url(#buttonGradient)" stroke="#059669" stroke-width="1"/>
+        <!-- 下按钮 -->
+        <circle cx="0" cy="12" r="6" fill="url(#buttonGradient)" stroke="#059669" stroke-width="1"/>
+        <!-- 左按钮 -->
+        <circle cx="-12" cy="0" r="6" fill="url(#buttonGradient)" stroke="#059669" stroke-width="1"/>
+        <!-- 右按钮 -->
+        <circle cx="12" cy="0" r="6" fill="url(#buttonGradient)" stroke="#059669" stroke-width="1"/>
+      </g>
+
+      <!-- 摇杆 -->
+      <!-- 左摇杆 -->
+      <g transform="translate(-25, 25)">
+        <circle cx="0" cy="0" r="8" fill="#64748b" stroke="#475569" stroke-width="1"/>
+        <circle cx="0" cy="0" r="5" fill="#94a3b8"/>
+      </g>
+
+      <!-- 右摇杆 -->
+      <g transform="translate(25, 25)">
+        <circle cx="0" cy="0" r="8" fill="#64748b" stroke="#475569" stroke-width="1"/>
+        <circle cx="0" cy="0" r="5" fill="#94a3b8"/>
+      </g>
+    </g>
+  </g>
+
+  <!-- 添加一些光泽效果 -->
+  <ellipse cx="400" cy="300" rx="120" ry="60" fill="url(#letterGradient)" opacity="0.3" transform="rotate(-30 400 300)"/>
+
+  <!-- 底部阴影效果 -->
+  <ellipse cx="512" cy="800" rx="200" ry="30" fill="#000000" opacity="0.1"/>
+</svg>
