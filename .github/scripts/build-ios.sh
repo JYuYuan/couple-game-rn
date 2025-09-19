@@ -49,10 +49,6 @@ echo "使用 scheme: $SCHEME_NAME"
 echo "可用的 schemes:"
 xcodebuild -list -workspace "$WORKSPACE" 2>/dev/null | grep -A 10 "Schemes:" || true
 
-# 清理之前的构建
-echo "🧹 清理之前的构建..."
-xcodebuild clean -workspace "$WORKSPACE" -scheme "$SCHEME_NAME" -configuration Release
-
 # 构建 archive（未签名）
 echo "🔨 开始构建 archive（未签名）..."
 xcodebuild archive \
