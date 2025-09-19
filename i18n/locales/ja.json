@@ -228,6 +228,16 @@
       "gameSettings": "ゲーム設定",
       "about": "アプリについて"
     },
+    "updateCheck": {
+      "error": "更新の確認に失敗しました。しばらくしてからもう一度お試しください。",
+      "noUpdate": "現在は最新バージョンです",
+      "hasUpdate": "新しいバージョン {{version}} が見つかりました！",
+      "update": "今すぐ更新",
+      "later": "後で更新",
+      "alertTitle": "更新の確認",
+      "checking": "確認中...",
+      "label": "更新を確認"
+    },
     "language": {
       "label": "言語設定",
       "modalTitle": "言語を選択",

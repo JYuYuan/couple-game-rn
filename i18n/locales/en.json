@@ -228,6 +228,16 @@
       "gameSettings": "Game Settings",
       "about": "About"
     },
+    "updateCheck": {
+      "error": "Failed to check for updates. Please try again later.",
+      "noUpdate": "You are already on the latest version.",
+      "hasUpdate": "New version {{version}} found!",
+      "update": "Update Now",
+      "later": "Update Later",
+      "alertTitle": "Check for Updates",
+      "checking": "Checking...",
+      "label": "Check for Updates"
+    },
     "language": {
       "label": "Language Settings",
       "modalTitle": "Select Language",
