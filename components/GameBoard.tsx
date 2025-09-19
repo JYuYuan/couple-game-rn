@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import {Dimensions, StyleSheet, TouchableOpacity, View} from 'react-native';
+import {Dimensions, StyleSheet, TouchableOpacity, View, Platform} from 'react-native';
 import Animated, {
     interpolate,
     runOnJS,
@@ -40,12 +40,12 @@ interface CellComponentProps {
 }
 
 const CellComponent: React.FC<CellComponentProps> = ({
-    cell,
-    players,
-    currentPlayer,
-    isHighlighted = false,
-    onPress
-}) => {
+                                                         cell,
+                                                         players,
+                                                         currentPlayer,
+                                                         isHighlighted = false,
+                                                         onPress
+                                                     }) => {
     const colorScheme = useColorScheme() ?? 'light';
     const colors = Colors[colorScheme] as any;
 
@@ -96,7 +96,10 @@ const CellComponent: React.FC<CellComponentProps> = ({
             case 'trap':
                 return ['#722ed1', '#9254de', '#b37feb'];
             default:
-                return [colors.homeCardBackground, colors.homeCardBackground, colors.homeCardBackground];
+                // 根据主题模式返回不同的颜色
+                return colorScheme === 'dark'
+                    ? ['#404040', '#363636', '#2a2a2a']
+                    : ['#f0f0f0', '#e8e8e8', '#d9d9d9'];
         }
     };
 
@@ -116,7 +119,10 @@ const CellComponent: React.FC<CellComponentProps> = ({
     };
 
     const getIconColor = () => {
-        return cell.type === 'path' ? colors.homeCardDescription : 'white';
+        if (cell.type === 'path') {
+            return colorScheme === 'dark' ? '#cccccc' : '#666666';
+        }
+        return 'white';
     };
 
     // 获取当前格子上的玩家，如果有多个玩家，只显示当前玩家
@@ -263,14 +269,14 @@ const PlayerPiece: React.FC<PlayerPieceProps> = ({player, index, total}) => {
     return (
         <Animated.View style={[styles.playerPiece, bounceStyle, getPosition()]}>
             {/* 发光背景 */}
-            <Animated.View style={[styles.playerGlow, glowStyle, {backgroundColor: player.color + '40'}]} />
+            <Animated.View style={[styles.playerGlow, glowStyle, {backgroundColor: player.color + '40'}]}/>
 
             <View style={[styles.playerPieceInner, {
                 backgroundColor: player.color,
                 borderWidth: 1,
                 borderColor: 'white',
                 shadowColor: player.color,
-                shadowOffset: { width: 0, height: 1 },
+                shadowOffset: {width: 0, height: 1},
                 shadowOpacity: 0.6,
                 shadowRadius: 2,
                 elevation: 4,
@@ -286,12 +292,13 @@ const PlayerPiece: React.FC<PlayerPieceProps> = ({player, index, total}) => {
 };
 
 const GameBoard: React.FC<GameBoardProps> = ({
-    players,
-    currentPlayer,
-    boardData,
-    onCellPress
-}) => {
+                                                 players,
+                                                 currentPlayer,
+                                                 boardData,
+                                                 onCellPress
+                                             }) => {
     const [board, setBoard] = useState<PathCell[]>([]);
+    const colorScheme = useColorScheme() ?? 'light';
 
     useEffect(() => {
         if (boardData) {
@@ -311,6 +318,13 @@ const GameBoard: React.FC<GameBoardProps> = ({
 
     return (
         <View style={styles.boardContainer}>
+            {/* 棋盘阴影层 */}
+            <View style={[{
+                backgroundColor: colorScheme === 'dark' ? 'rgba(0,0,0,0.4)' : 'rgba(0,0,0,0.15)'
+            }]}/>
+
+            {/* 棋盘背景层 */}
+
             <View style={styles.board}>
                 {/* 连接线 */}
                 {board.map((cell, index) => {
@@ -354,8 +368,8 @@ const ConnectionLine: React.FC<ConnectionLineProps> = ({from, to, direction}) =>
     const getLineStyle = () => {
         const baseStyle = {
             position: 'absolute' as const,
-            backgroundColor: colors.homeCardBorder,
-            opacity: 0.5,
+            backgroundColor: colorScheme === 'dark' ? colors.homeCardBorder : colors.homeCardBorder,
+            opacity: colorScheme === 'dark' ? 0.3 : 0.5,
         };
 
         const gridCellSize = BOARD_WIDTH / BOARD_SIZE;
@@ -404,7 +418,7 @@ const ConnectionLine: React.FC<ConnectionLineProps> = ({from, to, direction}) =>
         }
     };
 
-    return <View style={getLineStyle()} />;
+    return <View style={getLineStyle()}/>;
 };
 
 const styles = StyleSheet.create({
@@ -423,6 +437,17 @@ const styles = StyleSheet.create({
         width: CELL_SIZE,
         height: CELL_SIZE,
         padding: 2,
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 3 },
+                shadowOpacity: 0.25,
+                shadowRadius: 6,
+            },
+            android: {
+                elevation: 5,
+            },
+        }),
     },
     cellGlow: {
         position: 'absolute',
@@ -451,7 +476,18 @@ const styles = StyleSheet.create({
         position: 'relative',
         borderRadius: 50,
         borderWidth: 2,
-        borderColor: 'rgba(255, 255, 255, 0.3)',
+        borderColor: 'rgba(255, 255, 255, 0.6)',
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: {width: 0, height: 4},
+                shadowOpacity: 0.2,
+                shadowRadius: 8,
+            },
+            android: {
+                elevation: 6,
+            },
+        }),
     },
     cellNumber: {
         fontSize: 10,
@@ -492,6 +528,17 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         zIndex: 11,
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: {width: 0, height: 2},
+                shadowOpacity: 0.3,
+                shadowRadius: 3,
+            },
+            android: {
+                elevation: 4,
+            },
+        }),
     },
 });
 

@@ -8,6 +8,7 @@ import {useColorScheme} from '@/hooks/use-color-scheme';
 import {Colors} from '@/constants/theme';
 import {PlayerIcon} from './icons';
 import {useTranslation} from 'react-i18next';
+import {GlassCard} from './GlassCard';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
@@ -245,11 +246,12 @@ export default function TaskModal({
 
             <View style={styles.container}>
                 <Animated.View style={[styles.modal, modalStyle]}>
-                    <LinearGradient
-                        colors={[colors.homeCardBackground, colors.homeCardBackground + 'F0']}
+                    <GlassCard
                         style={styles.modalContent}
-                        start={{x: 0, y: 0}}
-                        end={{x: 1, y: 1}}
+                        intensity={40}
+                        borderGlow={true}
+                        liquidAnimation={true}
+                        glowIntensity="high"
                     >
                         {!showResult ? (
                             // 任务展示界面
@@ -387,7 +389,7 @@ export default function TaskModal({
                                 </View>
                             )
                         )}
-                    </LinearGradient>
+                    </GlassCard>
                 </Animated.View>
             </View>
         </Modal>
@@ -410,14 +412,9 @@ const styles = StyleSheet.create({
         maxHeight: screenHeight * 0.8,
         borderRadius: 24,
         overflow: 'hidden',
-        shadowColor: '#000',
-        shadowOffset: {width: 0, height: 10},
-        shadowOpacity: 0.3,
-        shadowRadius: 20,
-        elevation: 20,
     },
     modalContent: {
-        padding: 24,
+        // GlassCard已经处理了padding，这里只需要移除默认样式
     },
     header: {
         alignItems: 'center',

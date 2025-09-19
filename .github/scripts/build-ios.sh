@@ -10,14 +10,31 @@ if ! command -v xcodebuild &> /dev/null; then
     exit 1
 fi
 
+# 检查 Expo CLI
+if ! command -v npx &> /dev/null; then
+    echo "❌ npx 不可用"
+    exit 1
+fi
+
 # 设置 Xcode
 echo "设置 Xcode 环境..."
 sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
 xcodebuild -version
 
+# 显示当前环境信息
+echo "当前工作目录: $(pwd)"
+echo "项目文件:"
+ls -la
+
 # Expo 预构建
 echo "📦 Expo 预构建..."
 npx expo prebuild --platform ios --clean
+
+# 验证 iOS 目录是否存在
+if [ ! -d "ios" ]; then
+    echo "❌ iOS 目录不存在，预构建可能失败"
+    exit 1
+fi
 
 # 安装 CocoaPods 依赖
 echo "📦 安装 CocoaPods 依赖..."
@@ -49,14 +66,30 @@ echo "使用 scheme: $SCHEME_NAME"
 echo "可用的 schemes:"
 xcodebuild -list -workspace "$WORKSPACE" 2>/dev/null | grep -A 10 "Schemes:" || true
 
+# 验证 workspace 文件存在
+if [ ! -d "$WORKSPACE" ]; then
+    echo "❌ 错误: workspace '$WORKSPACE' 不存在"
+    echo "当前目录: $(pwd)"
+    echo "当前目录内容:"
+    ls -la
+    exit 1
+fi
+
 # 构建 archive（未签名）
 echo "🔨 开始构建 archive（未签名）..."
+
+# 设置正确的路径
+ARCHIVE_PATH="../build/$SCHEME_NAME.xcarchive"
+
+# 确保构建目录存在
+mkdir -p ../build
+
 xcodebuild archive \
     -workspace "$WORKSPACE" \
     -scheme "$SCHEME_NAME" \
     -configuration Release \
     -destination generic/platform=iOS \
-    -archivePath "../build/$SCHEME_NAME.xcarchive" \
+    -archivePath "$ARCHIVE_PATH" \
     CODE_SIGN_IDENTITY="" \
     CODE_SIGNING_REQUIRED=NO \
     CODE_SIGNING_ALLOWED=NO \
@@ -65,10 +98,18 @@ xcodebuild archive \
     | tee ../build/build.log
 
 # 检查构建是否成功
-if [ ! -d "../build/$SCHEME_NAME.xcarchive" ]; then
+if [ ! -d "$ARCHIVE_PATH" ]; then
     echo "❌ 构建失败，archive 不存在"
     echo "构建日志（最后 20 行）："
     tail -20 ../build/build.log || true
+    echo ""
+    echo "当前目录: $(pwd)"
+    echo "当前目录内容："
+    ls -la
+    echo ""
+    echo "预期 archive 路径: $ARCHIVE_PATH"
+    echo "构建目录内容："
+    ls -la ../build/ || true
     exit 1
 fi
 
