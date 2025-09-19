@@ -2,7 +2,7 @@
   "expo": {
     "name": "卿轻游",
     "slug": "couple-game-rn",
-    "version": "1.0.0",
+    "version": "1.0.6",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "couplegamern",
