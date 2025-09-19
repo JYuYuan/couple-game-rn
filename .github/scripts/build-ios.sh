@@ -18,7 +18,7 @@ fi
 
 # 设置 Xcode
 echo "设置 Xcode 环境..."
-sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+# sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
 xcodebuild -version
 
 # 显示当前环境信息
@@ -55,16 +55,41 @@ mkdir -p ./build
 # 进入 iOS 目录开始构建
 cd ios
 
-# 项目配置
-WORKSPACE="couplegamern.xcworkspace"
-SCHEME_NAME="couplegamern"
+# 项目配置 - 动态查找workspace并从app.json读取scheme
+echo "🔍 查找 workspace 文件..."
+WORKSPACE=$(find . -name "*.xcworkspace" -depth 1 | head -1 | sed 's|^\./||')
 
-echo "使用 workspace: $WORKSPACE"
-echo "使用 scheme: $SCHEME_NAME"
+if [ -z "$WORKSPACE" ]; then
+    echo "❌ 未找到 .xcworkspace 文件"
+    echo "当前目录内容:"
+    ls -la
+    exit 1
+fi
 
-# 验证配置
-echo "可用的 schemes:"
-xcodebuild -list -workspace "$WORKSPACE" 2>/dev/null | grep -A 10 "Schemes:" || true
+echo "✅ 找到 workspace: $WORKSPACE"
+
+echo "✅ 使用 scheme: $SCHEME_NAME"
+
+# 验证scheme是否存在
+echo "📋 验证 scheme 是否存在..."
+AVAILABLE_SCHEMES=$(xcodebuild -list -workspace "$WORKSPACE" 2>/dev/null | grep -A 100 "Schemes:" | grep "^        $SCHEME_NAME$" || true)
+
+if [ -z "$AVAILABLE_SCHEMES" ]; then
+    echo "⚠️  scheme '$SCHEME_NAME' 在 workspace 中不存在，列出所有可用的 schemes:"
+    xcodebuild -list -workspace "$WORKSPACE" 2>/dev/null | grep -A 100 "Schemes:" | head -20
+    echo ""
+    echo "🔧 尝试使用第一个可用的 scheme..."
+    SCHEME_NAME=$(xcodebuild -list -workspace "$WORKSPACE" 2>/dev/null | grep -A 100 "Schemes:" | grep "^        " | head -1 | sed 's/^        //')
+    if [ -z "$SCHEME_NAME" ]; then
+        echo "❌ 无法找到任何可用的 scheme"
+        exit 1
+    fi
+    echo "🔄 更新为: $SCHEME_NAME"
+fi
+
+echo "🎯 最终配置:"
+echo "   Workspace: $WORKSPACE"
+echo "   Scheme: $SCHEME_NAME"
 
 # 验证 workspace 文件存在
 if [ ! -d "$WORKSPACE" ]; then

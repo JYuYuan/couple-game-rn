@@ -84,7 +84,12 @@
       "Bash(npx tsc --noEmit --skipLibCheck components/GlassCard.tsx)",
       "Bash(cat .github/scripts/build-ios.sh)",
       "Bash(chmod +x test-ios-build-debug.sh)",
-      "Bash(./test-ios-build-debug.sh)"
+      "Bash(./test-ios-build-debug.sh)",
+      "Bash(chmod +x .github/scripts/build-ios.sh)",
+      "Bash(./.github/scripts/build-ios.sh)",
+      "Bash(xcodebuild -list -workspace app.xcworkspace)",
+      "Bash(xcodebuild clean -workspace app.xcworkspace -scheme app -configuration Release)",
+      "Bash(chmod +x test-workspace-detection.sh)"
     ],
     "deny": [],
     "ask": []
