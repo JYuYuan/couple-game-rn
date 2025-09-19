@@ -14,8 +14,8 @@
     "confirm": "確認"
   },
   "home": {
-    "title": "カップルゲーム",
-    "subtitle": "ゲームで愛を深めよう",
+    "title": "趣味ゲーム",
+    "subtitle": "ゲームで関係を温めましょう",
     "features": {
       "title": "ゲーム特徴",
       "classic": {
@@ -222,6 +222,7 @@
     "confirm": "確定"
   },
   "settings": {
+    "title": "設定",
     "sections": {
       "general": "一般設定",
       "gameSettings": "ゲーム設定",
@@ -316,10 +317,9 @@
         "invalidContent": "インポートするファイルの内容形式が不正です",
         "failed": "インポートに失敗しました"
       },
-      "success": {
-        "title": "成功",
-        "message": "タスクセット「{{name}}」を正常にインポートしました"
-      }
+      "success": "タスクセットをインポートしました: {{name}}",
+      "unnamedTaskSet": "名称未設定のタスクセット",
+      "categoryCreated": "新しいカテゴリを同時に作成しました: {{categoryName}}"
     },
     "export": {
       "title": "タスクセットをエクスポート",
@@ -339,6 +339,10 @@
         "saveFailed": "ファイルの保存に失敗しました"
       }
     }
+  },
+  "taskSetDetail": {
+    "taskList": "タスクリスト",
+    "emptyTasks": "タスクはありません"
   },
   "tabs": {
     "home": "ホーム",

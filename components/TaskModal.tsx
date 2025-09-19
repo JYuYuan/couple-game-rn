@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {Dimensions, Modal, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
-import Animated, {interpolate, useAnimatedStyle, useSharedValue, withSpring, withTiming} from 'react-native-reanimated';
+import Animated, {useAnimatedStyle, useSharedValue, withSpring, withTiming} from 'react-native-reanimated';
 import {LinearGradient} from 'expo-linear-gradient';
 import {BlurView} from 'expo-blur';
 import {Ionicons} from '@expo/vector-icons';
@@ -8,7 +8,6 @@ import {useColorScheme} from '@/hooks/use-color-scheme';
 import {Colors} from '@/constants/theme';
 import {PlayerIcon} from './icons';
 import {useTranslation} from 'react-i18next';
-import {GlassCard} from './GlassCard';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
@@ -57,9 +56,10 @@ export default function TaskModal({
     const [showResult, setShowResult] = useState(false);
 
     // 动画值
-    const modalScale = useSharedValue(0);
+    const modalScale = useSharedValue(0.8);
     const backdropOpacity = useSharedValue(0);
-    const contentOpacity = useSharedValue(0);
+    const modalOpacity = useSharedValue(0);
+    const modalTranslateY = useSharedValue(50);
 
     useEffect(() => {
         if (visible) {
@@ -67,18 +67,23 @@ export default function TaskModal({
             setIsCompleted(null);
             setShowResult(false);
 
-            // 开始动画
+            // 开始动画 - 优雅的弹入效果
             backdropOpacity.value = withTiming(1, {duration: 300});
-            modalScale.value = withSpring(1, {
-                damping: 15,
-                stiffness: 150
+            modalTranslateY.value = withSpring(0, {
+                damping: 20,
+                stiffness: 200
             });
-            contentOpacity.value = withTiming(1, {duration: 400});
+            modalScale.value = withSpring(1, {
+                damping: 16,
+                stiffness: 160
+            });
+            modalOpacity.value = withTiming(1, {duration: 300});
         } else {
-            // 关闭动画
+            // 关闭动画 - 快速淡出
             backdropOpacity.value = withTiming(0, {duration: 200});
-            modalScale.value = withTiming(0, {duration: 200});
-            contentOpacity.value = withTiming(0, {duration: 200});
+            modalTranslateY.value = withTiming(30, {duration: 150});
+            modalScale.value = withTiming(0.9, {duration: 150});
+            modalOpacity.value = withTiming(0, {duration: 150});
         }
     }, [visible]);
 
@@ -89,15 +94,9 @@ export default function TaskModal({
     const modalStyle = useAnimatedStyle(() => ({
         transform: [
             {scale: modalScale.value},
-            {
-                translateY: interpolate(
-                    modalScale.value,
-                    [0, 1],
-                    [50, 0]
-                )
-            }
+            {translateY: modalTranslateY.value}
         ],
-        opacity: contentOpacity.value,
+        opacity: modalOpacity.value,
     }));
 
     // 获取任务类型信息
@@ -246,13 +245,7 @@ export default function TaskModal({
 
             <View style={styles.container}>
                 <Animated.View style={[styles.modal, modalStyle]}>
-                    <GlassCard
-                        style={styles.modalContent}
-                        intensity={40}
-                        borderGlow={true}
-                        liquidAnimation={true}
-                        glowIntensity="high"
-                    >
+                    <View style={[styles.modalContent, {backgroundColor: colors.homeCardBackground, borderColor: colors.homeCardBorder}]}>
                         {!showResult ? (
                             // 任务展示界面
                             <>
@@ -389,7 +382,7 @@ export default function TaskModal({
                                 </View>
                             )
                         )}
-                    </GlassCard>
+                    </View>
                 </Animated.View>
             </View>
         </Modal>
@@ -414,7 +407,17 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
     },
     modalContent: {
-        // GlassCard已经处理了padding，这里只需要移除默认样式
+        padding: 24,
+        borderRadius: 24,
+        borderWidth: 1,
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 8,
+        },
+        shadowOpacity: 0.2,
+        shadowRadius: 16,
+        elevation: 8,
     },
     header: {
         alignItems: 'center',

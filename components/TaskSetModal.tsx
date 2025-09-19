@@ -197,7 +197,7 @@ export const TaskSetModal: React.FC<TaskSetModalProps> = ({
               <TextInput
                 style={[styles.input, {
                   backgroundColor: colors.settingsCardBackground,
-                  borderColor: colors.settingsCardBorder,
+                  borderColor: colorScheme === 'light' ? '#E5E5E5' : colors.settingsCardBorder,
                   color: colors.settingsText,
                 }]}
                 value={formData.name}
@@ -212,7 +212,7 @@ export const TaskSetModal: React.FC<TaskSetModalProps> = ({
               <TextInput
                 style={[styles.input, {
                   backgroundColor: colors.settingsCardBackground,
-                  borderColor: colors.settingsCardBorder,
+                  borderColor: colorScheme === 'light' ? '#E5E5E5' : colors.settingsCardBorder,
                   color: colors.settingsText,
                   minHeight: 60,
                 }]}
@@ -229,7 +229,7 @@ export const TaskSetModal: React.FC<TaskSetModalProps> = ({
               <Text style={[styles.label, { color: colors.settingsText }]}>{t('taskSetModal.category', '分类')}</Text>
               <View style={[styles.pickerContainer, {
                 backgroundColor: colors.settingsCardBackground,
-                borderColor: colors.settingsCardBorder,
+                borderColor: colorScheme === 'light' ? '#E5E5E5' : colors.settingsCardBorder,
               }]}>
                 {categories.map((category) => (
                   <TouchableOpacity
@@ -280,7 +280,7 @@ export const TaskSetModal: React.FC<TaskSetModalProps> = ({
                   <TextInput
                     style={[styles.taskInput, {
                       backgroundColor: colors.settingsCardBackground,
-                      borderColor: colors.settingsCardBorder,
+                      borderColor: colorScheme === 'light' ? '#E5E5E5' : colors.settingsCardBorder,
                       color: colors.settingsText,
                     }]}
                     value={task}

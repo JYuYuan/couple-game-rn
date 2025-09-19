@@ -14,8 +14,8 @@
     "confirm": "Confirm"
   },
   "home": {
-    "title": "Couple Games",
-    "subtitle": "Ignite Love Through Games",
+    "title": "Fun Games",
+    "subtitle": "Let the relationship heat up in the game",
     "features": {
       "title": "Game Features",
       "classic": {
@@ -222,6 +222,7 @@
     "confirm": "Confirm"
   },
   "settings": {
+    "title": "settings",
     "sections": {
       "general": "General",
       "gameSettings": "Game Settings",
@@ -316,10 +317,9 @@
         "invalidContent": "The content format of the imported file is incorrect",
         "failed": "Import failed"
       },
-      "success": {
-        "title": "Success",
-        "message": "Successfully imported task set: {{name}}"
-      }
+      "success": "Successfully imported task set: {{name}}",
+      "unnamedTaskSet": "Unnamed Task Set",
+      "categoryCreated": "Also created new category: {{categoryName}}"
     },
     "export": {
       "title": "Export Task Set",
@@ -339,6 +339,10 @@
         "saveFailed": "Failed to save file"
       }
     }
+  },
+  "taskSetDetail": {
+    "taskList": "Task List",
+    "emptyTasks": "No tasks available"
   },
   "tabs": {
     "home": "Home",

@@ -212,7 +212,7 @@ export default function Home() {
                         </LinearGradient>
                     </View>
 
-                    <Text style={[styles.mainTitle, {color: colors.homeTitle}]}>{t('home.title', '情侣游戏')}</Text>
+                    <Text style={[styles.mainTitle, {color: colors.homeTitle}]}>{t('home.title', '趣味游戏')}</Text>
                     <Text
                         style={[styles.subtitle, {color: colors.homeSubtitle}]}>{t('home.subtitle', '一起玩游戏，增进感情')}</Text>
                 </Animated.View>

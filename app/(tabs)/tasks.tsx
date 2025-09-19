@@ -21,6 +21,7 @@ import {useTranslation} from 'react-i18next';
 import {TaskCategory, TaskSet} from '@/types/tasks';
 import {TaskSetModal} from '@/components/TaskSetModal';
 import {CategoryModal} from '@/components/CategoryModal';
+import {TaskSetDetailModal} from '@/components/TaskSetDetailModal';
 import * as DocumentPicker from 'expo-document-picker';
 import {Language} from '@/utils/systemTasks';
 import i18n from '@/i18n';
@@ -61,6 +62,7 @@ const TaskSettings: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'taskSets' | 'categories'>('taskSets');
     const [showAddModal, setShowAddModal] = useState(false);
     const [showCategoryModal, setShowCategoryModal] = useState(false);
+    const [showDetailModal, setShowDetailModal] = useState(false);
     const [selectedTaskSet, setSelectedTaskSet] = useState<TaskSet | null>(null);
     const [selectedCategory, setSelectedCategory] = useState<TaskCategory | null>(null);
 
@@ -223,10 +225,21 @@ const TaskSettings: React.FC = () => {
                         return;
                     }
 
+                    // 检查是否需要创建新分类
+                    const categoryExists = importData.categoryId && categories.some(cat => cat.id === importData.categoryId);
+                    const willCreateCategory = importData.categoryId && !categoryExists;
+
                     // 使用store的importTaskSet方法
                     importTaskSet(importData);
 
-                    showAlert(t('common.success', '成功'), t('tasks.import.success', '已成功导入任务集: {{name}}', {name: importData.name || t('tasks.import.unnamedTaskSet', '未命名任务集')}));
+                    // 生成成功消息
+                    let successMessage = t('tasks.import.success', '已成功导入任务集: {{name}}', {name: importData.name || t('tasks.import.unnamedTaskSet', '未命名任务集')});
+
+                    if (willCreateCategory) {
+                        successMessage += `\n${t('tasks.import.categoryCreated', '同时创建了新分类: {{categoryName}}', {categoryName: importData.categoryName || `分类 ${importData.categoryId}`})}`;
+                    }
+
+                    showAlert(t('common.success', '成功'), successMessage);
                 } catch {
                     showAlert(t('common.error', '错误'), t('tasks.import.error.invalidContent', '导入的文件内容格式不正确'));
                 }
@@ -240,12 +253,20 @@ const TaskSettings: React.FC = () => {
         try {
             const exportData = exportTaskSet(taskSet.id);
             if (exportData) {
-                // 创建导出数据，移除敏感信息并格式化
+                // 查找对应的分类信息
+                const category = categories.find(cat => cat.id === exportData.categoryId);
+
+                // 创建导出数据，包含分类信息以便导入时自动创建分类
                 const exportJson = {
                     name: exportData.name,
                     description: exportData.description,
                     difficulty: exportData.difficulty,
                     categoryId: exportData.categoryId,
+                    // 包含分类信息用于自动创建
+                    categoryName: category?.name,
+                    categoryDescription: category?.description,
+                    categoryColor: category?.color,
+                    categoryIcon: category?.icon,
                     tasks: exportData.tasks,
                     isActive: exportData.isActive,
                     exportedAt: new Date().toISOString(),
@@ -333,9 +354,17 @@ const TaskSettings: React.FC = () => {
     const TaskSetCard = ({taskSet}: { taskSet: TaskSet }) => {
         const category = categories.find(cat => cat.id === taskSet.categoryId);
 
+        const handleCardPress = () => {
+            setSelectedTaskSet(taskSet);
+            setShowDetailModal(true);
+        };
+
         return (
-            <View
-                style={[styles.card, {backgroundColor: colors.homeCardBackground, borderColor: colors.homeCardBorder}]}>
+            <TouchableOpacity
+                style={[styles.card, {backgroundColor: colors.homeCardBackground, borderColor: colors.homeCardBorder}]}
+                onPress={handleCardPress}
+                activeOpacity={0.8}
+            >
                 <View style={styles.cardHeader}>
                     <View style={styles.cardTitleRow}>
                         <View
@@ -414,7 +443,7 @@ const TaskSettings: React.FC = () => {
                         )}
                     </View>
                 </View>
-            </View>
+            </TouchableOpacity>
         );
     };
 
@@ -604,6 +633,32 @@ const TaskSettings: React.FC = () => {
                     setSelectedCategory(null);
                 }}
                 category={selectedCategory}
+            />
+
+            {/* 任务集详情弹窗 */}
+            <TaskSetDetailModal
+                visible={showDetailModal}
+                taskSet={selectedTaskSet}
+                category={selectedTaskSet ? categories.find(cat => cat.id === selectedTaskSet.categoryId) || null : null}
+                onClose={() => {
+                    setShowDetailModal(false);
+                    setSelectedTaskSet(null);
+                }}
+                onEdit={() => {
+                    setShowDetailModal(false);
+                    setShowAddModal(true);
+                }}
+                onToggleActive={() => {
+                    if (selectedTaskSet) {
+                        toggleTaskSetActive(selectedTaskSet.id);
+                    }
+                }}
+                onDelete={() => {
+                    if (selectedTaskSet) {
+                        setShowDetailModal(false);
+                        handleDeleteTaskSet(selectedTaskSet);
+                    }
+                }}
             />
 
             {/* 自定义导出对话框 */}

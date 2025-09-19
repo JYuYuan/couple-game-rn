@@ -238,13 +238,40 @@ export const useTasksStore: TasksStoreType = (() => {
                 },
 
                 importTaskSet: (data) => {
-                    const {addTaskSet} = get();
+                    const {categories, addTaskSet, addCategory} = get();
+
+                    let categoryId = data.categoryId;
+
+                    // 检查categoryId是否存在
+                    if (categoryId) {
+                        const categoryExists = categories.some(cat => cat.id === categoryId);
+                        if (!categoryExists) {
+                            // 如果分类不存在，尝试根据categoryId创建新分类
+                            const newCategory: TaskCategory = {
+                                id: categoryId,
+                                name: data.categoryName || `导入分类 ${categoryId}`,
+                                description: data.categoryDescription || '从导入任务集自动创建的分类',
+                                color: data.categoryColor || '#45B7D1',
+                                icon: (data.categoryIcon as any) || 'folder',
+                                createdAt: new Date(),
+                            };
+
+                            // 添加新分类，但不生成新ID，使用原来的ID
+                            set((state) => ({
+                                categories: [...state.categories, newCategory]
+                            }));
+                        }
+                    } else {
+                        // 如果没有categoryId，使用第一个可用分类
+                        categoryId = categories.length > 0 ? categories[0].id : '1';
+                    }
+
                     addTaskSet({
                         name: data.name || '导入的任务集',
                         description: data.description || '',
                         difficulty: data.difficulty || 'normal',
                         type: 'custom',
-                        categoryId: data.categoryId || '1',
+                        categoryId: categoryId,
                         tasks: data.tasks,
                         isActive: data.isActive ?? true,
                     });
