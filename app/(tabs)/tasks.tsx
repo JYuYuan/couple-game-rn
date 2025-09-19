@@ -123,9 +123,10 @@ const TaskSettings: React.FC = () => {
         },
     });
 
-    // 初始化默认数据和系统任务
+    // 初始化默认数据
     useEffect(() => {
         const initializeData = async () => {
+            // 初始化默认分类（如果需要）
             initializeDefaultData();
 
             // 等待i18n准备好后更新分类的国际化文本
@@ -162,7 +163,7 @@ const TaskSettings: React.FC = () => {
         };
 
         initializeData();
-    }, [t]); // 依赖t函数，确保在国际化准备好后执行
+    }, [t, i18n.language]); // 语言变化时重新执行，但store已经能智能保留自定义任务
 
 
     const handleDeleteTaskSet = (taskSet: TaskSet) => {

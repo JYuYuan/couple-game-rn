@@ -401,6 +401,7 @@
   "taskSetModal": {
     "create": "创建任务集",
     "edit": "编辑任务集",
+    "copyFromSystem": "基于系统任务创建",
     "name": "名称",
     "description": "描述",
     "category": "分类",

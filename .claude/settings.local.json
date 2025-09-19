@@ -89,7 +89,9 @@
       "Bash(./.github/scripts/build-ios.sh)",
       "Bash(xcodebuild -list -workspace app.xcworkspace)",
       "Bash(xcodebuild clean -workspace app.xcworkspace -scheme app -configuration Release)",
-      "Bash(chmod +x test-workspace-detection.sh)"
+      "Bash(chmod +x test-workspace-detection.sh)",
+      "Bash(npx tsc --noEmit --skipLibCheck store/tasksStore.ts)",
+      "mcp__ide__getDiagnostics"
     ],
     "deny": [],
     "ask": []

@@ -401,6 +401,7 @@
   "taskSetModal": {
     "create": "Create Task Set",
     "edit": "Edit Task Set",
+    "copyFromSystem": "Create from System Task",
     "name": "Name",
     "description": "Description",
     "category": "Category",

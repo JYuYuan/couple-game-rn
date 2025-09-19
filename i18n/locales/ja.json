@@ -401,6 +401,7 @@
   "taskSetModal": {
     "create": "タスクセットを作成",
     "edit": "タスクセットを編集",
+    "copyFromSystem": "システムタスクに基づいて作成",
     "name": "名前",
     "description": "説明",
     "category": "カテゴリー",

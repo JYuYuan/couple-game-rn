@@ -4,66 +4,37 @@ import {TaskCategory, TaskSet, TasksState} from '@/types/tasks';
 import {getStorage} from '@/utils/storage';
 import {getSystemTasksForLanguage, Language} from '@/utils/systemTasks';
 
-// 静态默认分类（不依赖i18n，在组件中动态获取翻译）
-const staticDefaultCategories: TaskCategory[] = [
-  {
-    id: '1',
-    name: '日常互动',
-    description: '温馨日常的互动任务',
-    color: '#FF6B6B',
-    icon: 'heart',
-    createdAt: new Date(),
-  },
-  {
-    id: '2',
-    name: '甜蜜时光',
-    description: '增进感情的甜蜜任务',
-    color: '#4ECDC4',
-    icon: 'gift',
-    createdAt: new Date(),
-  },
-  {
-    id: '3',
-    name: '趣味挑战',
-    description: '有趣的挑战任务',
-    color: '#45B7D1',
-    icon: 'game-controller',
-    createdAt: new Date(),
-  }
-];
-
-// 获取国际化的默认分类（在组件中调用）
+// 获取默认分类的函数，支持国际化
 export const getDefaultCategories = (): TaskCategory[] => [
   {
     id: '1',
-    name: '日常互动', // 组件中使用时会被国际化文本替换
-    description: '温馨日常的互动任务',
+    name: 'categories.daily.name',
+    description: 'categories.daily.description',
     color: '#FF6B6B',
     icon: 'heart',
     createdAt: new Date(),
   },
   {
     id: '2',
-    name: '甜蜜时光',
-    description: '增进感情的甜蜜任务',
+    name: 'categories.sweet.name',
+    description: 'categories.sweet.description',
     color: '#4ECDC4',
     icon: 'gift',
     createdAt: new Date(),
   },
   {
     id: '3',
-    name: '趣味挑战',
-    description: '有趣的挑战任务',
+    name: 'categories.challenge.name',
+    description: 'categories.challenge.description',
     color: '#45B7D1',
     icon: 'game-controller',
     createdAt: new Date(),
   }
 ];
 
-const defaultCategories = staticDefaultCategories;
+const defaultCategories = getDefaultCategories();
 
 
-const defaultTaskSets: TaskSet[] = [];
 
 type TasksStoreType = () => TasksState;
 
@@ -183,10 +154,17 @@ export const useTasksStore: TasksStoreType = (() => {
                     })),
 
                 initializeDefaultData: () =>
-                    set(() => ({
-                        categories: defaultCategories,
-                        taskSets: defaultTaskSets,
-                    })),
+                    set((state) => {
+                        // 保留所有自定义任务集（type === 'custom'）
+                        const customTaskSets = state.taskSets.filter(ts => ts.type === 'custom');
+
+                        return {
+                            // 只在categories为空时才设置默认分类
+                            categories: state.categories.length === 0 ? defaultCategories : state.categories,
+                            // 保留自定义任务集，重置系统任务集
+                            taskSets: customTaskSets,
+                        };
+                    }),
 
                 // 更新分类的国际化显示名称
                 updateCategoriesI18n: (getLocalizedCategories: () => TaskCategory[]) =>
@@ -204,21 +182,26 @@ export const useTasksStore: TasksStoreType = (() => {
                     try {
                         const {taskSets} = get();
                         const systemConfigs = getSystemTasksForLanguage(language);
-                        const newTaskSets: TaskSet[] = [];
+
+                        // 移除旧的系统任务集
+                        const customTaskSets = taskSets.filter(ts => ts.type === 'custom');
+
+                        // 创建新的系统任务集
+                        const newSystemTaskSets: TaskSet[] = [];
 
                         for (const config of systemConfigs) {
-                            // 检查是否已经存在同名的系统任务集
-                            const existingTaskSet = taskSets.find(ts => ts.name === config.name && ts.type === 'system');
-                            if (existingTaskSet) continue;
-
                             if (Array.isArray(config.tasks) && config.tasks.length > 0) {
-                                newTaskSets.push({
-                                    id: `system_${config.fileName}_${Date.now()}`,
+                                newSystemTaskSets.push({
+                                    id: `system_${config.fileName}_${language}`,
                                     name: config.name,
                                     description: config.description,
                                     difficulty: 'normal',
                                     type: 'system',
                                     categoryId: config.categoryId,
+                                    categoryName: '',
+                                    categoryIcon: '',
+                                    categoryColor: '',
+                                    categoryDescription: '',
                                     tasks: config.tasks,
                                     isActive: true,
                                     createdAt: new Date(),
@@ -227,18 +210,17 @@ export const useTasksStore: TasksStoreType = (() => {
                             }
                         }
 
-                        if (newTaskSets.length > 0) {
-                            set((state) => ({
-                                taskSets: [...state.taskSets, ...newTaskSets]
-                            }));
-                        }
+                        // 合并自定义任务集和新的系统任务集
+                        set(() => ({
+                            taskSets: [...customTaskSets, ...newSystemTaskSets]
+                        }));
                     } catch (error) {
                         console.error('Failed to load system tasks:', error);
                     }
                 },
 
                 importTaskSet: (data) => {
-                    const {categories, addTaskSet, addCategory} = get();
+                    const {categories, addTaskSet} = get();
 
                     let categoryId = data.categoryId;
 
@@ -266,10 +248,17 @@ export const useTasksStore: TasksStoreType = (() => {
                         categoryId = categories.length > 0 ? categories[0].id : '1';
                     }
 
+                    // 获取分类信息填充到 TaskSet 中
+                    const category = categories.find(cat => cat.id === categoryId);
+
                     addTaskSet({
                         name: data.name || '导入的任务集',
                         description: data.description || '',
                         difficulty: data.difficulty || 'normal',
+                        categoryName: category?.name || '',
+                        categoryIcon: category?.icon || '',
+                        categoryColor: category?.color || '',
+                        categoryDescription: category?.description || '',
                         type: 'custom',
                         categoryId: categoryId,
                         tasks: data.tasks,

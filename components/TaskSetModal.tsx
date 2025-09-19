@@ -74,13 +74,28 @@ export const TaskSetModal: React.FC<TaskSetModalProps> = ({
       const validTasks = formData.tasks.filter(task => task.trim());
 
       if (taskSet) {
-        updateTaskSet(taskSet.id, {
-          name: formData.name.trim(),
-          description: formData.description.trim(),
-          categoryId: formData.categoryId,
-          tasks: validTasks,
-        });
+        if (taskSet.type === 'system') {
+          // 系统任务编辑时创建新的自定义任务
+          addTaskSet({
+            name: formData.name.trim(),
+            description: formData.description.trim(),
+            difficulty: 'normal',
+            type: 'custom',
+            categoryId: formData.categoryId,
+            tasks: validTasks,
+            isActive: true,
+          });
+        } else {
+          // 自定义任务正常更新
+          updateTaskSet(taskSet.id, {
+            name: formData.name.trim(),
+            description: formData.description.trim(),
+            categoryId: formData.categoryId,
+            tasks: validTasks,
+          });
+        }
       } else {
+        // 新建任务集
         addTaskSet({
           name: formData.name.trim(),
           description: formData.description.trim(),
@@ -184,7 +199,12 @@ export const TaskSetModal: React.FC<TaskSetModalProps> = ({
         <View style={[styles.modal, { backgroundColor: colors.modalBackground }]}>
           <View style={styles.header}>
             <Text style={[styles.title, { color: colors.settingsText }]}>
-              {taskSet ? t('taskSetModal.edit', '编辑任务集') : t('taskSetModal.create', '创建任务集')}
+              {taskSet
+                ? (taskSet.type === 'system'
+                  ? t('taskSetModal.copyFromSystem', '基于系统任务创建')
+                  : t('taskSetModal.edit', '编辑任务集'))
+                : t('taskSetModal.create', '创建任务集')
+              }
             </Text>
             <TouchableOpacity onPress={onClose}>
               <Ionicons name="close" size={24} color={colors.settingsSecondaryText} />
