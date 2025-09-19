@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View, ActivityIndicator, Linking} from 'react-native';
 import {Ionicons} from '@expo/vector-icons';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useSettingsStore} from "@/store";
@@ -7,6 +7,7 @@ import {useTranslation} from 'react-i18next';
 import {LanguageMode, ThemeMode} from '@/types/settings';
 import {useColorScheme} from '@/hooks/use-color-scheme';
 import {Colors} from '@/constants/theme';
+import {getAppInfo, checkForUpdates} from '@/utils/app-info';
 
 const Settings: React.FC = () => {
     const insets = useSafeAreaInsets();
@@ -14,6 +15,10 @@ const Settings: React.FC = () => {
     const {t, i18n} = useTranslation();
     const [showLanguageModal, setShowLanguageModal] = useState(false);
     const [showThemeModal, setShowThemeModal] = useState(false);
+    const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
+
+    // 获取应用信息
+    const appInfo = getAppInfo();
 
     // 主题颜色
     const colorScheme = useColorScheme() ?? 'light';
@@ -50,17 +55,47 @@ const Settings: React.FC = () => {
         // 实际的主题切换应该通过应用内的状态管理来实现
     };
 
-    const handleAboutPress = (type: string) => {
+    const handleAboutPress = async (type: string) => {
         switch (type) {
             case 'version':
-                const buildDate = `${new Date().getFullYear()}.${String(new Date().getMonth() + 1).padStart(2, '0')}.${String(new Date().getDate()).padStart(2, '0')}`;
                 Alert.alert(
                     t('settings.version.alertTitle', '版本信息'),
                     t('settings.version.alertMessage', '版本：{{version}}\n构建：{{buildDate}}', {
-                        version: '1.0.0',
-                        buildDate
+                        version: appInfo.version,
+                        buildDate: appInfo.buildDate
                     })
                 );
+                break;
+            case 'update':
+                setIsCheckingUpdate(true);
+                try {
+                    const updateInfo = await checkForUpdates();
+                    Alert.alert(
+                        t('settings.updateCheck.alertTitle', '检查更新'),
+                        updateInfo.message || (updateInfo.hasUpdate
+                            ? t('settings.updateCheck.hasUpdate', '发现新版本 {{version}}！', { version: updateInfo.latestVersion })
+                            : t('settings.updateCheck.noUpdate', '当前已是最新版本')
+                        ),
+                        updateInfo.hasUpdate
+                            ? [
+                                { text: t('settings.updateCheck.later', '稍后更新'), style: 'cancel' },
+                                { text: t('settings.updateCheck.update', '立即更新'), onPress: () => {
+                                    // 打开 GitHub 页面
+                                    if (updateInfo.updateUrl) {
+                                        Linking.openURL(updateInfo.updateUrl);
+                                    }
+                                }}
+                            ]
+                            : [{ text: t('common.ok', '确定') }]
+                    );
+                } catch (error) {
+                    Alert.alert(
+                        t('settings.updateCheck.alertTitle', '检查更新'),
+                        t('settings.updateCheck.error', '检查更新失败，请稍后再试')
+                    );
+                } finally {
+                    setIsCheckingUpdate(false);
+                }
                 break;
             case 'privacy':
                 Alert.alert(
@@ -123,8 +158,15 @@ const Settings: React.FC = () => {
                 {
                     icon: 'information-circle',
                     label: t('settings.version.label', '版本信息'),
-                    value: '1.0.0',
+                    value: appInfo.version,
                     onPress: () => handleAboutPress('version')
+                },
+                {
+                    icon: 'refresh',
+                    label: t('settings.updateCheck.label', '检查更新'),
+                    value: isCheckingUpdate ? t('settings.updateCheck.checking', '检查中...') : '',
+                    onPress: isCheckingUpdate ? undefined : () => handleAboutPress('update'),
+                    disabled: isCheckingUpdate
                 },
                 {
                     icon: 'document-text',
@@ -161,21 +203,29 @@ const Settings: React.FC = () => {
                                         key={index}
                                         style={[
                                             styles.settingItem,
-                                            index < section.items.length - 1 && styles.settingItemBorder
+                                            index < section.items.length - 1 && styles.settingItemBorder,
+                                            (item as any).disabled && styles.settingItemDisabled
                                         ]}
                                         onPress={item.onPress}
-                                        activeOpacity={0.7}
+                                        activeOpacity={(item as any).disabled ? 1 : 0.7}
+                                        disabled={(item as any).disabled}
                                     >
                                         <View style={styles.settingItemLeft}>
                                             <View style={[styles.iconContainer, {backgroundColor: `${accentColor}20`}]}>
-                                                <Ionicons name={item.icon as any} size={22} color={accentColor}/>
+                                                {item.icon === 'refresh' && isCheckingUpdate ? (
+                                                    <ActivityIndicator size="small" color={accentColor} />
+                                                ) : (
+                                                    <Ionicons name={item.icon as any} size={22} color={accentColor}/>
+                                                )}
                                             </View>
-                                            <Text style={[styles.settingLabel, {color: textColor}]}>{item.label}</Text>
+                                            <Text style={[styles.settingLabel, {color: textColor}, (item as any).disabled && styles.settingLabelDisabled]}>{item.label}</Text>
                                         </View>
                                         <View style={styles.settingItemRight}>
                                             <Text
                                                 style={[styles.settingValue, {color: secondaryText}]}>{item.value}</Text>
-                                            <Ionicons name="chevron-forward" size={20} color={secondaryText}/>
+                                            {!(item as any).disabled && (
+                                                <Ionicons name="chevron-forward" size={20} color={secondaryText}/>
+                                            )}
                                         </View>
                                     </TouchableOpacity>
                                 ))}
@@ -337,6 +387,9 @@ const styles = StyleSheet.create({
         borderBottomWidth: 0.5,
         borderBottomColor: 'rgba(60, 60, 67, 0.12)',
     },
+    settingItemDisabled: {
+        opacity: 0.6,
+    },
     settingItemLeft: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -353,6 +406,9 @@ const styles = StyleSheet.create({
     settingLabel: {
         fontSize: 16,
         fontWeight: '400',
+    },
+    settingLabelDisabled: {
+        opacity: 0.5,
     },
     settingItemRight: {
         flexDirection: 'row',
