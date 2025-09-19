@@ -293,18 +293,18 @@
         "system": "System",
         "custom": "Custom"
       },
-      "tasks": "{{count}} Tasks",
+      "tasks": "{{count}} tasks",
       "status": {
         "enabled": "Enabled",
         "disabled": "Disabled"
       }
     },
     "category": {
-      "taskSets": "{{count}} Task Sets"
+      "taskSets": "{{count}} task sets"
     },
     "empty": {
-      "taskSets": "No task sets yet. Click the button at the bottom right to create one.",
-      "categories": "No categories yet. Click the button at the bottom right to create one."
+      "taskSets": "No task sets available, tap the button in the bottom right to create one",
+      "categories": "No categories available, tap the button in the bottom right to create one"
     },
     "delete": {
       "taskSet": {
@@ -313,35 +313,35 @@
       },
       "category": {
         "title": "Delete Confirmation",
-        "message": "Are you sure you want to delete the category \"{{name}}\"? {{hasTaskSets}}This action cannot be undone.",
+        "message": "Are you sure you want to delete the category \"{{name}}\"? This action cannot be undone.",
         "withTaskSets": "This will also delete {{count}} task sets under this category."
       },
       "cancel": "Cancel",
       "confirm": "Delete"
     },
     "import": {
-      "title": "import",
+      "title": "Import",
       "error": {
         "title": "Error",
-        "invalidFormat": "The imported file format is incorrect",
-        "invalidContent": "The content format of the imported file is incorrect",
+        "invalidFormat": "Invalid file format",
+        "invalidContent": "Invalid file content",
         "failed": "Import failed"
       },
       "success": "Successfully imported task set: {{name}}",
       "unnamedTaskSet": "Unnamed Task Set",
-      "categoryCreated": "Also created new category: {{categoryName}}"
+      "categoryCreated": "A new category was also created: {{categoryName}}"
     },
     "export": {
       "title": "Export Task Set",
-      "message": "Please select export method",
+      "message": "Please choose an export method",
       "share": "Share",
       "saveToFile": "Save to File",
       "cancel": "Cancel",
       "shareTitle": "Export Task Set: {{name}}",
       "success": {
-        "downloaded": "File has been downloaded to your device",
-        "saved": "File has been saved to: {{fileName}}",
-        "exported": "File has been exported and can be saved to your device"
+        "downloaded": "The file has been downloaded to your device",
+        "saved": "The file has been saved to: {{fileName}}",
+        "exported": "The file has been exported and can be saved to your device"
       },
       "error": {
         "title": "Error",

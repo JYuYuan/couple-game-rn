@@ -168,12 +168,12 @@ const TaskSettings: React.FC = () => {
 
     const handleDeleteTaskSet = (taskSet: TaskSet) => {
         setConfirmAlertData({
-            title: t('common.deleteConfirm', '删除确认'),
-            message: t('tasks.deleteTaskSet.message', '确定要删除任务集 "{{name}}" 吗？此操作无法撤销。', {name: taskSet.name}),
+            title: t('tasks.delete.taskSet.title', '删除确认'),
+            message: t('tasks.delete.taskSet.message', '确定要删除任务集 "{{name}}" 吗？此操作无法撤销。', {name: taskSet.name}),
             buttons: [
                 {text: t('common.cancel', '取消'), style: 'cancel'},
                 {
-                    text: t('common.delete', '删除'),
+                    text: t('tasks.delete.confirm', '删除'),
                     style: 'destructive',
                     onPress: () => deleteTaskSet(taskSet.id),
                 },
@@ -186,15 +186,15 @@ const TaskSettings: React.FC = () => {
         const taskCount = taskSets.filter(set => set.categoryId === category.id).length;
 
         setConfirmAlertData({
-            title: t('common.deleteConfirm', '删除确认'),
-            message: t('tasks.deleteCategory.message', '确定要删除分类 "{{name}}" 吗？{{warning}}此操作无法撤销。', {
+            title: t('tasks.delete.taskSet.title', '删除确认'),
+            message: t('tasks.delete.category.message', '确定要删除分类 "{{name}}" 吗？{{warning}}此操作无法撤销。', {
                 name: category.name,
-                warning: taskCount > 0 ? t('tasks.deleteCategory.warning', '这将同时删除该分类下的 {{count}} 个任务集。', {count: taskCount}) : ''
+                warning: taskCount > 0 ? t('tasks.delete.category.warning', '这将同时删除该分类下的 {{count}} 个任务集。', {count: taskCount}) : ''
             }),
             buttons: [
                 {text: t('common.cancel', '取消'), style: 'cancel'},
                 {
-                    text: t('common.delete', '删除'),
+                    text: t('tasks.delete.confirm', '删除'),
                     style: 'destructive',
                     onPress: () => deleteCategory(category.id),
                 },

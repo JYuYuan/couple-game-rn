@@ -313,7 +313,7 @@
       },
       "category": {
         "title": "删除确认",
-        "message": "确定要删除分类 \"{{name}}\" 吗？{{hasTaskSets}}此操作无法撤销。",
+        "message": "确定要删除分类 \"{{name}}\" 吗？此操作无法撤销。",
         "withTaskSets": "这将同时删除该分类下的 {{count}} 个任务集。"
       },
       "cancel": "取消",

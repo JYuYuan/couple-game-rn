@@ -283,38 +283,38 @@
   },
   "tasks": {
     "title": "タスク管理",
-    "subtitle": "ゲームのタスクとカテゴリーを管理",
+    "subtitle": "ゲームのタスクとカテゴリを管理",
     "tabs": {
       "taskSets": "タスクセット",
-      "categories": "カテゴリー"
+      "categories": "カテゴリ"
     },
     "taskSet": {
       "type": {
         "system": "システム",
         "custom": "カスタム"
       },
-      "tasks": "{{count}}件のタスク",
+      "tasks": "{{count}} 件のタスク",
       "status": {
         "enabled": "有効",
         "disabled": "無効"
       }
     },
     "category": {
-      "taskSets": "{{count}}件のタスクセット"
+      "taskSets": "{{count}} 件のタスクセット"
     },
     "empty": {
-      "taskSets": "タスクセットがありません。右下のボタンをクリックして作成してください",
-      "categories": "カテゴリーがありません。右下のボタンをクリックして作成してください"
+      "taskSets": "タスクセットがありません。右下のボタンをタップして作成してください",
+      "categories": "カテゴリがありません。右下のボタンをタップして作成してください"
     },
     "delete": {
       "taskSet": {
-        "title": "削除確認",
-        "message": "\"{{name}}\" タスクセットを削除してもよろしいですか？この操作は取り消せません。"
+        "title": "削除の確認",
+        "message": "タスクセット「{{name}}」を削除してもよろしいですか？この操作は元に戻せません。"
       },
       "category": {
-        "title": "削除確認",
-        "message": "\"{{name}}\" カテゴリーを削除してもよろしいですか？{{hasTaskSets}}この操作は取り消せません。",
-        "withTaskSets": "この操作と同時に、当該カテゴリー配下の{{count}}件のタスクセットも削除されます。"
+        "title": "削除の確認",
+        "message": "カテゴリ「{{name}}」を削除してもよろしいですか？この操作は元に戻せません。",
+        "withTaskSets": "このカテゴリに含まれる {{count}} 件のタスクセットも同時に削除されます。"
       },
       "cancel": "キャンセル",
       "confirm": "削除"
@@ -323,25 +323,25 @@
       "title": "インポート",
       "error": {
         "title": "エラー",
-        "invalidFormat": "インポートするファイル形式が不正です",
-        "invalidContent": "インポートするファイルの内容形式が不正です",
+        "invalidFormat": "ファイル形式が正しくありません",
+        "invalidContent": "ファイル内容の形式が正しくありません",
         "failed": "インポートに失敗しました"
       },
-      "success": "タスクセットをインポートしました: {{name}}",
-      "unnamedTaskSet": "名称未設定のタスクセット",
-      "categoryCreated": "新しいカテゴリを同時に作成しました: {{categoryName}}"
+      "success": "タスクセットを正常にインポートしました: {{name}}",
+      "unnamedTaskSet": "無名のタスクセット",
+      "categoryCreated": "新しいカテゴリも作成されました: {{categoryName}}"
     },
     "export": {
-      "title": "タスクセットをエクスポート",
+      "title": "タスクセットのエクスポート",
       "message": "エクスポート方法を選択してください",
       "share": "共有",
       "saveToFile": "ファイルに保存",
       "cancel": "キャンセル",
-      "shareTitle": "タスクセットをエクスポート：{{name}}",
+      "shareTitle": "タスクセットのエクスポート: {{name}}",
       "success": {
-        "downloaded": "ファイルをデバイスにダウンロードしました",
-        "saved": "ファイルを「{{fileName}}」に保存しました",
-        "exported": "ファイルをエクスポートしました。デバイスに保存できます"
+        "downloaded": "ファイルがデバイスにダウンロードされました",
+        "saved": "ファイルが保存されました: {{fileName}}",
+        "exported": "ファイルがエクスポートされ、デバイスに保存できます"
       },
       "error": {
         "title": "エラー",
