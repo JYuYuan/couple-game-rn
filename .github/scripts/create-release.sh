@@ -42,41 +42,21 @@ echo "生成更新日志..."
 CHANGELOG=""
 COMMIT_DETAILS=""
 
-if [ -f CHANGELOG.txt ]; then
-    CHANGELOG=$(cat CHANGELOG.txt)
+# 直接获取最后一条commit信息作为更新日志
+echo "获取最新 commit 信息..."
+
+LATEST_COMMIT=$(git log -1 --pretty=format:"%s" 2>/dev/null || echo "")
+
+if [ -n "$LATEST_COMMIT" ]; then
+    CHANGELOG="最新更新: $LATEST_COMMIT"
+    echo "✅ 使用最新 commit: $LATEST_COMMIT"
 else
-    # 生成版本信息和详细的 commit 内容
-    echo "从 git 历史生成版本信息..."
-
-    # 安全地获取 tags
-    TAGS=($(git tag --sort=-creatordate 2>/dev/null || echo ""))
-
-    if [ ${#TAGS[@]} -eq 0 ]; then
-        echo "没有找到任何 tag，使用首次发布"
-        CHANGELOG="首次发布"
-        COMMIT_DETAILS=""
-    elif [ ${#TAGS[@]} -eq 1 ]; then
-        echo "只有一个 tag"
-        CHANGELOG="版本 ${TAGS[0]} 发布"
-        # 获取当前 tag 的所有 commits
-        COMMIT_DETAILS=$(git log --oneline "${TAGS[0]}" 2>/dev/null | head -20 || echo "")
-    else
-        echo "找到多个 tags"
-        PREVIOUS_TAG=${TAGS[1]}
-        CURRENT_TAG=${TAGS[0]}
-        echo "从 $PREVIOUS_TAG 更新到 $CURRENT_TAG"
-
-        CHANGELOG="从版本 $PREVIOUS_TAG 更新到 $CURRENT_TAG"
-
-        # 获取两个 tag 之间的 commits
-        COMMIT_DETAILS=$(git log "$PREVIOUS_TAG..$CURRENT_TAG" --oneline 2>/dev/null || echo "")
-
-        # 如果没有新 commits，显示当前 tag 的 commits
-        if [ -z "$COMMIT_DETAILS" ]; then
-            COMMIT_DETAILS=$(git log --oneline "$CURRENT_TAG" 2>/dev/null | head -10 || echo "")
-        fi
-    fi
+    CHANGELOG="新版本发布"
+    echo "⚠️  无法获取 commit 信息，使用默认描述"
 fi
+
+# 获取最近的详细 commit 列表用于详细信息
+COMMIT_DETAILS=$(git log --oneline -10 2>/dev/null || echo "")
 
 echo "生成的更新日志:"
 echo "$CHANGELOG"
