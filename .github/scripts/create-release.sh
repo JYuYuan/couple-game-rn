@@ -40,12 +40,13 @@ fi
 # 获取更新日志
 echo "生成更新日志..."
 CHANGELOG=""
+COMMIT_DETAILS=""
 
 if [ -f CHANGELOG.txt ]; then
     CHANGELOG=$(cat CHANGELOG.txt)
 else
-    # 尝试生成简单的更新日志
-    echo "从 git 历史生成更新日志..."
+    # 生成版本信息和详细的 commit 内容
+    echo "从 git 历史生成版本信息..."
 
     # 安全地获取 tags
     TAGS=($(git tag --sort=-creatordate 2>/dev/null || echo ""))
@@ -53,33 +54,33 @@ else
     if [ ${#TAGS[@]} -eq 0 ]; then
         echo "没有找到任何 tag，使用首次发布"
         CHANGELOG="首次发布"
+        COMMIT_DETAILS=""
     elif [ ${#TAGS[@]} -eq 1 ]; then
-        echo "只有一个 tag，显示从初始提交的所有更改"
-        # 获取从初始提交到当前 tag 的日志
-        git log --oneline "${TAGS[0]}" 2>/dev/null > CHANGELOG.txt || echo "初始版本" > CHANGELOG.txt
-        CHANGELOG=$(cat CHANGELOG.txt)
+        echo "只有一个 tag"
+        CHANGELOG="版本 ${TAGS[0]} 发布"
+        # 获取当前 tag 的所有 commits
+        COMMIT_DETAILS=$(git log --oneline "${TAGS[0]}" 2>/dev/null | head -20 || echo "")
     else
-        echo "找到多个 tags，生成增量日志"
+        echo "找到多个 tags"
         PREVIOUS_TAG=${TAGS[1]}
         CURRENT_TAG=${TAGS[0]}
-        echo "对比 $PREVIOUS_TAG 到 $CURRENT_TAG"
+        echo "从 $PREVIOUS_TAG 更新到 $CURRENT_TAG"
 
-        # 生成两个 tag 之间的日志
-        if git log "$PREVIOUS_TAG..$CURRENT_TAG" --oneline > CHANGELOG.txt 2>/dev/null; then
-            CHANGELOG=$(cat CHANGELOG.txt)
-            if [ -z "$CHANGELOG" ]; then
-                CHANGELOG="没有新的提交"
-            fi
-        else
-            echo "⚠️ 无法生成增量日志，使用最近的提交"
-            git log --oneline -10 > CHANGELOG.txt 2>/dev/null || echo "无法获取提交历史" > CHANGELOG.txt
-            CHANGELOG=$(cat CHANGELOG.txt)
+        CHANGELOG="从版本 $PREVIOUS_TAG 更新到 $CURRENT_TAG"
+
+        # 获取两个 tag 之间的 commits
+        COMMIT_DETAILS=$(git log "$PREVIOUS_TAG..$CURRENT_TAG" --oneline 2>/dev/null || echo "")
+
+        # 如果没有新 commits，显示当前 tag 的 commits
+        if [ -z "$COMMIT_DETAILS" ]; then
+            COMMIT_DETAILS=$(git log --oneline "$CURRENT_TAG" 2>/dev/null | head -10 || echo "")
         fi
     fi
 fi
 
 echo "生成的更新日志:"
 echo "$CHANGELOG"
+echo "Commit 详情行数: $(echo "$COMMIT_DETAILS" | wc -l)"
 
 # 生成 release notes
 cat > release-notes.md << EOF
@@ -99,6 +100,25 @@ cat > release-notes.md << EOF
 
 ## 📋 更新内容
 $CHANGELOG
+EOF
+
+# 如果有 commit 详情，添加折叠展开部分
+if [ -n "$COMMIT_DETAILS" ]; then
+cat >> release-notes.md << EOF
+
+<details>
+<summary>📝 查看详细提交记录</summary>
+
+\`\`\`
+$COMMIT_DETAILS
+\`\`\`
+
+</details>
+EOF
+fi
+
+# 添加结尾
+cat >> release-notes.md << EOF
 
 ---
 🤖 此版本由 GitHub Actions 自动构建

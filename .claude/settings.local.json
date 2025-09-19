@@ -75,7 +75,12 @@
       "Bash(unzip -l couplegamern-unsigned.ipa)",
       "Bash(chmod +x /Users/dompling/Desktop/GIT/couple-game-rn/update-workflow.sh)",
       "Bash(./update-workflow.sh)",
-      "Bash(chmod +x /Users/dompling/Desktop/GIT/couple-game-rn/.github/scripts/*.sh)"
+      "Bash(chmod +x /Users/dompling/Desktop/GIT/couple-game-rn/.github/scripts/*.sh)",
+      "Bash(git tag --list)",
+      "Bash(git describe --tags)",
+      "Bash(./.github/scripts/create-release.sh v1.0.4)",
+      "Bash(chmod +x /Users/dompling/Desktop/GIT/couple-game-rn/.github/scripts/test-scripts.sh)",
+      "Bash(./.github/scripts/test-scripts.sh)"
     ],
     "deny": [],
     "ask": []
