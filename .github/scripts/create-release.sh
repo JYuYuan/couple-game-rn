@@ -40,20 +40,46 @@ fi
 # 获取更新日志
 echo "生成更新日志..."
 CHANGELOG=""
+
 if [ -f CHANGELOG.txt ]; then
     CHANGELOG=$(cat CHANGELOG.txt)
 else
     # 尝试生成简单的更新日志
-    TAGS=($(git tag --sort=-creatordate))
-    if [ ${#TAGS[@]} -gt 1 ]; then
-        PREVIOUS_TAG=${TAGS[1]}
-        CURRENT_TAG=${TAGS[0]}
-        git log $PREVIOUS_TAG..$CURRENT_TAG --oneline > CHANGELOG.txt
+    echo "从 git 历史生成更新日志..."
+
+    # 安全地获取 tags
+    TAGS=($(git tag --sort=-creatordate 2>/dev/null || echo ""))
+
+    if [ ${#TAGS[@]} -eq 0 ]; then
+        echo "没有找到任何 tag，使用首次发布"
+        CHANGELOG="首次发布"
+    elif [ ${#TAGS[@]} -eq 1 ]; then
+        echo "只有一个 tag，显示从初始提交的所有更改"
+        # 获取从初始提交到当前 tag 的日志
+        git log --oneline "${TAGS[0]}" 2>/dev/null > CHANGELOG.txt || echo "初始版本" > CHANGELOG.txt
         CHANGELOG=$(cat CHANGELOG.txt)
     else
-        CHANGELOG="首次发布"
+        echo "找到多个 tags，生成增量日志"
+        PREVIOUS_TAG=${TAGS[1]}
+        CURRENT_TAG=${TAGS[0]}
+        echo "对比 $PREVIOUS_TAG 到 $CURRENT_TAG"
+
+        # 生成两个 tag 之间的日志
+        if git log "$PREVIOUS_TAG..$CURRENT_TAG" --oneline > CHANGELOG.txt 2>/dev/null; then
+            CHANGELOG=$(cat CHANGELOG.txt)
+            if [ -z "$CHANGELOG" ]; then
+                CHANGELOG="没有新的提交"
+            fi
+        else
+            echo "⚠️ 无法生成增量日志，使用最近的提交"
+            git log --oneline -10 > CHANGELOG.txt 2>/dev/null || echo "无法获取提交历史" > CHANGELOG.txt
+            CHANGELOG=$(cat CHANGELOG.txt)
+        fi
     fi
 fi
+
+echo "生成的更新日志:"
+echo "$CHANGELOG"
 
 # 生成 release notes
 cat > release-notes.md << EOF
