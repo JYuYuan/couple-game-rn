@@ -10,6 +10,14 @@
       "channel": "development",
       "autoIncrement": true
     },
+    "unsigned": {
+      "distribution": "internal",
+      "ios": {
+        "buildConfiguration": "Release"
+      },
+      "channel": "unsigned",
+      "autoIncrement": true
+    },
     "preview": {
       "distribution": "internal",
       "android": {

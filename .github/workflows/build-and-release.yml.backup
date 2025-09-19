@@ -289,7 +289,7 @@ jobs:
             echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
           fi
 
-      # 1️⃣1️⃣ 构建未签名 IPA (使用 xcodebuild + 直接提取)
+      # 1️⃣1️⃣ 构建未签名 IPA (使用 xcodebuild)
       - name: Build unsigned IPA with xcodebuild
         run: |
           echo "🏗️ 开始构建未签名 IPA..."
@@ -304,25 +304,58 @@ jobs:
           echo "📋 项目信息："
           ls -la
 
-          # 使用已知的配置
-          WORKSPACE="couplegamern.xcworkspace"
-          SCHEME_NAME="couplegamern"
+          # 找到 .xcworkspace 或 .xcodeproj 文件
+          WORKSPACE=$(find . -name "*.xcworkspace" | head -1)
+          PROJECT=$(find . -name "*.xcodeproj" | grep -v Pods | head -1)
 
-          echo "使用 workspace: $WORKSPACE"
-          echo "使用 scheme: $SCHEME_NAME"
+          if [ -n "$WORKSPACE" ]; then
+            BUILD_TARGET="-workspace ${WORKSPACE}"
+            echo "使用 workspace: $WORKSPACE"
+            # 列出可用的 schemes
+            echo "可用的 schemes:"
+            xcodebuild -list -workspace "$WORKSPACE" 2>/dev/null | grep -A 10 "Schemes:" || true
+          elif [ -n "$PROJECT" ]; then
+            BUILD_TARGET="-project ${PROJECT}"
+            echo "使用 project: $PROJECT"F
+            # 列出可用的 schemes
+            echo "可用的 schemes:"
+            xcodebuild -list -project "$PROJECT" 2>/dev/null | grep -A 10 "Schemes:" || true
+          else
+            echo "❌ 未找到 .xcworkspace 或 .xcodeproj 文件"
+            exit 1
+          fi
 
-          # 列出可用的 schemes（验证）
-          echo "可用的 schemes:"
-          xcodebuild -list -workspace "$WORKSPACE" 2>/dev/null | grep -A 10 "Schemes:" || true
+          # 尝试几个可能的 scheme 名称
+          POSSIBLE_SCHEMES=("couplegamern" "couple-game-rn" "CoupleGameRN" "main")
+          SCHEME_NAME=""
 
-          echo ""
+          for scheme in "${POSSIBLE_SCHEMES[@]}"; do
+            if xcodebuild -list $BUILD_TARGET 2>/dev/null | grep -q "$scheme"; then
+              SCHEME_NAME="$scheme"
+              echo "找到 scheme: $SCHEME_NAME"
+              break
+            fi
+          done
+
+          # 如果没找到，使用第一个可用的 scheme
+          if [ -z "$SCHEME_NAME" ]; then
+            SCHEME_NAME=$(xcodebuild -list $BUILD_TARGET 2>/dev/null | grep -A 20 "Schemes:" | grep -v "Schemes:" | head -1 | xargs)
+            echo "使用第一个可用的 scheme: $SCHEME_NAME"
+          fi
+
+          if [ -z "$SCHEME_NAME" ]; then
+            echo "❌ 未找到可用的 scheme"
+            exit 1
+          fi
+
+          # 清理之前的构建
           echo "🧹 清理之前的构建..."
-          xcodebuild clean -workspace "$WORKSPACE" -scheme "$SCHEME_NAME" -configuration Release
+          xcodebuild clean $BUILD_TARGET -scheme "$SCHEME_NAME" -configuration Release
 
-          echo ""
-          echo "🔨 开始构建 archive（未签名）..."
+          # 构建项目（不签名）
+          echo "🔨 开始构建..."
           xcodebuild archive \
-            -workspace "$WORKSPACE" \
+            $BUILD_TARGET \
             -scheme "$SCHEME_NAME" \
             -configuration Release \
             -destination generic/platform=iOS \
@@ -338,51 +371,61 @@ jobs:
           if [ ! -d "../build/$SCHEME_NAME.xcarchive" ]; then
             echo "❌ 构建失败，archive 不存在"
             echo "构建日志："
-            tail -20 ../build/build.log || true
+            cat ../build/build.log || true
             exit 1
           fi
 
-          echo ""
-          echo "✅ Archive 构建成功！"
-          echo "📦 直接从 archive 提取 APP..."
+          # 导出 IPA（未签名）
+          echo "📦 导出未签名 IPA..."
 
+          # 创建导出配置文件
+          cat > "../build/ExportOptions.plist" << EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>method</key>
+              <string>development</string>
+              <key>compileBitcode</key>
+              <false/>
+              <key>signingStyle</key>
+              <string>manual</string>
+              <key>stripSwiftSymbols</key>
+              <false/>
+          </dict>
+          </plist>
+          EOF
+
+          # 导出 IPA
+          xcodebuild -exportArchive \
+            -archivePath "../build/$SCHEME_NAME.xcarchive" \
+            -exportPath "../build/" \
+            -exportOptionsPlist "../build/ExportOptions.plist" \
+            | tee ../build/export.log
+
+          # 重命名 IPA 文件
           cd ../build
-
-          # 从 xcarchive 中提取 .app（使用动态查找）
-          APP_PATH=$(find "$SCHEME_NAME.xcarchive/Products/Applications" -name "*.app" | head -1)
-
-          if [ -z "$APP_PATH" ]; then
-            echo "❌ 在 archive 中未找到 .app 文件"
-            echo "Archive 结构："
-            find "$SCHEME_NAME.xcarchive" -type d -name "*.app"
-            exit 1
+          if [ -f "$SCHEME_NAME.ipa" ]; then
+            mv "$SCHEME_NAME.ipa" "couple-game-unsigned.ipa"
+            echo "✅ 重命名 IPA: $SCHEME_NAME.ipa -> couple-game-unsigned.ipa"
+          else
+            # 查找任何 .ipa 文件并重命名
+            IPA_FILE=$(find . -name "*.ipa" | head -1)
+            if [ -n "$IPA_FILE" ]; then
+              mv "$IPA_FILE" "couple-game-unsigned.ipa"
+              echo "✅ 重命名 IPA: $(basename $IPA_FILE) -> couple-game-unsigned.ipa"
+            else
+              echo "❌ 未找到生成的 IPA 文件"
+              echo "导出日志："
+              cat export.log || true
+              echo "构建目录内容："
+              ls -la
+              exit 1
+            fi
           fi
 
-          echo "找到 APP: $APP_PATH"
-          APP_NAME=$(basename "$APP_PATH")
-
-          # 创建 Payload 目录（IPA 结构）
-          mkdir -p Payload
-          cp -r "$APP_PATH" Payload/
-
-          # 创建 IPA（就是一个 zip 文件）
-          zip -r "couple-game-unsigned.ipa" Payload/
-
-          # 检查 IPA 是否生成
-          if [ ! -f "couple-game-unsigned.ipa" ]; then
-            echo "❌ IPA 创建失败"
-            ls -la
-            exit 1
-          fi
-
-          echo ""
-          echo "✅ 未签名 IPA 构建成功！"
-          echo "文件位置: $(realpath couple-game-unsigned.ipa)"
-          echo "文件大小: $(du -h couple-game-unsigned.ipa | cut -f1)"
-          ls -la couple-game-unsigned.ipa
-
-          echo ""
-          echo "🎉 iOS 未签名 IPA 构建完成！"
+          echo "✅ 构建完成！"
+          ls -la
 
       # 1️⃣2️⃣ 查找 IPA 文件
       - name: Find IPA file

@@ -1,0 +1,174 @@
+name: Build and Release
+
+on:
+  # 方式一：push tag 时触发
+  push:
+    tags:
+      - 'v*'
+  # 方式二：手动触发
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., v1.0.0)'
+        required: true
+        default: 'v1.0.0'
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    env:
+      GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=2048m -Dorg.gradle.daemon=false
+      EXPO_NO_DOTENV: 1
+      CI: false
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          api-level: 34
+          build-tools: 34.0.0
+
+      - name: Accept Android licenses
+        run: yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+
+      - name: Setup environment variables
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
+          echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> $GITHUB_ENV
+          echo "PATH=$PATH:$ANDROID_HOME/emulator:$ANDROID_HOME/tools:$ANDROID_HOME/tools/bin:$ANDROID_HOME/platform-tools" >> $GITHUB_ENV
+
+      - name: Show environment info
+        run: ./.github/scripts/show-env-info.sh
+
+      - name: Install dependencies
+        run: ./.github/scripts/install-deps.sh
+
+      - name: Setup Expo
+        run: |
+          if [ -n "${{ secrets.EXPO_TOKEN }}" ]; then
+            npx expo login --non-interactive -u ${{ secrets.EXPO_USERNAME }} || true
+          fi
+
+      - name: Build Android APK
+        run: ./.github/scripts/build-android.sh
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          EAS_BUILD_SKIP_CREDENTIALS_CHECK: 1
+          EAS_NO_VCS_IGNORE_CHECK: 1
+
+      - name: Find and upload APK
+        run: |
+          APK_FILE=$(find . -name "*.apk" -type f ! -path "./node_modules/*" | head -1)
+          echo "apk_path=$APK_FILE" >> $GITHUB_OUTPUT
+          echo "apk_name=$(basename $APK_FILE)" >> $GITHUB_OUTPUT
+        id: find_apk
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: ${{ steps.find_apk.outputs.apk_path }}
+          retention-days: 30
+
+  build-ios:
+    runs-on: macos-latest
+    env:
+      EXPO_NO_DOTENV: 1
+      CI: false
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Show environment info
+        run: ./.github/scripts/show-env-info.sh
+
+      - name: Install dependencies
+        run: ./.github/scripts/install-deps.sh
+
+      - name: Setup Expo
+        run: |
+          if [ -n "${{ secrets.EXPO_TOKEN }}" ]; then
+            npx expo login --non-interactive -u ${{ secrets.EXPO_USERNAME }} || true
+          fi
+
+      - name: Build iOS IPA
+        run: ./.github/scripts/build-ios.sh
+
+      - name: Find and upload IPA
+        run: |
+          IPA_FILE=$(find ./build -name "*.ipa" -type f | head -1)
+          echo "ipa_path=$IPA_FILE" >> $GITHUB_OUTPUT
+          echo "ipa_name=$(basename $IPA_FILE)" >> $GITHUB_OUTPUT
+        id: find_ipa
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-ipa
+          path: ${{ steps.find_ipa.outputs.ipa_path }}
+          retention-days: 30
+
+  create-release:
+    needs: [build-android, build-ios]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts/
+
+      - name: Determine release tag
+        id: get_tag
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "tag=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Generate changelog
+        run: |
+          TAGS=($(git tag --sort=-creatordate))
+          if [ ${#TAGS[@]} -gt 1 ]; then
+            PREVIOUS_TAG=${TAGS[1]}
+            CURRENT_TAG=${TAGS[0]}
+            git log $PREVIOUS_TAG..$CURRENT_TAG --oneline > CHANGELOG.txt
+          else
+            echo "首次发布" > CHANGELOG.txt
+          fi
+
+      - name: Create GitHub Release
+        run: ./.github/scripts/create-release.sh "${{ steps.get_tag.outputs.tag }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -60,7 +60,22 @@
       "Bash(export PATH=\"$ANDROID_HOME/platform-tools:$PATH\")",
       "Bash(npx expo run:android)",
       "Bash(chmod +x /Users/dompling/Desktop/GIT/couple-game-rn/start.sh)",
-      "Bash(chmod +x /Users/dompling/Desktop/GIT/couple-game-rn/build.sh)"
+      "Bash(chmod +x /Users/dompling/Desktop/GIT/couple-game-rn/build.sh)",
+      "Bash(npx eas build --platform ios --local --profile development)",
+      "Bash(npx expo install expo-dev-client)",
+      "Bash(npx eas build --platform ios --local --profile unsigned)",
+      "Bash(xcodebuild -workspace couplegamern.xcworkspace -scheme couplegamern -configuration Release -destination generic/platform=iOS -archivePath build/couplegamern.xcarchive CODE_SIGN_IDENTITY=\"\" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO archive)",
+      "Bash(xcodebuild -list -workspace couplegamern.xcworkspace)",
+      "Bash(xcodebuild -version)",
+      "Bash(pod --version)",
+      "Bash(chmod +x /Users/dompling/Desktop/GIT/couple-game-rn/test-ios-build.sh)",
+      "Bash(./test-ios-build.sh)",
+      "Bash(chmod +x /Users/dompling/Desktop/GIT/couple-game-rn/test-ios-build-direct.sh)",
+      "Bash(./test-ios-build-direct.sh)",
+      "Bash(unzip -l couplegamern-unsigned.ipa)",
+      "Bash(chmod +x /Users/dompling/Desktop/GIT/couple-game-rn/update-workflow.sh)",
+      "Bash(./update-workflow.sh)",
+      "Bash(chmod +x /Users/dompling/Desktop/GIT/couple-game-rn/.github/scripts/*.sh)"
     ],
     "deny": [],
     "ask": []
