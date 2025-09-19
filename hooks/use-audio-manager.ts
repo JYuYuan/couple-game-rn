@@ -48,8 +48,9 @@ export const useAudioManager = (): AudioManager => {
                         }
                     );
                     sound = bgmSound;
-                } catch {
-                    console.log('BGM file not found, audio manager will work without background music');
+                    console.log('BGM loaded successfully');
+                } catch (error) {
+                    console.log('BGM file not found, audio manager will work without background music', error);
                     return; // 如果音频文件不存在，直接返回
                 }
 
@@ -58,12 +59,15 @@ export const useAudioManager = (): AudioManager => {
                     if (status.isLoaded) {
                         setIsPlaying(status.isPlaying || false);
                         setIsLoaded(true);
+                        console.log('Audio status:', { isPlaying: status.isPlaying, isLoaded: status.isLoaded });
                     } else {
                         setIsLoaded(false);
+                        console.log('Audio not loaded');
                     }
                 });
 
                 soundRef.current = sound;
+                setIsLoaded(true);
 
             } catch (error) {
                 console.error('Audio initialization failed:', error);
@@ -78,7 +82,7 @@ export const useAudioManager = (): AudioManager => {
                 soundRef.current.unloadAsync().catch(console.error);
             }
         };
-    }, []);
+    }, []); // 移除 soundSettings 依赖，避免重复初始化
 
     // 同步设置状态
     useEffect(() => {
@@ -90,9 +94,20 @@ export const useAudioManager = (): AudioManager => {
 
     const play = async () => {
         try {
+            console.log('Attempting to play audio...', { isLoaded, globalMute: soundSettings.globalMute });
             if (soundRef.current && isLoaded && !soundSettings.globalMute) {
+                const status = await soundRef.current.getStatusAsync();
+                console.log('Current audio status before play:', status);
+
                 await soundRef.current.playAsync();
+                console.log('Audio play command sent');
                 setIsPlaying(true);
+            } else {
+                console.log('Cannot play audio:', {
+                    hasSound: !!soundRef.current,
+                    isLoaded,
+                    globalMute: soundSettings.globalMute
+                });
             }
         } catch (error) {
             console.error('Play failed:', error);

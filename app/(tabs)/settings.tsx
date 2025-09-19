@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View, ActivityIndicator, Linking} from 'react-native';
+import {Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View, ActivityIndicator, Linking, Switch} from 'react-native';
 import {Ionicons} from '@expo/vector-icons';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useSettingsStore} from "@/store";
@@ -137,7 +137,9 @@ const Settings: React.FC = () => {
                 {
                     icon: 'musical-notes',
                     label: t('settings.sound.label', '声音设置'),
-                    value: soundSettings.globalMute ? t('settings.sound.disabled', '已关闭') : t('settings.sound.enabled', '已开启'),
+                    value: '',
+                    type: 'switch',
+                    switchValue: !soundSettings.globalMute,
                     onPress: () => {
                         setSoundSettings({ globalMute: !soundSettings.globalMute });
                     }
@@ -145,7 +147,9 @@ const Settings: React.FC = () => {
                 {
                     icon: 'volume-high',
                     label: t('settings.sound.bgm', '背景音乐'),
-                    value: soundSettings.bgmEnabled ? t('settings.sound.enabled', '已开启') : t('settings.sound.disabled', '已关闭'),
+                    value: '',
+                    type: 'switch',
+                    switchValue: soundSettings.bgmEnabled,
                     onPress: () => {
                         setSoundSettings({ bgmEnabled: !soundSettings.bgmEnabled });
                     }
@@ -206,9 +210,9 @@ const Settings: React.FC = () => {
                                             index < section.items.length - 1 && styles.settingItemBorder,
                                             (item as any).disabled && styles.settingItemDisabled
                                         ]}
-                                        onPress={item.onPress}
-                                        activeOpacity={(item as any).disabled ? 1 : 0.7}
-                                        disabled={(item as any).disabled}
+                                        onPress={(item as any).type === 'switch' ? undefined : item.onPress}
+                                        activeOpacity={(item as any).disabled || (item as any).type === 'switch' ? 1 : 0.7}
+                                        disabled={(item as any).disabled || (item as any).type === 'switch'}
                                     >
                                         <View style={styles.settingItemLeft}>
                                             <View style={[styles.iconContainer, {backgroundColor: `${accentColor}20`}]}>
@@ -221,10 +225,21 @@ const Settings: React.FC = () => {
                                             <Text style={[styles.settingLabel, {color: textColor}, (item as any).disabled && styles.settingLabelDisabled]}>{item.label}</Text>
                                         </View>
                                         <View style={styles.settingItemRight}>
-                                            <Text
-                                                style={[styles.settingValue, {color: secondaryText}]}>{item.value}</Text>
-                                            {!(item as any).disabled && (
-                                                <Ionicons name="chevron-forward" size={20} color={secondaryText}/>
+                                            {(item as any).type === 'switch' ? (
+                                                <Switch
+                                                    value={(item as any).switchValue}
+                                                    onValueChange={() => item.onPress?.()}
+                                                    trackColor={{ false: '#767577', true: accentColor }}
+                                                    thumbColor={(item as any).switchValue ? '#ffffff' : '#f4f3f4'}
+                                                />
+                                            ) : (
+                                                <>
+                                                    <Text
+                                                        style={[styles.settingValue, {color: secondaryText}]}>{item.value}</Text>
+                                                    {!(item as any).disabled && (
+                                                        <Ionicons name="chevron-forward" size={20} color={secondaryText}/>
+                                                    )}
+                                                </>
                                             )}
                                         </View>
                                     </TouchableOpacity>

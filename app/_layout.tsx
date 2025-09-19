@@ -17,12 +17,30 @@ export default function RootLayout() {
 
     // 自动播放背景音乐
     useEffect(() => {
-        if (soundSettings.bgmEnabled && !soundSettings.globalMute) {
-            audioManager.play();
-        } else {
-            audioManager.pause();
-        }
-    }, [soundSettings.bgmEnabled, soundSettings.globalMute]);
+        const handleAudioControl = async () => {
+            console.log('Audio control triggered:', {
+                bgmEnabled: soundSettings.bgmEnabled,
+                globalMute: soundSettings.globalMute,
+                appIsReady
+            });
+
+            // 确保应用已经准备好
+            if (!appIsReady) return;
+
+            // 延迟一点时间确保音频已经初始化完成
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            if (soundSettings.bgmEnabled && !soundSettings.globalMute) {
+                console.log('Attempting to play background music...');
+                await audioManager.play();
+            } else {
+                console.log('Attempting to pause background music...');
+                await audioManager.pause();
+            }
+        };
+
+        handleAudioControl().catch(console.error);
+    }, [soundSettings.bgmEnabled, soundSettings.globalMute, appIsReady, audioManager]);
 
     // 控制启动屏显示时间
     useEffect(() => {
