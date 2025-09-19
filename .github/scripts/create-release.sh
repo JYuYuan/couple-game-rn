@@ -40,8 +40,6 @@ fi
 # 获取更新日志
 echo "生成更新日志..."
 CHANGELOG=""
-COMMIT_DETAILS=""
-
 # 直接获取最后一条commit信息作为更新日志
 echo "获取最新 commit 信息..."
 
@@ -55,12 +53,9 @@ else
     echo "⚠️  无法获取 commit 信息，使用默认描述"
 fi
 
-# 获取最近的详细 commit 列表用于详细信息
-COMMIT_DETAILS=$(git log --oneline -10 2>/dev/null || echo "")
 
 echo "生成的更新日志:"
 echo "$CHANGELOG"
-echo "Commit 详情行数: $(echo "$COMMIT_DETAILS" | wc -l)"
 
 # 生成 release notes
 cat > release-notes.md << EOF
@@ -83,14 +78,14 @@ $CHANGELOG
 EOF
 
 # 如果有 commit 详情，添加折叠展开部分
-if [ -n "$COMMIT_DETAILS" ]; then
+if [ -n "$CHANGELOG" ]; then
 cat >> release-notes.md << EOF
 
 <details>
 <summary>📝 查看详细提交记录</summary>
 
 \`\`\`
-$COMMIT_DETAILS
+$CHANGELOG
 \`\`\`
 
 </details>
