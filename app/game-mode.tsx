@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {Stack, useLocalSearchParams, useRouter} from 'expo-router';
 import {useTranslation} from 'react-i18next';
@@ -17,6 +17,7 @@ import {useColorScheme} from '@/hooks/use-color-scheme';
 import {Colors} from '@/constants/theme';
 import {useTasksStore} from '@/store/tasksStore';
 import {TaskSet} from '@/types/tasks';
+import {TaskSetDetailModal} from '@/components/TaskSetDetailModal';
 
 const routeConfig: Record<string, string> = {
     fly: '/flying-chess',
@@ -39,6 +40,9 @@ export default function GameMode() {
 
     // 状态管理
     const [selectedCategory, setSelectedCategory] = useState<string>('all');
+    const [modalVisible, setModalVisible] = useState(false);
+    const [selectedTaskSet, setSelectedTaskSet] = useState<TaskSet | null>(null);
+    const hasInitialAnimated = useRef(false);
 
     // 动画值
     const floatAnimation = useSharedValue(0);
@@ -195,7 +199,7 @@ export default function GameMode() {
     const TaskSetCard = ({taskSet, index}: { taskSet: TaskSet, index: number }) => {
         const category = categories.find(cat => cat.id === taskSet.categoryId);
         const scale = useSharedValue(1);
-        const cardAnimation = useSharedValue(0);
+        const cardAnimation = useSharedValue(hasInitialAnimated.current ? 1 : 0);
 
         const animatedStyle = useAnimatedStyle(() => ({
             transform: [{scale: scale.value}],
@@ -209,7 +213,12 @@ export default function GameMode() {
         }));
 
         useEffect(() => {
-            cardAnimation.value = withTiming(1, {duration: 600});
+            if (!hasInitialAnimated.current) {
+                cardAnimation.value = withTiming(1, {duration: 600});
+                if (index === filteredTaskSets.length - 1) {
+                    hasInitialAnimated.current = true;
+                }
+            }
         }, []);
 
         const handlePressIn = () => {
@@ -220,7 +229,12 @@ export default function GameMode() {
             scale.value = withSpring(1);
         };
 
-        const handlePress = () => {
+        const handleCardPress = () => {
+            setSelectedTaskSet(taskSet);
+            setModalVisible(true);
+        };
+
+        const handleStartGame = () => {
             if (!routeConfig[gameType]) return;
             router.push({
                 pathname: routeConfig[gameType] as any,
@@ -231,7 +245,7 @@ export default function GameMode() {
         return (
             <Animated.View style={[animatedStyle, cardFadeStyle, styles.taskSetCard]}>
                 <TouchableOpacity
-                    onPress={handlePress}
+                    onPress={handleCardPress}
                     onPressIn={handlePressIn}
                     onPressOut={handlePressOut}
                     style={[styles.cardContainer, {
@@ -296,7 +310,7 @@ export default function GameMode() {
                     {/* 开始按钮 */}
                     <TouchableOpacity
                         style={styles.startButton}
-                        onPress={handlePress}
+                        onPress={handleStartGame}
                     >
                         <LinearGradient
                             colors={['#5E5CE6', '#BF5AF2']}
@@ -352,7 +366,10 @@ export default function GameMode() {
             const hours = Math.floor(minutes / 60);
             const remainingMinutes = minutes % 60;
             if (remainingMinutes > 0) {
-                return t('gameMode.estimatedTime.hours', '约 {{hours}}小时{{minutes}}分钟', {hours, minutes: remainingMinutes});
+                return t('gameMode.estimatedTime.hours', '约 {{hours}}小时{{minutes}}分钟', {
+                    hours,
+                    minutes: remainingMinutes
+                });
             } else {
                 return t('gameMode.estimatedTime.hoursOnly', '约 {{hours}}小时', {hours});
             }
@@ -450,13 +467,23 @@ export default function GameMode() {
                                     start={{x: 0, y: 0}}
                                     end={{x: 1, y: 1}}
                                 >
-                                    <Text style={styles.emptyButtonText}>{t('gameMode.empty.button', '去添加任务')}</Text>
+                                    <Text
+                                        style={styles.emptyButtonText}>{t('gameMode.empty.button', '去添加任务')}</Text>
                                     <Ionicons name="add" size={16} color="white"/>
                                 </LinearGradient>
                             </TouchableOpacity>
                         </Animated.View>
                     )}
                 </ScrollView>
+
+                {/* TaskSet详情Modal */}
+                <TaskSetDetailModal
+                    isEdit={false}
+                    visible={modalVisible}
+                    taskSet={selectedTaskSet}
+                    category={selectedTaskSet ? categories.find(cat => cat.id === selectedTaskSet.categoryId) || null : null}
+                    onClose={() => setModalVisible(false)}
+                />
             </View>
         </>
     );

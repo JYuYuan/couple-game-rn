@@ -28,7 +28,7 @@ export default function FlyingChessGame() {
 
     // 使用hooks，传入分类参数
     const gameTasks = useGameTasks(taskSetId);
-    const gamePlayersHook = useGamePlayers(2);
+    const gamePlayersHook = useGamePlayers(2, 49); // 7x7 = 49格
     const audioManager = useAudioManager();
     const {
         players,
@@ -40,7 +40,8 @@ export default function FlyingChessGame() {
         nextPlayer,
         movePlayer,
         checkWinCondition,
-        applyTaskReward,
+        calculateTaskReward,
+        endGame,
         getOpponentPlayer
     } = gamePlayersHook;
 
@@ -84,6 +85,12 @@ export default function FlyingChessGame() {
     // 处理胜利
     const handleVictory = (victoryPlayer: GamePlayer) => {
         console.log('Game victory! Winner:', victoryPlayer.name);
+
+        // 立即设置游戏状态为结束，防止继续游戏
+        if (gameStatus === 'playing') {
+            console.log('Setting game status to ended');
+            endGame();
+        }
 
         // 播放胜利音效
         audioManager.playSoundEffect('victory').catch(console.error);
@@ -189,41 +196,78 @@ export default function FlyingChessGame() {
 
         console.log(`Task completed: type=${pendingTaskType}, trigger=${triggerPlayerId}, executor=${executorPlayerId}, completed=${completed}`);
 
-        // 应用任务奖惩，移动执行者
-        const moveResult = applyTaskReward(executorPlayerId, pendingTaskType, completed);
-
-        if (moveResult) {
-            console.log(`Executor ${executorPlayerId} moved from position ${moveResult.oldPosition} to ${moveResult.newPosition}`);
-
-            // 如果执行者位置发生了变化，立即检查胜利条件
-            if (moveResult.newPosition !== moveResult.oldPosition) {
-                setTimeout(() => {
-                    checkWinCondition((winner) => {
-                        handleVictory(winner);
-                    });
-                }, 100);
-            }
-        }
+        // 计算任务奖惩信息
+        const rewardInfo = calculateTaskReward(executorPlayerId, pendingTaskType, completed);
 
         // 关闭弹窗并重置状态
         setShowTaskModal(false);
         setTaskModalData(null);
         setPendingTaskType(null);
 
-        // 任务完成后检查是否需要切换玩家
-        setTimeout(() => {
-            // 再次检查胜利条件
-            checkWinCondition((winner) => {
-                handleVictory(winner);
-            });
+        if (rewardInfo && rewardInfo.actualSteps > 0) {
+            console.log(`Task reward: Player ${executorPlayerId} will move ${rewardInfo.actualSteps} steps ${rewardInfo.isForward ? 'forward' : 'backward'}`);
 
-            // 如果游戏仍在进行中，切换到下一个玩家
+            // 设置移动状态
+            setIsMoving(true);
+
+            // 使用逐步移动
+            if (pendingTaskType === 'collision' && !completed) {
+                // 特殊处理：碰撞任务失败直接回到起点
+                movePlayer(executorPlayerId, 0);
+                setTimeout(() => {
+                    setIsMoving(false);
+                    handleTaskCompleteCallback(executorPlayerId, 0);
+                }, 500);
+            } else {
+                // 正常的逐步移动
+                movePlayerByTaskReward(executorPlayerId, rewardInfo.actualSteps, rewardInfo.isForward, (playerId, finalPosition) => {
+                    setIsMoving(false);
+                    handleTaskCompleteCallback(playerId, finalPosition);
+                });
+            }
+        } else {
+            // 没有移动或移动步数为0，直接处理后续逻辑
+            setTimeout(() => {
+                handleTaskCompleteCallback(executorPlayerId, players.find(p => p.id === executorPlayerId)?.position || 0);
+            }, 300);
+        }
+    };
+
+    // 任务完成后的回调处理
+    const handleTaskCompleteCallback = (playerId: number, finalPosition: number) => {
+        console.log(`Task movement completed: Player ${playerId} at position ${finalPosition}`);
+
+        const finishPosition = boardPath.length - 1; // 终点位置
+        console.log(`Board length: ${boardPath.length}, Finish position: ${finishPosition}`);
+
+        // 立即检查胜利条件，不使用setTimeout
+        const updatedPlayer = players.find(p => p.id === playerId);
+        console.log(`Player ${playerId} current position in state: ${updatedPlayer?.position}, final position from callback: ${finalPosition}`);
+
+        if (updatedPlayer && updatedPlayer.position === finishPosition) {
+            console.log(`Direct victory check: Player reached position ${finishPosition}!`);
+            handleVictory(updatedPlayer);
+            return; // 立即返回，不再执行后续逻辑
+        }
+
+        // 使用hook的胜利检查作为备选，传入具体的玩家和位置信息
+        const winResult = checkWinCondition(playerId, finalPosition);
+        if (winResult.hasWinner && winResult.winner) {
+            console.log('Victory detected after task completion!', winResult.winner);
+            handleVictory(winResult.winner);
+        }
+
+        // 延迟检查游戏状态，确保胜利检查完成
+        setTimeout(() => {
+            // 只有当游戏仍在进行中时，才切换到下一个玩家
             if (gameStatus === 'playing') {
                 setDiceValue(0);
                 nextPlayer();
                 console.log('Task completed, switching to next player');
+            } else {
+                console.log('Game ended, not switching player');
             }
-        }, 500);
+        }, 100);
     };
 
 
@@ -255,11 +299,12 @@ export default function FlyingChessGame() {
                     // 移动完成的回调函数
                     setIsMoving(false);
 
-                    // 先检查胜利条件
-                    checkWinCondition((winner) => {
-                        handleVictory(winner);
+                    // 先检查胜利条件，传入具体的玩家和位置信息
+                    const winResult = checkWinCondition(playerId, finalPosition);
+                    if (winResult.hasWinner && winResult.winner) {
+                        handleVictory(winResult.winner);
                         return; // 如果有人获胜，直接返回
-                    });
+                    }
 
                     // 检查是否触发了任务
                     const hasTask = checkCellAndTriggerTask(playerId, finalPosition);
@@ -285,25 +330,94 @@ export default function FlyingChessGame() {
         setIsMoving(false);
     };
 
+    // 任务奖惩逐步移动
+    const movePlayerByTaskReward = (playerId: number, steps: number, isForward: boolean, onComplete?: (playerId: number, finalPosition: number) => void) => {
+        const player = players.find(p => p.id === playerId);
+        if (!player) return;
+
+        const startPosition = player.position;
+        const finishLine = boardPath.length - 1; // 终点位置
+        let stepCount = 0;
+        let targetPosition;
+
+        if (isForward) {
+            // 前进逻辑（和投掷骰子相同）
+            if (startPosition + steps > finishLine) {
+                const excess = (startPosition + steps) - finishLine;
+                targetPosition = finishLine - excess;
+            } else {
+                targetPosition = startPosition + steps;
+            }
+            targetPosition = Math.max(0, targetPosition);
+        } else {
+            // 后退逻辑
+            targetPosition = Math.max(startPosition - steps, 0);
+        }
+
+        console.log(`Task reward movement: Player ${playerId} from position ${startPosition}, ${isForward ? 'forward' : 'backward'} ${steps} steps, target: ${targetPosition}`);
+
+        const moveOneStep = () => {
+            if (stepCount < steps && gameStatus === 'playing') {
+                stepCount++;
+                let currentMovePosition;
+
+                if (isForward) {
+                    // 前进移动
+                    const currentStep = startPosition + stepCount;
+                    if (currentStep <= finishLine) {
+                        currentMovePosition = currentStep;
+                    } else {
+                        const stepsFromFinish = currentStep - finishLine;
+                        currentMovePosition = finishLine - stepsFromFinish;
+                    }
+                    currentMovePosition = Math.max(0, Math.min(finishLine, currentMovePosition));
+                } else {
+                    // 后退移动
+                    currentMovePosition = Math.max(startPosition - stepCount, 0);
+                }
+
+                movePlayer(playerId, currentMovePosition);
+
+                // 播放移动音效
+                audioManager.playSoundEffect('step').catch(console.error);
+
+                if (stepCount < steps) {
+                    setTimeout(moveOneStep, 400);
+                } else {
+                    // 移动完成
+                    console.log(`Task reward movement completed! Player ${playerId} moved from position ${startPosition} to position ${targetPosition}`);
+
+                    if (onComplete) {
+                        setTimeout(() => {
+                            onComplete(playerId, targetPosition);
+                        }, 500);
+                    }
+                }
+            }
+        };
+
+        moveOneStep();
+    };
+
     const movePlayerStepByStep = (playerIndex: number, steps: number, onComplete?: (playerId: number, finalPosition: number) => void) => {
         const startPlayer = players[playerIndex];
         if (!startPlayer) return;
 
         const startPosition = startPlayer.position;
-        const boardSize = 48; // 棋盘总格数（终点位置为47，索引从0开始）
+        const finishLine = boardPath.length - 1; // 终点位置
         let stepCount = 0;
         let targetPosition;
 
-        // 计算最终位置，考虑终点反弹机制
-        if (startPosition + steps > boardSize) {
-            // 如果超过终点，需要反弹
-            const excess = (startPosition + steps) - boardSize;
-            targetPosition = boardSize - excess;
+        // 计算最终位置，考虑倒着走的机制
+        if (startPosition + steps > finishLine) {
+            // 如果超过终点，需要倒着走
+            const excess = (startPosition + steps) - finishLine;
+            targetPosition = finishLine - excess;
         } else {
             targetPosition = startPosition + steps;
         }
 
-        // 确保位置不小于起始位置（防止反弹到起点之前）
+        // 确保位置不小于0（防止倒着走到负数位置）
         targetPosition = Math.max(0, targetPosition);
 
         console.log(`Player ${startPlayer.id} from position ${startPosition} rolled ${steps} steps, target position: ${targetPosition}`);
@@ -313,17 +427,20 @@ export default function FlyingChessGame() {
                 stepCount++;
                 let currentMovePosition;
 
-                if (stepCount <= boardSize - startPosition) {
-                    // 向前移动阶段
-                    currentMovePosition = startPosition + stepCount;
+                // 计算当前步的位置
+                const currentStep = startPosition + stepCount;
+
+                if (currentStep <= finishLine) {
+                    // 向前移动阶段：还未到达终点
+                    currentMovePosition = currentStep;
                 } else {
-                    // 反弹阶段
-                    const bounceSteps = stepCount - (boardSize - startPosition);
-                    currentMovePosition = boardSize - bounceSteps;
+                    // 已经越过终点，开始倒着走
+                    const stepsFromFinish = currentStep - finishLine;
+                    currentMovePosition = finishLine - stepsFromFinish;
                 }
 
                 // 确保位置在有效范围内
-                currentMovePosition = Math.max(0, Math.min(boardSize, currentMovePosition));
+                currentMovePosition = Math.max(0, Math.min(finishLine, currentMovePosition));
                 movePlayer(startPlayer.id, currentMovePosition);
 
                 // 播放移动音效

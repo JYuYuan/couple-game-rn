@@ -31,17 +31,19 @@ interface TaskSetDetailModalProps {
     onEdit?: () => void;
     onToggleActive?: () => void;
     onDelete?: () => void;
+    isEdit?: boolean
 }
 
 export const TaskSetDetailModal: React.FC<TaskSetDetailModalProps> = ({
-    visible,
-    taskSet,
-    category,
-    onClose,
-    onEdit,
-    onToggleActive,
-    onDelete
-}) => {
+                                                                          visible,
+                                                                          taskSet,
+                                                                          category,
+                                                                          onClose,
+                                                                          onEdit,
+                                                                          onToggleActive,
+                                                                          onDelete,
+                                                                          isEdit
+                                                                      }) => {
     const insets = useSafeAreaInsets();
     const colorScheme = useColorScheme() ?? 'light';
     const colors = Colors[colorScheme] as any;
@@ -110,7 +112,7 @@ export const TaskSetDetailModal: React.FC<TaskSetDetailModalProps> = ({
             {/* 透明背景蒙层 */}
             <View style={styles.backdrop}>
                 <TouchableWithoutFeedback onPress={handleBackdropPress}>
-                    <View style={styles.backdropTouchable} />
+                    <View style={styles.backdropTouchable}/>
                 </TouchableWithoutFeedback>
             </View>
 
@@ -166,7 +168,7 @@ export const TaskSetDetailModal: React.FC<TaskSetDetailModalProps> = ({
                             <View style={styles.infoRow}>
                                 {category && (
                                     <View style={styles.categoryInfo}>
-                                        <Ionicons name={category.icon as any} size={16} color={category.color} />
+                                        <Ionicons name={category.icon as any} size={16} color={category.color}/>
                                         <Text style={[styles.categoryName, {color: colors.homeCardDescription}]}>
                                             {category.name}
                                         </Text>
@@ -179,50 +181,52 @@ export const TaskSetDetailModal: React.FC<TaskSetDetailModalProps> = ({
                         </View>
 
                         <TouchableOpacity onPress={onClose} style={styles.headerCloseButton}>
-                            <Ionicons name="close" size={24} color={colors.homeCardDescription} />
+                            <Ionicons name="close" size={24} color={colors.homeCardDescription}/>
                         </TouchableOpacity>
                     </View>
 
                     {/* 操作按钮 */}
-                    <View style={styles.actionBar}>
-                        <TouchableOpacity
-                            style={[
-                                styles.actionButton,
-                                {backgroundColor: taskSet.isActive ? '#4ECDC4' + '20' : colors.homeCardBorder}
-                            ]}
-                            onPress={onToggleActive}
-                        >
-                            <Ionicons
-                                name={taskSet.isActive ? 'pause-circle' : 'play-circle'}
-                                size={18}
-                                color={taskSet.isActive ? '#4ECDC4' : colors.homeCardDescription}
-                            />
-                            <Text style={[
-                                styles.actionButtonText,
-                                {color: taskSet.isActive ? '#4ECDC4' : colors.homeCardDescription}
-                            ]}>
-                                {taskSet.isActive ? t('tasks.taskSet.status.enabled', '已启用') : t('tasks.taskSet.status.disabled', '已禁用')}
-                            </Text>
-                        </TouchableOpacity>
-
-                        <View style={styles.iconButtonGroup}>
+                    {isEdit !== false && (
+                        <View style={styles.actionBar}>
                             <TouchableOpacity
-                                style={[styles.iconButton, {backgroundColor: colors.settingsAccent + '15'}]}
-                                onPress={onEdit}
+                                style={[
+                                    styles.actionButton,
+                                    {backgroundColor: taskSet.isActive ? '#4ECDC4' + '20' : colors.homeCardBorder}
+                                ]}
+                                onPress={onToggleActive}
                             >
-                                <Ionicons name="create" size={18} color={colors.settingsAccent} />
+                                <Ionicons
+                                    name={taskSet.isActive ? 'pause-circle' : 'play-circle'}
+                                    size={18}
+                                    color={taskSet.isActive ? '#4ECDC4' : colors.homeCardDescription}
+                                />
+                                <Text style={[
+                                    styles.actionButtonText,
+                                    {color: taskSet.isActive ? '#4ECDC4' : colors.homeCardDescription}
+                                ]}>
+                                    {taskSet.isActive ? t('tasks.taskSet.status.enabled', '已启用') : t('tasks.taskSet.status.disabled', '已禁用')}
+                                </Text>
                             </TouchableOpacity>
 
-                            {taskSet.type === 'custom' && (
+                            <View style={styles.iconButtonGroup}>
                                 <TouchableOpacity
-                                    style={[styles.iconButton, {backgroundColor: '#FF6B6B' + '15'}]}
-                                    onPress={onDelete}
+                                    style={[styles.iconButton, {backgroundColor: colors.settingsAccent + '15'}]}
+                                    onPress={onEdit}
                                 >
-                                    <Ionicons name="trash" size={18} color="#FF6B6B" />
+                                    <Ionicons name="create" size={18} color={colors.settingsAccent}/>
                                 </TouchableOpacity>
-                            )}
+
+                                {taskSet.type === 'custom' && (
+                                    <TouchableOpacity
+                                        style={[styles.iconButton, {backgroundColor: '#FF6B6B' + '15'}]}
+                                        onPress={onDelete}
+                                    >
+                                        <Ionicons name="trash" size={18} color="#FF6B6B"/>
+                                    </TouchableOpacity>
+                                )}
+                            </View>
                         </View>
-                    </View>
+                    )}
 
                     {/* 任务列表 */}
                     <ScrollView
@@ -236,7 +240,7 @@ export const TaskSetDetailModal: React.FC<TaskSetDetailModalProps> = ({
                             </Text>
 
                             {taskSet.tasks.map((task, index) => {
-                                const taskObj = typeof task === 'string' ? { title: task } : task;
+                                const taskObj = typeof task === 'string' ? {title: task} : task;
 
                                 return (
                                     <View
@@ -260,7 +264,8 @@ export const TaskSetDetailModal: React.FC<TaskSetDetailModalProps> = ({
                                                     {taskObj.title}
                                                 </Text>
                                                 {taskObj.description && (
-                                                    <Text style={[styles.taskDescription, {color: colors.homeCardDescription}]}>
+                                                    <Text
+                                                        style={[styles.taskDescription, {color: colors.homeCardDescription}]}>
                                                         {taskObj.description}
                                                     </Text>
                                                 )}
@@ -272,7 +277,7 @@ export const TaskSetDetailModal: React.FC<TaskSetDetailModalProps> = ({
 
                             {taskSet.tasks.length === 0 && (
                                 <View style={styles.emptyTasks}>
-                                    <Ionicons name="document-outline" size={48} color={colors.homeCardDescription} />
+                                    <Ionicons name="document-outline" size={48} color={colors.homeCardDescription}/>
                                     <Text style={[styles.emptyText, {color: colors.homeCardDescription}]}>
                                         {t('taskSetDetail.emptyTasks', '暂无任务')}
                                     </Text>
@@ -281,7 +286,7 @@ export const TaskSetDetailModal: React.FC<TaskSetDetailModalProps> = ({
                         </View>
 
                         {/* 底部空白区域 */}
-                        <View style={styles.bottomSpacer} />
+                        <View style={styles.bottomSpacer}/>
                     </ScrollView>
                 </View>
             </Animated.View>

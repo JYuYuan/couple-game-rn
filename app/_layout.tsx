@@ -6,6 +6,7 @@ import {useAudioManager} from "@/hooks/use-audio-manager";
 import {useSettingsStore} from "@/store";
 import * as SplashScreen from 'expo-splash-screen';
 import "@/i18n";
+import {Platform} from "react-native";
 
 // 防止启动屏自动隐藏
 SplashScreen.preventAutoHideAsync();
@@ -44,6 +45,7 @@ export default function RootLayout() {
 
     // 控制启动屏显示时间
     useEffect(() => {
+
         async function prepare() {
             try {
                 // 这里可以进行一些初始化操作，比如加载资源、检查更新等
@@ -57,7 +59,12 @@ export default function RootLayout() {
             }
         }
 
-        prepare();
+        if (Platform.OS !== 'web' && typeof window !== "undefined") {
+            prepare();
+        } else {
+            setAppIsReady(true);
+        }
+
     }, []);
 
     const onLayoutRootView = useCallback(async () => {

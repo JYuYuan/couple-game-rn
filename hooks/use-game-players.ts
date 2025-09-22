@@ -17,7 +17,7 @@ export interface GamePlayer {
 const PLAYER_COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4'];
 const PLAYER_ICON_TYPES: PlayerIconType[] = ['airplane', 'helicopter', 'rocket', 'ufo'];
 
-export const useGamePlayers = (initialPlayerCount: number = 2) => {
+export const useGamePlayers = (initialPlayerCount: number = 2, boardSize: number = 48) => {
   const { t } = useTranslation();
 
   // 获取国际化的玩家名称
@@ -57,12 +57,13 @@ export const useGamePlayers = (initialPlayerCount: number = 2) => {
 
   // 移动玩家位置
   const movePlayer = useCallback((playerId: number, newPosition: number) => {
+    const finishPosition = boardSize - 1;
     setPlayers(prev => prev.map(player =>
       player.id === playerId
-        ? { ...player, position: Math.max(0, Math.min(newPosition, 48)) }
+        ? { ...player, position: Math.max(0, Math.min(newPosition, finishPosition)) }
         : player
     ));
-  }, []);
+  }, [boardSize]);
 
   // 增加玩家分数
   const addPlayerScore = useCallback((playerId: number, points: number) => {
@@ -96,14 +97,39 @@ export const useGamePlayers = (initialPlayerCount: number = 2) => {
   }, []);
 
   // 检查游戏胜利条件
-  const checkWinCondition = useCallback((onWin: (winner: GamePlayer) => void) => {
-    // 在反弹机制下，玩家需要刚好落在终点位置(48)才能获胜
-    const winner = players.find(player => player.position === 48);
-    if (winner && gameStatus === 'playing') {
-      setGameStatus('ended');
-      onWin(winner);
+  const checkWinCondition = useCallback((playerId?: number, currentPosition?: number) => {
+    console.log('Checking win condition, current players:', players.map(p => ({ id: p.id, name: p.name, position: p.position })));
+    console.log('Current game status:', gameStatus);
+
+    const finishPosition = boardSize - 1;
+
+    if (playerId !== undefined && currentPosition !== undefined) {
+      console.log(`Checking specific player ${playerId} at position ${currentPosition}`);
+      if (currentPosition === finishPosition) {
+        const winnerPlayer = players.find(p => p.id === playerId);
+        if (winnerPlayer && gameStatus === 'playing') {
+          console.log('Setting game status to ended');
+          setGameStatus('ended');
+          return { hasWinner: true, winner: winnerPlayer };
+        }
+      }
     }
-  }, [players, gameStatus]);
+
+    // 在反弹机制下，玩家需要刚好落在终点位置才能获胜
+    const winner = players.find(player => player.position === finishPosition);
+    console.log('Winner found:', winner ? `${winner.name} at position ${winner.position}` : 'none');
+
+    if (winner && gameStatus === 'playing') {
+      console.log('Setting game status to ended');
+      setGameStatus('ended');
+      return { hasWinner: true, winner };
+    } else if (winner && gameStatus !== 'playing') {
+      console.log('Winner found but game status is not playing:', gameStatus);
+      return { hasWinner: false, winner: null };
+    }
+
+    return { hasWinner: false, winner: null };
+  }, [players, gameStatus, boardSize]);
 
   // 重置游戏
   const resetGame = useCallback(() => {
@@ -122,6 +148,11 @@ export const useGamePlayers = (initialPlayerCount: number = 2) => {
   const startGame = useCallback(() => {
     setGameStatus('playing');
     setCurrentPlayerIndex(0);
+  }, []);
+
+  // 直接设置游戏状态
+  const endGame = useCallback(() => {
+    setGameStatus('ended');
   }, []);
 
   // 暂停/恢复游戏
@@ -145,23 +176,26 @@ export const useGamePlayers = (initialPlayerCount: number = 2) => {
     const player = players.find(p => p.id === playerId);
     if (!player) return null;
 
+    const finishPosition = boardSize - 1;
+
     return {
       tasksCompleted: player.completedTasks.length,
       achievements: player.achievements.length,
       position: player.position,
       score: player.score,
-      progress: Math.round((player.position / 48) * 100)
+      progress: Math.round((player.position / finishPosition) * 100)
     };
-  }, [players]);
+  }, [players, boardSize]);
 
-  // 任务奖惩机制
-  const applyTaskReward = useCallback((playerId: number, taskType: 'trap' | 'star' | 'collision', completed: boolean) => {
+  // 任务奖惩机制 - 计算移动信息但不直接移动
+  const calculateTaskReward = useCallback((playerId: number, taskType: 'trap' | 'star' | 'collision', completed: boolean) => {
     const player = players.find(p => p.id === playerId);
     if (!player) return null;
 
     let moveSteps = 0;
     let newPosition = player.position;
     const oldPosition = player.position;
+    const finishLine = boardSize - 1;
 
     switch (taskType) {
       case 'trap':
@@ -169,8 +203,17 @@ export const useGamePlayers = (initialPlayerCount: number = 2) => {
         // 陷阱和幸运任务：完成前进3-6格，未完成后退3-6格
         moveSteps = Math.floor(Math.random() * 4) + 3; // 3-6格
         if (completed) {
-          newPosition = Math.min(player.position + moveSteps, 48);
+          // 前进时考虑倒着走机制
+          if (player.position + moveSteps > finishLine) {
+            const excess = (player.position + moveSteps) - finishLine;
+            newPosition = finishLine - excess;
+          } else {
+            newPosition = player.position + moveSteps;
+          }
+          // 确保不会倒着走到负数位置
+          newPosition = Math.max(0, newPosition);
         } else {
+          // 后退时直接减去步数，但不能小于0
           newPosition = Math.max(player.position - moveSteps, 0);
         }
         break;
@@ -178,23 +221,34 @@ export const useGamePlayers = (initialPlayerCount: number = 2) => {
         // 碰撞任务：完成停留原地，未完成回到起点
         if (completed) {
           newPosition = player.position; // 保持原位
+          moveSteps = 0;
         } else {
           newPosition = 0; // 回到起点
+          moveSteps = player.position; // 移动步数为当前位置
         }
         break;
     }
 
-    // 更新玩家位置
-    movePlayer(playerId, newPosition);
-
-    // 返回移动信息用于显示
+    // 返回移动信息但不实际移动
     return {
       playerId,
       oldPosition,
       newPosition,
-      moveSteps: taskType === 'collision' ? (completed ? 0 : -oldPosition) : (completed ? moveSteps : -moveSteps)
+      moveSteps: taskType === 'collision' ? (completed ? 0 : -oldPosition) : (completed ? moveSteps : -moveSteps),
+      isForward: taskType === 'collision' ? false : completed,
+      actualSteps: Math.abs(moveSteps)
     };
-  }, [players, movePlayer]);
+  }, [players, boardSize]);
+
+  // 保留原有的直接移动函数用于其他场景
+  const applyTaskReward = useCallback((playerId: number, taskType: 'trap' | 'star' | 'collision', completed: boolean) => {
+    const rewardInfo = calculateTaskReward(playerId, taskType, completed);
+    if (!rewardInfo) return null;
+
+    // 直接移动玩家到最终位置
+    movePlayer(playerId, rewardInfo.newPosition);
+    return rewardInfo;
+  }, [calculateTaskReward, movePlayer]);
 
   // 获取对手玩家
   const getOpponentPlayer = useCallback((currentPlayerId: number) => {
@@ -256,11 +310,13 @@ export const useGamePlayers = (initialPlayerCount: number = 2) => {
     startGame,
     resetGame,
     togglePause,
+    endGame,
     checkWinCondition,
     showWinDialog,
 
     // 任务系统
     applyTaskReward,
+    calculateTaskReward,
 
     // 统计信息
     getPlayerRanking,

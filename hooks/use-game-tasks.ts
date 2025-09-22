@@ -63,7 +63,12 @@ export const useGameTasks = (taskSetId?: string) => {
             console.log('没有可用任务');
             return null;
         }
-        const randomTask = currentTasks[Math.floor(Math.random() * currentTasks.length)];
+        const randomIndex = Math.floor(Math.random() * currentTasks.length);
+        const randomTask = currentTasks[randomIndex];
+
+        // 获取任务的同时从列表中删除
+        setCurrentTasks(prevTasks => prevTasks.filter((_, index) => index !== randomIndex));
+
         console.log('随机选择的任务：', randomTask);
         return randomTask;
     };

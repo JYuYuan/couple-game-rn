@@ -67,23 +67,17 @@ export default function TaskModal({
             setIsCompleted(null);
             setShowResult(false);
 
-            // 开始动画 - 优雅的弹入效果
-            backdropOpacity.value = withTiming(1, {duration: 300});
-            modalTranslateY.value = withSpring(0, {
-                damping: 20,
-                stiffness: 200
-            });
-            modalScale.value = withSpring(1, {
-                damping: 16,
-                stiffness: 160
-            });
-            modalOpacity.value = withTiming(1, {duration: 300});
+            // 直接设置为显示状态，不使用动画
+            backdropOpacity.value = 1;
+            modalTranslateY.value = 0;
+            modalScale.value = 1;
+            modalOpacity.value = 1;
         } else {
-            // 关闭动画 - 快速淡出
-            backdropOpacity.value = withTiming(0, {duration: 200});
-            modalTranslateY.value = withTiming(30, {duration: 150});
-            modalScale.value = withTiming(0.9, {duration: 150});
-            modalOpacity.value = withTiming(0, {duration: 150});
+            // 直接设置为隐藏状态，不使用动画
+            backdropOpacity.value = 0;
+            modalTranslateY.value = 0;
+            modalScale.value = 1;
+            modalOpacity.value = 0;
         }
     }, [visible]);
 

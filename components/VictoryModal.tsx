@@ -65,17 +65,15 @@ export default function VictoryModal({
             setShowTaskSelection(false);
             setTasksCompleted(false);
 
-            // 启动入场动画
-            opacity.value = withTiming(1, { duration: 300 });
-            scale.value = withSequence(
-                withSpring(1.2, { damping: 8, stiffness: 100 }),
-                withSpring(1, { damping: 12, stiffness: 150 })
-            );
-            confettiScale.value = withSpring(1, { damping: 10, stiffness: 80 });
+            // 直接设置为显示状态，不使用动画
+            opacity.value = 1;
+            scale.value = 1;
+            confettiScale.value = 1;
         } else {
+            // 直接设置为隐藏状态，不使用动画
             opacity.value = 0;
-            scale.value = 0;
-            confettiScale.value = 0;
+            scale.value = 1;
+            confettiScale.value = 1;
         }
     }, [visible]);
 
