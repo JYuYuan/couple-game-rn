@@ -59,7 +59,7 @@ export const useAudioManager = (): AudioManager => {
                     if (status.isLoaded) {
                         setIsPlaying(status.isPlaying || false);
                         setIsLoaded(true);
-                        console.log('Audio status:', { isPlaying: status.isPlaying, isLoaded: status.isLoaded });
+                        // console.log('Audio status:', { isPlaying: status.isPlaying, isLoaded: status.isLoaded });
                     } else {
                         setIsLoaded(false);
                         console.log('Audio not loaded');
