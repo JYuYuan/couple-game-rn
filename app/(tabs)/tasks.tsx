@@ -25,7 +25,7 @@ import {TaskSetDetailModal} from '@/components/TaskSetDetailModal';
 import * as DocumentPicker from 'expo-document-picker';
 import {Language} from '@/utils/systemTasks';
 import i18n from '@/i18n';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import {AlertButton, CustomAlert} from '@/components/CustomAlert';
 
@@ -283,15 +283,6 @@ const TaskSettings: React.FC = () => {
                     buttons: [
                         {text: t('common.cancel', '取消'), style: 'cancel'},
                         {
-                            text: t('tasks.export.share', '分享'),
-                            onPress: async () => {
-                                await Share.share({
-                                    message: jsonString,
-                                    title: t('tasks.export.shareTitle', '导出任务集: {{name}}', {name: exportData.name}),
-                                });
-                            }
-                        },
-                        {
                             text: t('tasks.export.saveToFile', '保存到文件'),
                             onPress: async () => {
                                 await saveToFile(exportData.name, jsonString);
@@ -309,7 +300,7 @@ const TaskSettings: React.FC = () => {
     const saveToFile = async (taskSetName: string, content: string) => {
         try {
             // 创建文件名（移除特殊字符）
-            const fileName = `${taskSetName}_${new Date().getTime()}.json`;
+            let fileName = `${taskSetName}_${new Date().getTime()}.json`;
 
             if (Platform.OS === 'web') {
                 // Web端使用浏览器下载
@@ -326,25 +317,41 @@ const TaskSettings: React.FC = () => {
 
                 showAlert(t('common.success', '成功'), t('tasks.export.success.downloaded', '文件已下载到您的设备'));
             } else {
-                // 移动端使用expo文件系统
-                const file = new FileSystem.File(FileSystem.Paths.cache, fileName);
+                // fileName = `game_task_${new Date().getTime()}.json`;
 
-                // 写入文件
-                await file.write(content);
+                try {
+                    // 移动端使用expo文件系统legacy API（更稳定）
+                    const fileUri = FileSystem.cacheDirectory + fileName;
 
-                // 检查是否支持分享
-                if (!(await Sharing.isAvailableAsync())) {
-                    showAlert(t('common.success', '成功'), t('tasks.export.success.saved', '文件已保存到: {{fileName}}', {fileName}));
-                    return;
+                    // 写入文件内容
+                    await FileSystem.writeAsStringAsync(fileUri, content);
+
+                    // 验证文件是否创建成功
+                    const fileInfo = await FileSystem.getInfoAsync(fileUri);
+                    if (!fileInfo.exists) {
+                        throw new Error('文件创建失败');
+                    }
+
+                    console.log('文件创建成功，路径:', fileUri);
+
+                    // 检查是否支持分享
+                    if (!(await Sharing.isAvailableAsync())) {
+                        showAlert(t('common.success', '成功'), t('tasks.export.success.saved', '文件已保存到: {{fileName}}', {fileName}));
+                        return;
+                    }
+
+                    // 分享文件
+                    try {
+                        await Sharing.shareAsync(fileUri);
+                        showAlert(t('common.success', '成功'), t('tasks.export.success.exported', '文件已导出并可以保存到您的设备'));
+                    } catch (shareError) {
+                        console.warn('分享失败，但文件已保存:', shareError);
+                        showAlert(t('common.success', '成功'), t('tasks.export.success.saved', '文件已保存到: {{fileName}}', {fileName}));
+                    }
+                } catch (fileError) {
+                    console.error('文件操作失败:', fileError);
+                    throw fileError; // 重新抛出错误，让外层catch处理
                 }
-
-                // 分享文件
-                await Sharing.shareAsync(file.uri, {
-                    mimeType: 'application/json',
-                    dialogTitle: t('tasks.export.dialogTitle', '保存任务集文件'),
-                });
-
-                showAlert(t('common.success', '成功'), t('tasks.export.success.exported', '文件已导出并可以保存到您的设备'));
             }
         } catch (error) {
             console.error('保存文件失败:', error);
