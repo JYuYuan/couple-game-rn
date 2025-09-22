@@ -18,6 +18,8 @@ import {Colors} from '@/constants/theme';
 import {useTasksStore} from '@/store/tasksStore';
 import {TaskSet} from '@/types/tasks';
 import {TaskSetDetailModal} from '@/components/TaskSetDetailModal';
+import {OnlineRoomModal} from '@/components/OnlineRoomModal';
+import {useSocket} from '@/hooks/use-socket';
 
 const routeConfig: Record<string, string> = {
     fly: '/flying-chess',
@@ -31,6 +33,7 @@ export default function GameMode() {
     const {t} = useTranslation();
     const colorScheme = useColorScheme() ?? 'light';
     const colors = Colors[colorScheme] as any;
+    const socket = useSocket();
 
     // 获取传入的游戏类型参数
     const gameType = params.type as string || 'all';
@@ -42,6 +45,7 @@ export default function GameMode() {
     const [selectedCategory, setSelectedCategory] = useState<string>('all');
     const [modalVisible, setModalVisible] = useState(false);
     const [selectedTaskSet, setSelectedTaskSet] = useState<TaskSet | null>(null);
+    const [showOnlineModal, setShowOnlineModal] = useState(false);
     const hasInitialAnimated = useRef(false);
 
     // 动画值
@@ -242,6 +246,40 @@ export default function GameMode() {
             });
         };
 
+        const handleOnlineGame = () => {
+            setSelectedTaskSet(taskSet);
+
+            // 检查是否已经在房间中
+            if (socket.currentRoom) {
+                console.log('Already in room, directly entering game:', socket.currentRoom.id);
+                // 如果已经在房间中，直接进入游戏
+                router.push({
+                    pathname: routeConfig[gameType] as any,
+                    params: {
+                        taskSetId: taskSet.id,
+                        onlineMode: 'true',
+                        roomId: socket.currentRoom.id
+                    }
+                });
+            } else {
+                console.log('No active room, showing room creation modal');
+                // 如果没有房间，显示创建/加入房间的模态框
+                setShowOnlineModal(true);
+            }
+        };
+
+        const handleOnlineRoomJoined = (roomId: string) => {
+            if (!routeConfig[gameType]) return;
+            router.push({
+                pathname: routeConfig[gameType] as any,
+                params: {
+                    taskSetId: taskSet.id,
+                    onlineMode: 'true',
+                    roomId: roomId
+                }
+            });
+        };
+
         return (
             <Animated.View style={[animatedStyle, cardFadeStyle, styles.taskSetCard]}>
                 <TouchableOpacity
@@ -307,24 +345,55 @@ export default function GameMode() {
                         </View>
                     </View>
 
-                    {/* 开始按钮 */}
-                    <TouchableOpacity
-                        style={styles.startButton}
-                        onPress={handleStartGame}
-                    >
-                        <LinearGradient
-                            colors={['#5E5CE6', '#BF5AF2']}
-                            style={styles.startButtonGradient}
-                            start={{x: 0, y: 0}}
-                            end={{x: 1, y: 1}}
+                    {/* 游戏模式按钮 */}
+                    <View style={styles.gameButtons}>
+                        {/* 单机模式 */}
+                        <TouchableOpacity
+                            style={styles.gameModeButton}
+                            onPress={handleStartGame}
                         >
-                            <Text style={styles.startButtonText}>{t('gameMode.startGame', '开始游戏')}</Text>
-                            <Ionicons name="play" size={16} color="white"/>
-                        </LinearGradient>
-                    </TouchableOpacity>
+                            <LinearGradient
+                                colors={['#5E5CE6', '#BF5AF2']}
+                                style={styles.gameModeButtonGradient}
+                                start={{x: 0, y: 0}}
+                                end={{x: 1, y: 1}}
+                            >
+                                <Ionicons name="person" size={16} color="white"/>
+                                <Text style={styles.gameModeButtonText}>{t('gameMode.singlePlayer', '单机模式')}</Text>
+                            </LinearGradient>
+                        </TouchableOpacity>
+
+                        {/* 在线模式 */}
+                        <TouchableOpacity
+                            style={styles.gameModeButton}
+                            onPress={handleOnlineGame}
+                        >
+                            <LinearGradient
+                                colors={['#4CAF50', '#66BB6A']}
+                                style={styles.gameModeButtonGradient}
+                                start={{x: 0, y: 0}}
+                                end={{x: 1, y: 1}}
+                            >
+                                <Ionicons name="people" size={16} color="white"/>
+                                <Text style={styles.gameModeButtonText}>{t('gameMode.onlineMode', '在线模式')}</Text>
+                            </LinearGradient>
+                        </TouchableOpacity>
+                    </View>
                 </TouchableOpacity>
             </Animated.View>
         );
+    };
+
+    const handleOnlineRoomJoined = (roomId: string) => {
+        if (!routeConfig[gameType]) return;
+        router.push({
+            pathname: routeConfig[gameType] as any,
+            params: {
+                taskSetId: selectedTaskSet?.id || '',
+                onlineMode: 'true',
+                roomId: roomId
+            }
+        });
     };
 
     // 辅助函数
@@ -483,6 +552,15 @@ export default function GameMode() {
                     taskSet={selectedTaskSet}
                     category={selectedTaskSet ? categories.find(cat => cat.id === selectedTaskSet.categoryId) || null : null}
                     onClose={() => setModalVisible(false)}
+                />
+
+                {/* 在线房间Modal */}
+                <OnlineRoomModal
+                    taskSet={selectedTaskSet}
+                    visible={showOnlineModal}
+                    onClose={() => setShowOnlineModal(false)}
+                    gameType={gameType as 'fly' | 'wheel' | 'minesweeper'}
+                    onRoomJoined={handleOnlineRoomJoined}
                 />
             </View>
         </>
@@ -648,21 +726,25 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: '500',
     },
-    startButton: {
-        borderRadius: 12,
-        overflow: 'hidden',
-        marginTop: 4,
+    gameButtons: {
+        flexDirection: 'row',
+        gap: 8,
     },
-    startButtonGradient: {
+    gameModeButton: {
+        flex: 1,
+        borderRadius: 10,
+        overflow: 'hidden',
+    },
+    gameModeButtonGradient: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        paddingVertical: 14,
-        gap: 8,
+        paddingVertical: 12,
+        gap: 6,
     },
-    startButtonText: {
+    gameModeButtonText: {
         color: 'white',
-        fontSize: 16,
+        fontSize: 14,
         fontWeight: '600',
     },
     emptyState: {
