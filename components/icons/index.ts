@@ -1,5 +1,5 @@
-export { AirplaneIcon } from './AirplaneIcon';
-export { HelicopterIcon } from './HelicopterIcon';
-export { RocketIcon } from './RocketIcon';
-export { UFOIcon } from './UFOIcon';
-export { PlayerIcon, type PlayerIconType } from './PlayerIcon';
+export { AirplaneIcon } from './AirplaneIcon'
+export { HelicopterIcon } from './HelicopterIcon'
+export { RocketIcon } from './RocketIcon'
+export { UFOIcon } from './UFOIcon'
+export { PlayerIcon, type PlayerIconType } from './PlayerIcon'

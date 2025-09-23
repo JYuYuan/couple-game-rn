@@ -1,141 +1,317 @@
-import {useCallback, useEffect, useState} from 'react';
-import {socketService} from '@/services/socket-service';
-import {CreateRoomData, JoinRoomData, OnlineRoom} from '@/types/online';
+import { useCallback, useEffect, useState } from 'react'
+import { socketService } from '@/services/socket-service'
+import { webrtcService } from '@/services/webrtc-service'
+import {
+  CreateRoomData,
+  JoinRoomData,
+  OnlineRoom,
+  LANRoom,
+  CreateLANRoomData,
+  JoinLANRoomData,
+  ConnectionType,
+  WebRTCConnectionState,
+} from '@/types/online'
 
 export const useSocket = () => {
-    const [isConnected, setIsConnected] = useState(socketService.getIsConnected());
-    const [connectionError, setConnectionError] = useState(socketService.getConnectionError());
-    const [currentRoom, setCurrentRoom] = useState(socketService.getCurrentRoom());
+  const [isConnected, setIsConnected] = useState(socketService.getIsConnected())
+  const [connectionError, setConnectionError] = useState(socketService.getConnectionError())
+  const [currentRoom, setCurrentRoom] = useState(socketService.getCurrentRoom())
 
-    // 监听 SocketService 的状态变化
-    useEffect(() => {
-        const handleConnect = () => {
-            console.log('useSocket: Received connect event');
-            setIsConnected(true);
-            setConnectionError(null);
-        };
+  // 局域网相关状态
+  const [connectionType, setConnectionType] = useState<ConnectionType>('online')
+  const [currentLANRoom, setCurrentLANRoom] = useState(webrtcService?.getCurrentRoom())
+  const [webrtcConnections, setWebrtcConnections] = useState<Map<string, WebRTCConnectionState>>(
+    new Map(),
+  )
 
-        const handleDisconnect = () => {
-            console.log('useSocket: Received disconnect event');
-            setIsConnected(false);
-        };
+  // 监听 SocketService 的状态变化
+  useEffect(() => {
+    const handleConnect = () => {
+      console.log('useSocket: Received connect event')
+      setIsConnected(true)
+      setConnectionError(null)
+    }
 
-        const handleConnectError = () => {
-            console.log('useSocket: Received connect_error event');
-            setIsConnected(false);
-            setConnectionError(socketService.getConnectionError());
-        };
+    const handleDisconnect = () => {
+      console.log('useSocket: Received disconnect event')
+      setIsConnected(false)
+    }
 
-        const handleCurrentRoomChanged = (room: OnlineRoom | null) => {
-            console.log('useSocket: Received currentRoomChanged event:', room?.id);
-            setCurrentRoom(room);
-        };
+    const handleConnectError = () => {
+      console.log('useSocket: Received connect_error event')
+      setIsConnected(false)
+      setConnectionError(socketService.getConnectionError())
+    }
 
-        const handleError = () => {
-            console.log('useSocket: Received error event');
-            setConnectionError(socketService.getConnectionError());
-        };
+    const handleCurrentRoomChanged = (room: OnlineRoom | null) => {
+      console.log('useSocket: Received currentRoomChanged event:', room?.id)
+      setCurrentRoom(room)
+    }
 
-        // 注册事件监听器
-        socketService.on('connect', handleConnect);
-        socketService.on('disconnect', handleDisconnect);
-        socketService.on('connect_error', handleConnectError);
-        socketService.on('currentRoomChanged', handleCurrentRoomChanged);
-        socketService.on('error', handleError);
+    const handleError = () => {
+      console.log('useSocket: Received error event')
+      setConnectionError(socketService.getConnectionError())
+    }
 
-        return () => {
-            // 清理事件监听器
-            socketService.off('connect', handleConnect);
-            socketService.off('disconnect', handleDisconnect);
-            socketService.off('connect_error', handleConnectError);
-            socketService.off('currentRoomChanged', handleCurrentRoomChanged);
-            socketService.off('error', handleError);
-        };
-    }, []);
+    // 注册事件监听器
+    socketService.on('connect', handleConnect)
+    socketService.on('disconnect', handleDisconnect)
+    socketService.on('connect_error', handleConnectError)
+    socketService.on('currentRoomChanged', handleCurrentRoomChanged)
+    socketService.on('error', handleError)
 
-    // 包装的方法
-    const connect = useCallback(() => {
-        socketService.connect();
-    }, []);
+    return () => {
+      // 清理事件监听器
+      socketService.off('connect', handleConnect)
+      socketService.off('disconnect', handleDisconnect)
+      socketService.off('connect_error', handleConnectError)
+      socketService.off('currentRoomChanged', handleCurrentRoomChanged)
+      socketService.off('error', handleError)
+    }
+  }, [])
 
-    const disconnect = useCallback(() => {
-        socketService.disconnect();
-    }, []);
+  // 监听 WebRTC 服务的状态变化
+  useEffect(() => {
+    const handleRoomCreated = (room: LANRoom) => {
+      console.log('useSocket: WebRTC room created:', room.id)
+      setCurrentLANRoom(room)
+      setConnectionType('lan')
+    }
 
-    const createRoom = useCallback((data: CreateRoomData): Promise<OnlineRoom> => {
-        return socketService.createRoom(data);
-    }, []);
+    const handleRoomUpdated = (room: LANRoom) => {
+      console.log('useSocket: WebRTC room updated:', room.id)
+      setCurrentLANRoom(room)
+    }
 
-    const joinRoom = useCallback((data: JoinRoomData): Promise<OnlineRoom> => {
-        return socketService.joinRoom(data);
-    }, []);
+    const handleRoomJoined = (room: LANRoom) => {
+      console.log('useSocket: Joined WebRTC room:', room.id)
+      setCurrentLANRoom(room)
+      setConnectionType('lan')
+    }
 
-    const leaveRoom = useCallback(() => {
-        socketService.leaveRoom();
-    }, []);
+    const handleRoomLeft = () => {
+      console.log('useSocket: Left WebRTC room')
+      setCurrentLANRoom(null)
+      setConnectionType('online')
+      setWebrtcConnections(new Map())
+    }
 
-    const resetRoomState = useCallback(() => {
-        socketService.resetRoomState();
-    }, []);
+    const handleConnectionStateChanged = (peerId: string, state: WebRTCConnectionState) => {
+      console.log('useSocket: WebRTC connection state changed:', peerId, state)
+      setWebrtcConnections((prev) => {
+        const newMap = new Map(prev)
+        newMap.set(peerId, state)
+        return newMap
+      })
+    }
+
+    const handlePlayerJoined = (player: any) => {
+      console.log('useSocket: Player joined WebRTC room:', player.name)
+    }
+
+    // 注册 WebRTC 事件监听器
+    webrtcService?.on('roomCreated', handleRoomCreated)
+    webrtcService?.on('roomUpdated', handleRoomUpdated)
+    webrtcService?.on('roomJoined', handleRoomJoined)
+    webrtcService?.on('roomLeft', handleRoomLeft)
+    webrtcService?.on('connectionStateChanged', handleConnectionStateChanged)
+    webrtcService?.on('playerJoined', handlePlayerJoined)
+
+    return () => {
+      // 清理 WebRTC 事件监听器
+      webrtcService?.off('roomCreated', handleRoomCreated)
+      webrtcService?.off('roomUpdated', handleRoomUpdated)
+      webrtcService?.off('roomJoined', handleRoomJoined)
+      webrtcService?.off('roomLeft', handleRoomLeft)
+      webrtcService?.off('connectionStateChanged', handleConnectionStateChanged)
+      webrtcService?.off('playerJoined', handlePlayerJoined)
+    }
+  }, [])
+
+  // 包装的方法
+  const connect = useCallback(() => {
+    socketService.connect()
+  }, [])
+
+  const disconnect = useCallback(() => {
+    socketService.disconnect()
+  }, [])
+
+  const createRoom = useCallback((data: CreateRoomData): Promise<OnlineRoom> => {
+    return socketService.createRoom(data)
+  }, [])
+
+  const joinRoom = useCallback((data: JoinRoomData): Promise<OnlineRoom> => {
+    return socketService.joinRoom(data)
+  }, [])
+
+  const leaveRoom = useCallback(() => {
+    if (connectionType === 'lan') {
+      webrtcService?.leaveRoom()
+    } else {
+      socketService.leaveRoom()
+    }
+  }, [connectionType])
+
+  const resetRoomState = useCallback(() => {
+    if (connectionType === 'lan') {
+      webrtcService?.leaveRoom()
+    } else {
+      socketService.resetRoomState()
+    }
+  }, [connectionType])
+
+  // 局域网房间操作
+  const createLANRoom = useCallback((data: CreateLANRoomData): Promise<LANRoom> => {
+    return webrtcService?.createLANRoom(data)
+  }, [])
+
+  const joinLANRoom = useCallback((data: JoinLANRoomData): Promise<LANRoom> => {
+    return webrtcService?.joinLANRoom(data)
+  }, [])
+
+  const switchToOnlineMode = useCallback(() => {
+    if (connectionType === 'lan') {
+      webrtcService?.leaveRoom()
+    }
+    setConnectionType('online')
+  }, [connectionType])
+
+  const switchToLANMode = useCallback(() => {
+    if (connectionType === 'online' && currentRoom) {
+      socketService.leaveRoom()
+    }
+    setConnectionType('lan')
+  }, [connectionType, currentRoom])
+
+  // 游戏事件
+  const startGame = useCallback(
+    (data: any) => {
+      if (connectionType === 'lan') {
+        webrtcService?.startGame(data)
+      } else {
+        socketService.startGame(data)
+      }
+    },
+    [connectionType],
+  )
+
+  const rollDice = useCallback(
+    (data: any) => {
+      if (connectionType === 'lan') {
+        webrtcService?.rollDice(data)
+      } else {
+        socketService.rollDice(data)
+      }
+    },
+    [connectionType],
+  )
+
+  const movePlayer = useCallback(
+    (data: any) => {
+      if (connectionType === 'lan') {
+        webrtcService?.movePlayer(data)
+      } else {
+        socketService.movePlayer(data)
+      }
+    },
+    [connectionType],
+  )
+
+  const triggerTask = useCallback(
+    (data: any) => {
+      if (connectionType === 'lan') {
+        webrtcService?.triggerTask(data)
+      } else {
+        socketService.triggerTask(data)
+      }
+    },
+    [connectionType],
+  )
+
+  const completeTask = useCallback(
+    (data: any) => {
+      if (connectionType === 'lan') {
+        webrtcService?.completeTask(data)
+      } else {
+        socketService.completeTask(data)
+      }
+    },
+    [connectionType],
+  )
+
+  const addEventListener = useCallback(
+    (event: string, listener: (...args: any[]) => void) => {
+      if (connectionType === 'lan') {
+        webrtcService?.on(event, listener)
+      } else {
+        socketService.on(event, listener)
+      }
+    },
+    [connectionType],
+  )
+
+  const removeEventListener = useCallback(
+    (event: string, listener: (...args: any[]) => void) => {
+      if (connectionType === 'lan') {
+        webrtcService?.off(event, listener)
+      } else {
+        socketService.off(event, listener)
+      }
+    },
+    [connectionType],
+  )
+
+  return {
+    // 连接状态
+    isConnected: connectionType === 'lan' ? currentLANRoom !== null : isConnected,
+    connectionError,
+    currentRoom: connectionType === 'lan' ? currentLANRoom : currentRoom,
+
+    // 连接类型和状态
+    connectionType,
+    currentLANRoom,
+    webrtcConnections,
+
+    // 连接管理
+    connect,
+    disconnect,
+
+    // 在线房间管理
+    createRoom,
+    joinRoom,
+
+    // 局域网房间管理
+    createLANRoom,
+    joinLANRoom,
+    switchToOnlineMode,
+    switchToLANMode,
+
+    // 房间发现
+    getDiscoveredRooms: webrtcService?.getDiscoveredRooms,
+    startRoomScan: webrtcService?.startRoomScan,
+    stopRoomScan: webrtcService?.stopRoomScan,
+
+    // 通用房间操作
+    leaveRoom,
+    resetRoomState,
 
     // 游戏事件
-    const startGame = useCallback((data: any) => {
-        socketService.startGame(data);
-    }, []);
+    startGame,
+    rollDice,
+    movePlayer,
+    triggerTask,
+    completeTask,
 
-    const rollDice = useCallback((data: any) => {
-        socketService.rollDice(data);
-    }, []);
+    // 事件管理
+    addEventListener,
+    removeEventListener,
 
-    const movePlayer = useCallback((data: any) => {
-        socketService.movePlayer(data);
-    }, []);
-
-    const triggerTask = useCallback((data: any) => {
-        socketService.triggerTask(data);
-    }, []);
-
-    const completeTask = useCallback((data: any) => {
-        socketService.completeTask(data);
-    }, []);
-
-    const addEventListener = useCallback((event: string, listener: (...args: any[]) => void) => {
-        socketService.on(event, listener);
-    }, []);
-
-    const removeEventListener = useCallback((event: string, listener: (...args: any[]) => void) => {
-        socketService.off(event, listener);
-    }, []);
-
-    return {
-        // 连接状态
-        isConnected,
-        connectionError,
-        currentRoom,
-
-        // 连接管理
-        connect,
-        disconnect,
-
-        // 房间管理
-        createRoom,
-        joinRoom,
-        leaveRoom,
-        resetRoomState,
-
-        // 游戏事件
-        startGame,
-        rollDice,
-        movePlayer,
-        triggerTask,
-        completeTask,
-
-        // 事件管理
-        addEventListener,
-        removeEventListener,
-
-        // 实用函数
-        isHost: socketService.isHost,
-        currentPlayer: socketService.currentPlayer,
-    };
-};
+    // 实用函数
+    isHost: connectionType === 'lan' ? webrtcService?.isHost() : socketService.isHost,
+    currentPlayer:
+      connectionType === 'lan'
+        ? currentLANRoom?.players.find((p: any) => p.id === webrtcService?.getMyPeerId())
+        : socketService.currentPlayer,
+  }
+}

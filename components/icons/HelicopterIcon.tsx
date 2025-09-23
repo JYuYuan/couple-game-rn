@@ -1,27 +1,17 @@
-import React from 'react';
-import Svg, {Circle, Ellipse, G, Path} from 'react-native-svg';
+import React from 'react'
+import Svg, { Circle, Ellipse, G, Path } from 'react-native-svg'
 
 interface HelicopterIconProps {
-  size?: number;
-  color?: string;
+  size?: number
+  color?: string
 }
 
-export const HelicopterIcon: React.FC<HelicopterIconProps> = ({
-  size = 24,
-  color = '#FF6482'
-}) => {
+export const HelicopterIcon: React.FC<HelicopterIconProps> = ({ size = 24, color = '#FF6482' }) => {
   return (
     <Svg width={30} height={30} viewBox="0 0 24 24" fill="none">
       <G>
         {/* 清新女性脸部轮廓 */}
-        <Circle
-          cx="12"
-          cy="12.5"
-          r="8.5"
-          fill="#FFEEE6"
-          stroke="#FFDDDD"
-          strokeWidth="0.8"
-        />
+        <Circle cx="12" cy="12.5" r="8.5" fill="#FFEEE6" stroke="#FFDDDD" strokeWidth="0.8" />
 
         {/* 优雅长发 */}
         <Path
@@ -52,61 +42,15 @@ export const HelicopterIcon: React.FC<HelicopterIconProps> = ({
         />
 
         {/* 温柔的眼睛 */}
-        <Ellipse
-          cx="9.5"
-          cy="10.5"
-          rx="2"
-          ry="2.5"
-          fill="white"
-        />
-        <Ellipse
-          cx="9.5"
-          cy="10.5"
-          rx="1.5"
-          ry="2"
-          fill="#8B7355"
-        />
-        <Ellipse
-          cx="9.5"
-          cy="10.5"
-          rx="1"
-          ry="1.3"
-          fill="#5D4E37"
-        />
-        <Circle
-          cx="10"
-          cy="9.8"
-          r="0.5"
-          fill="white"
-        />
+        <Ellipse cx="9.5" cy="10.5" rx="2" ry="2.5" fill="white" />
+        <Ellipse cx="9.5" cy="10.5" rx="1.5" ry="2" fill="#8B7355" />
+        <Ellipse cx="9.5" cy="10.5" rx="1" ry="1.3" fill="#5D4E37" />
+        <Circle cx="10" cy="9.8" r="0.5" fill="white" />
 
-        <Ellipse
-          cx="14.5"
-          cy="10.5"
-          rx="2"
-          ry="2.5"
-          fill="white"
-        />
-        <Ellipse
-          cx="14.5"
-          cy="10.5"
-          rx="1.5"
-          ry="2"
-          fill="#8B7355"
-        />
-        <Ellipse
-          cx="14.5"
-          cy="10.5"
-          rx="1"
-          ry="1.3"
-          fill="#5D4E37"
-        />
-        <Circle
-          cx="15"
-          cy="9.8"
-          r="0.5"
-          fill="white"
-        />
+        <Ellipse cx="14.5" cy="10.5" rx="2" ry="2.5" fill="white" />
+        <Ellipse cx="14.5" cy="10.5" rx="1.5" ry="2" fill="#8B7355" />
+        <Ellipse cx="14.5" cy="10.5" rx="1" ry="1.3" fill="#5D4E37" />
+        <Circle cx="15" cy="9.8" r="0.5" fill="white" />
 
         {/* 细致睫毛 */}
         <Path
@@ -135,13 +79,7 @@ export const HelicopterIcon: React.FC<HelicopterIconProps> = ({
         />
 
         {/* 精致小鼻 */}
-        <Ellipse
-          cx="12"
-          cy="12.8"
-          rx="0.5"
-          ry="0.8"
-          fill="#FFCCCC"
-        />
+        <Ellipse cx="12" cy="12.8" rx="0.5" ry="0.8" fill="#FFCCCC" />
 
         {/* 自然微笑 */}
         <Path
@@ -153,22 +91,8 @@ export const HelicopterIcon: React.FC<HelicopterIconProps> = ({
         />
 
         {/* 淡淡腮红 */}
-        <Ellipse
-          cx="7.5"
-          cy="13.5"
-          rx="1.2"
-          ry="0.8"
-          fill="#FFB6C1"
-          opacity="0.6"
-        />
-        <Ellipse
-          cx="16.5"
-          cy="13.5"
-          rx="1.2"
-          ry="0.8"
-          fill="#FFB6C1"
-          opacity="0.6"
-        />
+        <Ellipse cx="7.5" cy="13.5" rx="1.2" ry="0.8" fill="#FFB6C1" opacity="0.6" />
+        <Ellipse cx="16.5" cy="13.5" rx="1.2" ry="0.8" fill="#FFB6C1" opacity="0.6" />
 
         {/* 柔和眉毛 */}
         <Path
@@ -185,19 +109,9 @@ export const HelicopterIcon: React.FC<HelicopterIconProps> = ({
         />
 
         {/* 简单耳环装饰 */}
-        <Circle
-          cx="5.5"
-          cy="11.5"
-          r="0.6"
-          fill="#FFD700"
-        />
-        <Circle
-          cx="18.5"
-          cy="11.5"
-          r="0.6"
-          fill="#FFD700"
-        />
+        <Circle cx="5.5" cy="11.5" r="0.6" fill="#FFD700" />
+        <Circle cx="18.5" cy="11.5" r="0.6" fill="#FFD700" />
       </G>
     </Svg>
-  );
-};
+  )
+}

@@ -1,27 +1,17 @@
-import React from 'react';
-import Svg, {Circle, G, Path} from 'react-native-svg';
+import React from 'react'
+import Svg, { Circle, G, Path } from 'react-native-svg'
 
 interface AirplaneIconProps {
-  size?: number;
-  color?: string;
+  size?: number
+  color?: string
 }
 
-export const AirplaneIcon: React.FC<AirplaneIconProps> = ({
-  size = 24,
-  color = '#5E5CE6'
-}) => {
+export const AirplaneIcon: React.FC<AirplaneIconProps> = ({ size = 24, color = '#5E5CE6' }) => {
   return (
     <Svg width={30} height={30} viewBox="0 0 24 24" fill="none">
       <G>
         {/* 脸部轮廓 - 更圆润 */}
-        <Circle
-          cx="12"
-          cy="13"
-          r="10"
-          fill="#FFD4C4"
-          stroke="#FFC4B4"
-          strokeWidth="0.8"
-        />
+        <Circle cx="12" cy="13" r="10" fill="#FFD4C4" stroke="#FFC4B4" strokeWidth="0.8" />
 
         {/* 头发 - 更蓬松可爱 */}
         <Path
@@ -30,99 +20,25 @@ export const AirplaneIcon: React.FC<AirplaneIconProps> = ({
         />
 
         {/* 可爱的呆毛 */}
-        <Circle
-          cx="12"
-          cy="3"
-          r="1.5"
-          fill="#FF7F50"
-        />
-        <Circle
-          cx="10"
-          cy="4"
-          r="1"
-          fill="#FF7F50"
-        />
-        <Circle
-          cx="14"
-          cy="4"
-          r="1"
-          fill="#FF7F50"
-        />
+        <Circle cx="12" cy="3" r="1.5" fill="#FF7F50" />
+        <Circle cx="10" cy="4" r="1" fill="#FF7F50" />
+        <Circle cx="14" cy="4" r="1" fill="#FF7F50" />
 
         {/* 超大眼睛 - 更可爱 */}
-        <Circle
-          cx="9"
-          cy="11"
-          r="2.5"
-          fill="white"
-          stroke="#E0E0E0"
-          strokeWidth="0.3"
-        />
-        <Circle
-          cx="9"
-          cy="11"
-          r="1.8"
-          fill="#4169E1"
-        />
-        <Circle
-          cx="9"
-          cy="11"
-          r="1.2"
-          fill="#000080"
-        />
-        <Circle
-          cx="9.5"
-          cy="10.2"
-          r="0.6"
-          fill="white"
-        />
-        <Circle
-          cx="8.5"
-          cy="10.8"
-          r="0.3"
-          fill="white"
-        />
+        <Circle cx="9" cy="11" r="2.5" fill="white" stroke="#E0E0E0" strokeWidth="0.3" />
+        <Circle cx="9" cy="11" r="1.8" fill="#4169E1" />
+        <Circle cx="9" cy="11" r="1.2" fill="#000080" />
+        <Circle cx="9.5" cy="10.2" r="0.6" fill="white" />
+        <Circle cx="8.5" cy="10.8" r="0.3" fill="white" />
 
-        <Circle
-          cx="15"
-          cy="11"
-          r="2.5"
-          fill="white"
-          stroke="#E0E0E0"
-          strokeWidth="0.3"
-        />
-        <Circle
-          cx="15"
-          cy="11"
-          r="1.8"
-          fill="#4169E1"
-        />
-        <Circle
-          cx="15"
-          cy="11"
-          r="1.2"
-          fill="#000080"
-        />
-        <Circle
-          cx="15.5"
-          cy="10.2"
-          r="0.6"
-          fill="white"
-        />
-        <Circle
-          cx="14.5"
-          cy="10.8"
-          r="0.3"
-          fill="white"
-        />
+        <Circle cx="15" cy="11" r="2.5" fill="white" stroke="#E0E0E0" strokeWidth="0.3" />
+        <Circle cx="15" cy="11" r="1.8" fill="#4169E1" />
+        <Circle cx="15" cy="11" r="1.2" fill="#000080" />
+        <Circle cx="15.5" cy="10.2" r="0.6" fill="white" />
+        <Circle cx="14.5" cy="10.8" r="0.3" fill="white" />
 
         {/* 可爱小鼻子 */}
-        <Circle
-          cx="12"
-          cy="14"
-          r="0.8"
-          fill="#FFB6C1"
-        />
+        <Circle cx="12" cy="14" r="0.8" fill="#FFB6C1" />
 
         {/* 超级可爱的笑脸 */}
         <Path
@@ -134,20 +50,8 @@ export const AirplaneIcon: React.FC<AirplaneIconProps> = ({
         />
 
         {/* 更大更粉的腮红 */}
-        <Circle
-          cx="6.5"
-          cy="14.5"
-          r="1.8"
-          fill="#FF91A4"
-          opacity="0.8"
-        />
-        <Circle
-          cx="17.5"
-          cy="14.5"
-          r="1.8"
-          fill="#FF91A4"
-          opacity="0.8"
-        />
+        <Circle cx="6.5" cy="14.5" r="1.8" fill="#FF91A4" opacity="0.8" />
+        <Circle cx="17.5" cy="14.5" r="1.8" fill="#FF91A4" opacity="0.8" />
 
         {/* 可爱的眉毛 */}
         <Path
@@ -164,23 +68,11 @@ export const AirplaneIcon: React.FC<AirplaneIconProps> = ({
         />
 
         {/* 可爱的星星装饰 */}
-        <Path
-          d="M5 7L5.5 7.5L6 7L5.5 6.5Z"
-          fill="#FFD700"
-        />
-        <Path
-          d="M19 7L19.5 7.5L20 7L19.5 6.5Z"
-          fill="#FFD700"
-        />
-        <Path
-          d="M6 19L6.5 19.5L7 19L6.5 18.5Z"
-          fill="#FFD700"
-        />
-        <Path
-          d="M18 19L18.5 19.5L19 19L18.5 18.5Z"
-          fill="#FFD700"
-        />
+        <Path d="M5 7L5.5 7.5L6 7L5.5 6.5Z" fill="#FFD700" />
+        <Path d="M19 7L19.5 7.5L20 7L19.5 6.5Z" fill="#FFD700" />
+        <Path d="M6 19L6.5 19.5L7 19L6.5 18.5Z" fill="#FFD700" />
+        <Path d="M18 19L18.5 19.5L19 19L18.5 18.5Z" fill="#FFD700" />
       </G>
     </Svg>
-  );
-};
+  )
+}

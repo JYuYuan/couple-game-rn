@@ -1,21 +1,21 @@
-import React from 'react';
-import {StyleSheet, View} from 'react-native';
-import {PlayerIcon, PlayerIconType} from './icons';
+import React from 'react'
+import { StyleSheet, View } from 'react-native'
+import { PlayerIcon, PlayerIconType } from './icons'
 
 interface PlayerAvatarProps {
-  iconType: PlayerIconType;
-  color: string;
-  size?: number;
-  backgroundColor?: string;
+  iconType: PlayerIconType
+  color: string
+  size?: number
+  backgroundColor?: string
 }
 
 export const PlayerAvatar: React.FC<PlayerAvatarProps> = ({
   iconType,
   color,
   size = 40,
-  backgroundColor
+  backgroundColor,
 }) => {
-  const iconSize = size * 0.6; // SVG图标占头像的60%
+  const iconSize = size * 0.6 // SVG图标占头像的60%
 
   return (
     <View
@@ -26,17 +26,13 @@ export const PlayerAvatar: React.FC<PlayerAvatarProps> = ({
           height: size,
           borderRadius: size / 2,
           backgroundColor: backgroundColor || color,
-        }
+        },
       ]}
     >
-      <PlayerIcon
-        type={iconType}
-        size={iconSize}
-        color="white"
-      />
+      <PlayerIcon type={iconType} size={iconSize} color="white" />
     </View>
-  );
-};
+  )
+}
 
 const styles = StyleSheet.create({
   avatar: {
@@ -48,4 +44,4 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-});
+})

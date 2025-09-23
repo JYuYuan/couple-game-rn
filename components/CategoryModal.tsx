@@ -1,48 +1,88 @@
-import React, {useEffect, useState} from 'react';
-import {Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View,} from 'react-native';
-import {Ionicons} from '@expo/vector-icons';
-import {useColorScheme} from '@/hooks/use-color-scheme';
-import {Colors} from '@/constants/theme';
-import {TaskCategory} from '@/types/tasks';
-import {useTasksStore} from '@/store/tasksStore';
+import React, { useEffect, useState } from 'react'
+import {
+  Alert,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
+import { useColorScheme } from '@/hooks/use-color-scheme'
+import { Colors } from '@/constants/theme'
+import { TaskCategory } from '@/types/tasks'
+import { useTasksStore } from '@/store/tasksStore'
 
 interface CategoryModalProps {
-  visible: boolean;
-  onClose: () => void;
-  category?: TaskCategory | null;
+  visible: boolean
+  onClose: () => void
+  category?: TaskCategory | null
 }
 
 const ICON_OPTIONS = [
-  'heart', 'gift', 'game-controller', 'trophy', 'star', 'flame',
-  'sparkles', 'happy', 'thumbs-up', 'diamond', 'rocket', 'music',
-  'camera', 'restaurant', 'home', 'car', 'bicycle', 'walk',
-];
+  'heart',
+  'gift',
+  'game-controller',
+  'trophy',
+  'star',
+  'flame',
+  'sparkles',
+  'happy',
+  'thumbs-up',
+  'diamond',
+  'rocket',
+  'music',
+  'camera',
+  'restaurant',
+  'home',
+  'car',
+  'bicycle',
+  'walk',
+]
 
 const COLOR_OPTIONS = [
-  '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
-  '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9',
-  '#F8C471', '#82E0AA', '#F1948A', '#85C1E9', '#D2B4DE',
-  '#AED6F1', '#A3E4D7', '#F9E79F', '#FADBD8', '#D5DBDB',
-];
+  '#FF6B6B',
+  '#4ECDC4',
+  '#45B7D1',
+  '#96CEB4',
+  '#FFEAA7',
+  '#DDA0DD',
+  '#98D8C8',
+  '#F7DC6F',
+  '#BB8FCE',
+  '#85C1E9',
+  '#F8C471',
+  '#82E0AA',
+  '#F1948A',
+  '#85C1E9',
+  '#D2B4DE',
+  '#AED6F1',
+  '#A3E4D7',
+  '#F9E79F',
+  '#FADBD8',
+  '#D5DBDB',
+]
 
 export const CategoryModal: React.FC<CategoryModalProps> = ({
   visible,
   onClose,
   category = null,
 }) => {
-  const colorScheme = useColorScheme() ?? 'light';
-  const colors = Colors[colorScheme] as any;
+  const colorScheme = useColorScheme() ?? 'light'
+  const colors = Colors[colorScheme] as any
 
-  const { addCategory, updateCategory } = useTasksStore();
+  const { addCategory, updateCategory } = useTasksStore()
 
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     color: COLOR_OPTIONS[0],
     icon: ICON_OPTIONS[0],
-  });
+  })
 
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     if (category) {
@@ -51,24 +91,24 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
         description: category.description || '',
         color: category.color,
         icon: category.icon,
-      });
+      })
     } else {
       setFormData({
         name: '',
         description: '',
         color: COLOR_OPTIONS[0],
         icon: ICON_OPTIONS[0],
-      });
+      })
     }
-  }, [category, visible]);
+  }, [category, visible])
 
   const handleSave = async () => {
     if (!formData.name.trim()) {
-      Alert.alert('提示', '请输入分类名称');
-      return;
+      Alert.alert('提示', '请输入分类名称')
+      return
     }
 
-    setLoading(true);
+    setLoading(true)
     try {
       if (category) {
         updateCategory(category.id, {
@@ -76,23 +116,23 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
           description: formData.description.trim(),
           color: formData.color,
           icon: formData.icon,
-        });
+        })
       } else {
         addCategory({
           name: formData.name.trim(),
           description: formData.description.trim(),
           color: formData.color,
           icon: formData.icon,
-        });
+        })
       }
 
-      onClose();
+      onClose()
     } catch {
-      Alert.alert('错误', '保存失败，请重试');
+      Alert.alert('错误', '保存失败，请重试')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   return (
     <Modal visible={visible} animationType="fade" transparent>
@@ -111,13 +151,16 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
             <View style={styles.section}>
               <Text style={[styles.label, { color: colors.settingsText }]}>名称</Text>
               <TextInput
-                style={[styles.input, {
-                  backgroundColor: colors.settingsCardBackground,
-                  borderColor: colors.settingsCardBorder,
-                  color: colors.settingsText,
-                }]}
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: colors.settingsCardBackground,
+                    borderColor: colors.settingsCardBorder,
+                    color: colors.settingsText,
+                  },
+                ]}
                 value={formData.name}
-                onChangeText={(text) => setFormData(prev => ({ ...prev, name: text }))}
+                onChangeText={(text) => setFormData((prev) => ({ ...prev, name: text }))}
                 placeholder="输入分类名称"
                 placeholderTextColor={colors.settingsSecondaryText}
               />
@@ -126,14 +169,17 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
             <View style={styles.section}>
               <Text style={[styles.label, { color: colors.settingsText }]}>描述</Text>
               <TextInput
-                style={[styles.input, {
-                  backgroundColor: colors.settingsCardBackground,
-                  borderColor: colors.settingsCardBorder,
-                  color: colors.settingsText,
-                  minHeight: 60,
-                }]}
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: colors.settingsCardBackground,
+                    borderColor: colors.settingsCardBorder,
+                    color: colors.settingsText,
+                    minHeight: 60,
+                  },
+                ]}
                 value={formData.description}
-                onChangeText={(text) => setFormData(prev => ({ ...prev, description: text }))}
+                onChangeText={(text) => setFormData((prev) => ({ ...prev, description: text }))}
                 placeholder="输入分类描述（可选）"
                 placeholderTextColor={colors.settingsSecondaryText}
                 multiline
@@ -150,15 +196,15 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
                     style={[
                       styles.iconOption,
                       {
-                        backgroundColor: formData.icon === iconName
-                          ? formData.color + '20'
-                          : colors.settingsCardBackground,
-                        borderColor: formData.icon === iconName
-                          ? formData.color
-                          : colors.settingsCardBorder,
-                      }
+                        backgroundColor:
+                          formData.icon === iconName
+                            ? formData.color + '20'
+                            : colors.settingsCardBackground,
+                        borderColor:
+                          formData.icon === iconName ? formData.color : colors.settingsCardBorder,
+                      },
                     ]}
-                    onPress={() => setFormData(prev => ({ ...prev, icon: iconName }))}
+                    onPress={() => setFormData((prev) => ({ ...prev, icon: iconName }))}
                   >
                     <Ionicons
                       name={iconName as any}
@@ -180,13 +226,12 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
                       styles.colorOption,
                       {
                         backgroundColor: colorValue,
-                        borderColor: formData.color === colorValue
-                          ? colors.settingsText
-                          : 'transparent',
+                        borderColor:
+                          formData.color === colorValue ? colors.settingsText : 'transparent',
                         borderWidth: formData.color === colorValue ? 2 : 0,
-                      }
+                      },
                     ]}
-                    onPress={() => setFormData(prev => ({ ...prev, color: colorValue }))}
+                    onPress={() => setFormData((prev) => ({ ...prev, color: colorValue }))}
                   >
                     {formData.color === colorValue && (
                       <Ionicons name="checkmark" size={16} color="white" />
@@ -198,10 +243,15 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
 
             <View style={styles.previewSection}>
               <Text style={[styles.label, { color: colors.settingsText }]}>预览</Text>
-              <View style={[styles.preview, {
-                backgroundColor: colors.settingsCardBackground,
-                borderColor: colors.settingsCardBorder,
-              }]}>
+              <View
+                style={[
+                  styles.preview,
+                  {
+                    backgroundColor: colors.settingsCardBackground,
+                    borderColor: colors.settingsCardBorder,
+                  },
+                ]}
+              >
                 <View style={[styles.previewIcon, { backgroundColor: formData.color + '20' }]}>
                   <Ionicons name={formData.icon as any} size={24} color={formData.color} />
                 </View>
@@ -209,7 +259,9 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
                   <Text style={[styles.previewName, { color: colors.settingsText }]}>
                     {formData.name || '分类名称'}
                   </Text>
-                  <Text style={[styles.previewDescription, { color: colors.settingsSecondaryText }]}>
+                  <Text
+                    style={[styles.previewDescription, { color: colors.settingsSecondaryText }]}
+                  >
                     {formData.description || '分类描述'}
                   </Text>
                 </View>
@@ -219,7 +271,11 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
 
           <View style={styles.footer}>
             <TouchableOpacity
-              style={[styles.button, styles.cancelButton, { backgroundColor: colors.settingsCardBackground }]}
+              style={[
+                styles.button,
+                styles.cancelButton,
+                { backgroundColor: colors.settingsCardBackground },
+              ]}
               onPress={onClose}
             >
               <Text style={[styles.buttonText, { color: colors.settingsSecondaryText }]}>取消</Text>
@@ -237,8 +293,8 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
         </View>
       </View>
     </Modal>
-  );
-};
+  )
+}
 
 const styles = StyleSheet.create({
   overlay: {
@@ -350,4 +406,4 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-});
+})

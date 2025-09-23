@@ -1,20 +1,20 @@
-import React from 'react';
-import {Modal, Platform, StyleSheet, Text, TouchableOpacity, View,} from 'react-native';
-import {useColorScheme} from '@/hooks/use-color-scheme';
-import {Colors} from '@/constants/theme';
+import React from 'react'
+import { Modal, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { useColorScheme } from '@/hooks/use-color-scheme'
+import { Colors } from '@/constants/theme'
 
 export interface AlertButton {
-  text: string;
-  onPress?: () => void;
-  style?: 'default' | 'cancel' | 'destructive';
+  text: string
+  onPress?: () => void
+  style?: 'default' | 'cancel' | 'destructive'
 }
 
 interface CustomAlertProps {
-  visible: boolean;
-  title: string;
-  message?: string;
-  buttons: AlertButton[];
-  onClose: () => void;
+  visible: boolean
+  title: string
+  message?: string
+  buttons: AlertButton[]
+  onClose: () => void
 }
 
 export const CustomAlert: React.FC<CustomAlertProps> = ({
@@ -24,15 +24,15 @@ export const CustomAlert: React.FC<CustomAlertProps> = ({
   buttons,
   onClose,
 }) => {
-  const colorScheme = useColorScheme() ?? 'light';
-  const colors = Colors[colorScheme] as any;
+  const colorScheme = useColorScheme() ?? 'light'
+  const colors = Colors[colorScheme] as any
 
   const handleButtonPress = (button: AlertButton) => {
     if (button.onPress) {
-      button.onPress();
+      button.onPress()
     }
-    onClose();
-  };
+    onClose()
+  }
 
   return (
     <Modal
@@ -45,9 +45,7 @@ export const CustomAlert: React.FC<CustomAlertProps> = ({
         <View style={[styles.alertContainer, { backgroundColor: colors.modalBackground }]}>
           <Text style={[styles.title, { color: colors.settingsText }]}>{title}</Text>
           {message && (
-            <Text style={[styles.message, { color: colors.settingsSecondaryText }]}>
-              {message}
-            </Text>
+            <Text style={[styles.message, { color: colors.settingsSecondaryText }]}>{message}</Text>
           )}
           <View style={styles.buttonContainer}>
             {buttons.map((button, index) => (
@@ -56,12 +54,13 @@ export const CustomAlert: React.FC<CustomAlertProps> = ({
                 style={[
                   styles.button,
                   {
-                    backgroundColor: button.style === 'destructive'
-                      ? '#FF6B6B20'
-                      : button.style === 'cancel'
-                      ? colors.settingsCardBackground
-                      : colors.settingsAccent + '20'
-                  }
+                    backgroundColor:
+                      button.style === 'destructive'
+                        ? '#FF6B6B20'
+                        : button.style === 'cancel'
+                          ? colors.settingsCardBackground
+                          : colors.settingsAccent + '20',
+                  },
                 ]}
                 onPress={() => handleButtonPress(button)}
               >
@@ -69,12 +68,13 @@ export const CustomAlert: React.FC<CustomAlertProps> = ({
                   style={[
                     styles.buttonText,
                     {
-                      color: button.style === 'destructive'
-                        ? '#FF6B6B'
-                        : button.style === 'cancel'
-                        ? colors.settingsSecondaryText
-                        : colors.settingsAccent
-                    }
+                      color:
+                        button.style === 'destructive'
+                          ? '#FF6B6B'
+                          : button.style === 'cancel'
+                            ? colors.settingsSecondaryText
+                            : colors.settingsAccent,
+                    },
                   ]}
                 >
                   {button.text}
@@ -85,8 +85,8 @@ export const CustomAlert: React.FC<CustomAlertProps> = ({
         </View>
       </View>
     </Modal>
-  );
-};
+  )
+}
 
 const styles = StyleSheet.create({
   overlay: {
@@ -132,17 +132,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-});
+})
 
 // 辅助函数，提供类似Alert.alert的API
 export const showCustomAlert = (
   title: string,
   message?: string,
-  buttons?: AlertButton[]
+  buttons?: AlertButton[],
 ): Promise<void> => {
   return new Promise((resolve) => {
     // 这里我们需要通过全局状态或Context来显示对话框
     // 暂时返回一个resolved Promise
-    resolve();
-  });
-};
+    resolve()
+  })
+}

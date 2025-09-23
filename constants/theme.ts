@@ -3,10 +3,10 @@
  * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
  */
 
-import { Platform } from 'react-native';
+import { Platform } from 'react-native'
 
-const tintColorLight = '#0a7ea4';
-const tintColorDark = '#fff';
+const tintColorLight = '#0a7ea4'
+const tintColorDark = '#fff'
 
 export const Colors = {
   light: {
@@ -19,7 +19,7 @@ export const Colors = {
 
     // 设置页面颜色
     settingsBackground: '#F2F2F7',
-    settingsCardBackground: 'rgba(255, 255, 255, 0.6)',
+    settingsCardBackground: 'rgba(255, 255, 255, 1)',
     settingsCardBorder: 'rgba(255, 255, 255, 0.3)',
     settingsText: '#1C1C1E',
     settingsSecondaryText: '#8E8E93',
@@ -46,7 +46,7 @@ export const Colors = {
     homeTitle: '#1C1C1E',
     homeSubtitle: '#8E8E93',
     homeCardBackground: 'rgba(255, 255, 255, 1)',
-    homeCardBorder:  '#8E8E93',
+    homeCardBorder: '#8E8E93',
     homeCardTitle: '#1C1C1E',
     homeCardDescription: '#8E8E93',
     homeCardArrowBg: 'rgba(142, 142, 147, 0.1)',
@@ -64,7 +64,7 @@ export const Colors = {
 
     // 设置页面深色模式颜色
     settingsBackground: '#000',
-    settingsCardBackground: 'rgba(28, 28, 30, 0.8)',
+    settingsCardBackground: 'rgba(28, 28, 30, 1)',
     settingsCardBorder: 'rgba(84, 84, 88, 0.3)',
     settingsText: '#FFFFFF',
     settingsSecondaryText: '#8E8E93',
@@ -99,7 +99,7 @@ export const Colors = {
     homeFooterText: '#8E8E93',
     homeBlurTint: 'dark',
   },
-};
+}
 
 export const Fonts = Platform.select({
   ios: {
@@ -124,4 +124,4 @@ export const Fonts = Platform.select({
     rounded: "'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif",
     mono: "SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
   },
-});
+})
