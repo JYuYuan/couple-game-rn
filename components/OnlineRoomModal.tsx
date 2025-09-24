@@ -25,6 +25,8 @@ import {
 } from '@/types/online'
 import { LinearGradient } from 'expo-linear-gradient'
 import { TaskSet } from '@/types/tasks'
+import { useSettingsStore } from '@/store'
+import { generateRoomId } from '@/utils'
 
 interface OnlineRoomModalProps {
   visible: boolean
@@ -45,7 +47,6 @@ export const OnlineRoomModal: React.FC<OnlineRoomModalProps> = ({
   const colors = Colors[colorScheme] as any
   const { t } = useTranslation()
   const socket = useSocket()
-
   const [activeTab, setActiveTab] = useState<'join' | 'create'>('join')
   const [connectionMode, setConnectionMode] = useState<'online' | 'lan'>('online')
   const [playerName, setPlayerName] = useState('')
@@ -74,7 +75,7 @@ export const OnlineRoomModal: React.FC<OnlineRoomModalProps> = ({
     } else if (visible && connectionMode === 'online' && socket.isConnected) {
       console.log('OnlineRoomModal: Socket already connected:', socket.isConnected)
     }
-  }, [visible, connectionMode, socket])
+  }, [visible, connectionMode, socket.isConnected])
 
   // 根据游戏类型和任务集设置默认房间名
   useEffect(() => {
@@ -124,31 +125,19 @@ export const OnlineRoomModal: React.FC<OnlineRoomModalProps> = ({
 
     setIsLoading(true)
     try {
+      const createData: CreateRoomData = {
+        roomName: roomName.trim(),
+        playerName: playerName.trim(),
+        maxPlayers,
+        gameType,
+        taskSet: taskSet,
+      }
+
       if (connectionMode === 'lan' && isLANSupported) {
         // 切换到局域网模式并创建房间
         await socket.switchToLANMode()
-
-        const createData: CreateLANRoomData = {
-          roomName: roomName.trim(),
-          playerName: playerName.trim(),
-          maxPlayers,
-          taskSetId: taskSet?.id || '',
-          gameType,
-        }
-
-        console.log('Creating LAN room with task set:', taskSet?.id, 'and game type:', gameType)
         await socket.createLANRoom(createData)
       } else {
-        // 在线模式
-        const createData: CreateRoomData = {
-          roomName: roomName.trim(),
-          playerName: playerName.trim(),
-          maxPlayers,
-          taskSetId: taskSet?.id || '',
-          gameType,
-        }
-
-        console.log('Creating online room with task set:', taskSet?.id, 'and game type:', gameType)
         await socket.createRoom(createData)
       }
     } catch (error) {

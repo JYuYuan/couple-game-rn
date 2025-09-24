@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { socketService } from '@/services/socket-service'
 import { webrtcService } from '@/services/webrtc-service'
 import {
@@ -11,8 +11,10 @@ import {
   ConnectionType,
   WebRTCConnectionState,
 } from '@/types/online'
+import { useSettingsStore } from '@/store'
 
 export const useSocket = () => {
+  const { playerId } = useSettingsStore()
   const [isConnected, setIsConnected] = useState(socketService.getIsConnected())
   const [connectionError, setConnectionError] = useState(socketService.getConnectionError())
   const [currentRoom, setCurrentRoom] = useState(socketService.getCurrentRoom())
@@ -27,7 +29,6 @@ export const useSocket = () => {
   // 监听 SocketService 的状态变化
   useEffect(() => {
     const handleConnect = () => {
-      console.log('useSocket: Received connect event')
       setIsConnected(true)
       setConnectionError(null)
     }
@@ -130,7 +131,7 @@ export const useSocket = () => {
 
   // 包装的方法
   const connect = useCallback(() => {
-    socketService.connect()
+    socketService.connect(playerId)
   }, [])
 
   const disconnect = useCallback(() => {
@@ -143,6 +144,10 @@ export const useSocket = () => {
 
   const joinRoom = useCallback((data: JoinRoomData): Promise<OnlineRoom> => {
     return socketService.joinRoom(data)
+  }, [])
+
+  const currentUser = useCallback(() => {
+    return socketService.getCurrentPlayer()
   }, [])
 
   const leaveRoom = useCallback(() => {
@@ -240,6 +245,18 @@ export const useSocket = () => {
     [connectionType],
   )
 
+  const emit = useCallback(
+    (event: string, data?: any) => {
+      if (connectionType === 'lan') {
+        // LANmode 暂时不支持自定义事件发送
+        console.warn('Custom emit not supported in LAN mode:', event)
+      } else {
+        socketService.socketEmit(event, data)
+      }
+    },
+    [connectionType],
+  )
+
   const addEventListener = useCallback(
     (event: string, listener: (...args: any[]) => void) => {
       if (connectionType === 'lan') {
@@ -304,14 +321,13 @@ export const useSocket = () => {
     completeTask,
 
     // 事件管理
-    addEventListener,
-    removeEventListener,
+    emit,
 
     // 实用函数
-    isHost: connectionType === 'lan' ? webrtcService?.isHost() : socketService.isHost,
+    isHost: connectionType === 'lan' ? webrtcService?.isHost() : socketService.isHost(playerId),
     currentPlayer:
       connectionType === 'lan'
         ? currentLANRoom?.players.find((p: any) => p.id === webrtcService?.getMyPeerId())
-        : socketService.currentPlayer,
+        : currentUser,
   }
 }

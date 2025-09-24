@@ -297,7 +297,6 @@ const GameBoard: React.FC<GameBoardProps> = ({
 }) => {
   const [board, setBoard] = useState<PathCell[]>([])
   const colorScheme = useColorScheme() ?? 'light'
-
   useEffect(() => {
     if (boardData) {
       setBoard(boardData)

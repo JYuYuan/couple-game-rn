@@ -1,8 +1,5 @@
 import React from 'react'
-import { AirplaneIcon } from './AirplaneIcon'
-import { HelicopterIcon } from './HelicopterIcon'
-import { RocketIcon } from './RocketIcon'
-import { UFOIcon } from './UFOIcon'
+import Avatar from '@/components/icons/Avatar'
 
 export type PlayerIconType = 'airplane' | 'helicopter' | 'rocket' | 'ufo'
 
@@ -12,20 +9,14 @@ interface PlayerIconProps {
   color?: string
 }
 
-export const PlayerIcon: React.FC<PlayerIconProps> = ({ type, size = 24, color }) => {
-  switch (type) {
-    case 'airplane':
-      return <AirplaneIcon size={size} color={color} />
-    case 'helicopter':
-      return <HelicopterIcon size={size} color={color} />
-    case 'rocket':
-      return <RocketIcon size={size} color={color} />
-    case 'ufo':
-      return <UFOIcon size={size} color={color} />
-    default:
-      return <AirplaneIcon size={size} color={color} />
-  }
+// 生成100-1000之间的随机seed
+function generateRandomSeed() {
+  // 生成100到1000之间的随机整数
+  return Math.floor(Math.random() * 901) + 100
+}
+
+export const PlayerIcon: React.FC<PlayerIconProps> = () => {
+  return <Avatar seed={generateRandomSeed()} style="random" />
 }
 
 // 导出所有图标类型
-export { AirplaneIcon, HelicopterIcon, RocketIcon, UFOIcon }

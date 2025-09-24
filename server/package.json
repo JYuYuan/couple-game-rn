@@ -3,20 +3,24 @@
   "version": "1.0.0",
   "description": "Socket.io server for couple game",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "simulator": "node simulator-cli.js",
-    "sim-quick": "node simulator-cli.js --quick",
-    "sim-3p": "node simulator-cli.js --players 3",
-    "sim-wheel": "node simulator-cli.js --type wheel",
-    "sim-join": "node simulator-cli.js --join"
+    "simulator": "node bot/simulator-cli.js",
+    "sim-quick": "node bot/simulator-cli.js --quick",
+    "sim-3p": "node bot/simulator-cli.js --players 3",
+    "sim-wheel": "node bot/simulator-cli.js --type wheel",
+    "sim-join": "node bot/simulator-cli.js --join"
   },
   "dependencies": {
-    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "http": "^0.0.1-security",
+    "ioredis": "^5.8.0",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
-    "cors": "^2.8.5"
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.0"
