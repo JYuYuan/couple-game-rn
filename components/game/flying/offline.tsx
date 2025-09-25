@@ -82,7 +82,7 @@ export default function OfflineGame() {
 
     // 首先检查是否到达终点
     if (finalPosition >= finishPosition) {
-      const player = players.find(p => p.id === playerId)
+      const player = players.find((p) => p.id === playerId)
       if (player && gameStatus === 'playing') {
         console.log(`Victory! Player ${playerId} reached finish line at position ${finishPosition}`)
         handleVictory(player)
@@ -138,6 +138,7 @@ export default function OfflineGame() {
 
     // 检查是否有其他玩家在相同位置（碰撞）
     const playersAtPosition = players.filter((p) => p.position === position && p.id !== playerId)
+    console.log(playersAtPosition)
     if (playersAtPosition.length > 0) {
       console.log(`Collision detected at position ${position}`)
       triggerTask('collision', playerId)
@@ -188,17 +189,22 @@ export default function OfflineGame() {
 
     console.log(`Executor ID: ${executorPlayerId}, type: ${executorType}`)
 
-    const executorPlayer = players.find(p => p.id === executorPlayerId)
+    const executorPlayer = players.find((p) => p.id === executorPlayerId)
     const taskData: TaskModalData = {
       id: task.id,
       title: task.title,
       description: task.description || '',
       type: taskType,
-      executors: executorPlayer ? [{
-        id: executorPlayer.id,
-        name: executorPlayer.name,
-        color: executorPlayer.color
-      }] : [],
+      executors: executorPlayer
+        ? [
+            {
+              id: executorPlayer.id,
+              name: executorPlayer.name,
+              color: executorPlayer.color,
+              iconType: executorPlayer.iconType,
+            },
+          ]
+        : [],
       category: task.category,
       difficulty: task.difficulty,
       triggerPlayerIds: [triggerPlayerId],
@@ -211,6 +217,7 @@ export default function OfflineGame() {
 
   // 处理任务完成结果（优化版）
   const handleTaskComplete = (completed: boolean) => {
+    console.log(taskModalData, pendingTaskType)
     if (!taskModalData || !pendingTaskType) return
 
     const triggerPlayerId = taskModalData.triggerPlayerIds[0]
@@ -252,12 +259,12 @@ export default function OfflineGame() {
           (playerId, finalPosition) => {
             setIsMoving(false)
             handleTaskCompleteCallback(playerId, finalPosition)
-          }
+          },
         )
       }
     } else {
       // 没有移动，直接处理后续逻辑
-      const currentPosition = players.find(p => p.id === executorPlayerId)?.position || 0
+      const currentPosition = players.find((p) => p.id === executorPlayerId)?.position || 0
       setTimeout(() => {
         handleTaskCompleteCallback(executorPlayerId, currentPosition)
       }, 300)
@@ -329,7 +336,7 @@ export default function OfflineGame() {
             } else if (hasTask) {
               console.log('Task triggered, waiting for task completion')
             }
-          }
+          },
         )
       }, 1000)
     }, 1200)
@@ -342,7 +349,7 @@ export default function OfflineGame() {
     isForward: boolean = true,
     onComplete?: (playerId: number, finalPosition: number) => void,
   ) => {
-    const player = players.find(p => p.id === playerId)
+    const player = players.find((p) => p.id === playerId)
     if (!player || gameStatus !== 'playing') return
 
     const startPosition = player.position
@@ -368,7 +375,7 @@ export default function OfflineGame() {
     targetPosition = Math.max(0, Math.min(finishLine, targetPosition))
 
     console.log(
-      `Moving player ${playerId} from ${startPosition} ${isForward ? 'forward' : 'backward'} ${steps} steps to ${targetPosition}`
+      `Moving player ${playerId} from ${startPosition} ${isForward ? 'forward' : 'backward'} ${steps} steps to ${targetPosition}`,
     )
 
     const moveOneStep = () => {
@@ -550,7 +557,7 @@ export default function OfflineGame() {
                     },
                   ]}
                 >
-                  <PlayerAvatar iconType={player.iconType} color={player.color} size={32} />
+                  <PlayerAvatar see={player.iconType} color={player.color} size={32} />
                   <View style={styles.playerInfo}>
                     <Text style={[styles.playerName, { color: colors.homeCardTitle }]}>
                       {player.name}
@@ -568,14 +575,7 @@ export default function OfflineGame() {
 
           {/* 游戏棋盘 */}
           <View style={[styles.boardSection, { backgroundColor: colors.homeCardBackground }]}>
-            <GameBoard
-              players={players}
-              currentPlayer={currentPlayerIndex}
-              boardData={boardPath}
-              onCellPress={(cell) => {
-                console.log('Cell pressed:', cell)
-              }}
-            />
+            <GameBoard players={players} boardData={boardPath} currentPlayer={currentPlayerIndex} />
           </View>
         </ScrollView>
       </View>

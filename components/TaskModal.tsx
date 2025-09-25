@@ -1,23 +1,23 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import {
+  Alert,
   Dimensions,
   Modal,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
   Vibration,
-  Alert,
+  View,
 } from 'react-native'
 import Animated, {
+  Extrapolate,
+  interpolate,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
   withTiming,
-  runOnJS,
-  interpolate,
-  Extrapolate
 } from 'react-native-reanimated'
 import { LinearGradient } from 'expo-linear-gradient'
 import { BlurView } from 'expo-blur'
@@ -39,6 +39,7 @@ export interface TaskModalData {
     id: number
     name: string
     color: string
+    iconType: number
   }[]
   category: string
   difficulty: string
@@ -96,11 +97,15 @@ export default function TaskModal({ visible, task, players, onComplete, onClose 
       modalOpacity.value = withTiming(1, { duration: 300 })
 
       // 开始脉冲动画
-      pulseAnimation.value = withTiming(1.05, {
-        duration: 1000,
-      }, () => {
-        pulseAnimation.value = withTiming(1, { duration: 1000 })
-      })
+      pulseAnimation.value = withTiming(
+        1.05,
+        {
+          duration: 1000,
+        },
+        () => {
+          pulseAnimation.value = withTiming(1, { duration: 1000 })
+        },
+      )
     } else {
       // 退出动画
       backdropOpacity.value = withTiming(0, { duration: 200 })
@@ -117,7 +122,7 @@ export default function TaskModal({ visible, task, players, onComplete, onClose 
   const modalStyle = useAnimatedStyle(() => ({
     transform: [
       { scale: modalScale.value * pulseAnimation.value },
-      { translateY: modalTranslateY.value }
+      { translateY: modalTranslateY.value },
     ],
     opacity: modalOpacity.value,
   }))
@@ -222,69 +227,86 @@ export default function TaskModal({ visible, task, players, onComplete, onClose 
   }, [])
 
   // 处理任务完成选择（增强版）
-  const handleTaskChoice = useCallback((completed: boolean) => {
-    // 防止重复点击
-    if (isProcessing) return
+  const handleTaskChoice = useCallback(
+    (completed: boolean) => {
+      // 防止重复点击
+      if (isProcessing) return
 
-    setIsProcessing(true)
-    setHasError(false)
-    triggerHaptic()
-    setIsCompleted(completed)
+      setIsProcessing(true)
+      setHasError(false)
+      triggerHaptic()
+      setIsCompleted(completed)
 
-    try {
-      // 开始进度动画
-      progressValue.value = withTiming(1, { duration: 2000 })
+      try {
+        // 开始进度动画
+        progressValue.value = withTiming(1, { duration: 2000 })
 
-      // 显示结果界面
-      setTimeout(() => {
-        setShowResult(true)
-      }, 800)
+        // 显示结果界面
+        setTimeout(() => {
+          setShowResult(true)
+        }, 800)
 
-      // 延迟执行回调
-      setTimeout(() => {
-        try {
-          onComplete(completed)
-          setIsProcessing(false)
-        } catch (error) {
-          setHasError(true)
-          setErrorMessage(t('taskModal.submitError', '提交失败，请重试'))
-          setIsProcessing(false)
+        // 延迟执行回调
+        setTimeout(() => {
+          try {
+            onComplete(completed)
+            setIsProcessing(false)
+          } catch (error) {
+            setHasError(true)
+            setErrorMessage(t('taskModal.submitError', '提交失败，请重试'))
+            setIsProcessing(false)
+          }
+        }, 2500)
+      } catch (error) {
+        setHasError(true)
+        setErrorMessage(t('taskModal.processError', '处理失败，请重试'))
+        setIsProcessing(false)
+      }
+    },
+    [isProcessing, triggerHaptic, onComplete, progressValue, t],
+  )
+
+  // Web兼容的确认对话框
+  const showWebCompatibleConfirmDialog = useCallback(
+    (completed: boolean) => {
+      if (Platform.OS === 'web') {
+        const title = completed ? '确认完成任务？' : '确认任务失败？'
+        const message = completed
+          ? '确定你已经成功完成了这个任务吗？'
+          : '确定任务没有完成吗？这可能会有惩罚。'
+
+        if (window.confirm(`${title}\n\n${message}`)) {
+          handleTaskChoice(completed)
         }
-      }, 2500)
-    } catch (error) {
-      setHasError(true)
-      setErrorMessage(t('taskModal.processError', '处理失败，请重试'))
-      setIsProcessing(false)
-    }
-  }, [isProcessing, triggerHaptic, onComplete, progressValue, t])
+      } else {
+        const title = completed
+          ? t('taskModal.confirmComplete', '确认完成任务？')
+          : t('taskModal.confirmFailed', '确认任务失败？')
 
-  // 添加确认对话框
-  const showConfirmDialog = useCallback((completed: boolean) => {
-    const title = completed
-      ? t('taskModal.confirmComplete', '确认完成任务？')
-      : t('taskModal.confirmFailed', '确认任务失败？')
+        const message = completed
+          ? t('taskModal.completeMessage', '确定你已经成功完成了这个任务吗？')
+          : t('taskModal.failedMessage', '确定任务没有完成吗？这可能会有惩罚。')
 
-    const message = completed
-      ? t('taskModal.completeMessage', '确定你已经成功完成了这个任务吗？')
-      : t('taskModal.failedMessage', '确定任务没有完成吗？这可能会有惩罚。')
-
-    Alert.alert(
-      title,
-      message,
-      [
-        {
-          text: t('taskModal.cancel', '取消'),
-          style: 'cancel',
-        },
-        {
-          text: t('taskModal.confirm', '确认'),
-          onPress: () => handleTaskChoice(completed),
-          style: completed ? 'default' : 'destructive',
-        },
-      ],
-      { cancelable: true }
-    )
-  }, [handleTaskChoice, t])
+        Alert.alert(
+          title,
+          message,
+          [
+            {
+              text: t('taskModal.cancel', '取消'),
+              style: 'cancel',
+            },
+            {
+              text: t('taskModal.confirm', '确认'),
+              onPress: () => handleTaskChoice(completed),
+              style: completed ? 'default' : 'destructive',
+            },
+          ],
+          { cancelable: true },
+        )
+      }
+    },
+    [handleTaskChoice, t],
+  )
 
   // 获取结果信息
   const getResultInfo = () => {
@@ -402,11 +424,7 @@ export default function TaskModal({ visible, task, players, onComplete, onClose 
                             <View
                               style={[styles.executorAvatar, { backgroundColor: executor.color }]}
                             >
-                              <PlayerIcon
-                                type={getPlayerIconType(executor.id)}
-                                size={20}
-                                color="white"
-                              />
+                              <PlayerIcon see={executor.iconType} />
                             </View>
                             <Text style={[styles.executorName, { color: colors.homeCardTitle }]}>
                               {executor.name}
@@ -431,11 +449,7 @@ export default function TaskModal({ visible, task, players, onComplete, onClose 
                             <View
                               style={[styles.executorAvatar, { backgroundColor: executor.color }]}
                             >
-                              <PlayerIcon
-                                type={getPlayerIconType(executor.id)}
-                                size={20}
-                                color="white"
-                              />
+                              <PlayerIcon see={executor.iconType} />
                             </View>
                             <Text
                               style={[
@@ -500,9 +514,7 @@ export default function TaskModal({ visible, task, players, onComplete, onClose 
                   {hasError && (
                     <View style={styles.errorContainer}>
                       <Ionicons name="warning" size={20} color="#FF6B6B" />
-                      <Text style={[styles.errorText, { color: '#FF6B6B' }]}>
-                        {errorMessage}
-                      </Text>
+                      <Text style={[styles.errorText, { color: '#FF6B6B' }]}>{errorMessage}</Text>
                       <TouchableOpacity
                         style={styles.retryButton}
                         onPress={() => {
@@ -521,11 +533,17 @@ export default function TaskModal({ visible, task, players, onComplete, onClose 
                   {/* 进度条 */}
                   {isProcessing && (
                     <View style={styles.progressContainer}>
-                      <View style={[styles.progressTrack, { backgroundColor: colors.homeCardBorder }]}>
+                      <View
+                        style={[styles.progressTrack, { backgroundColor: colors.homeCardBorder }]}
+                      >
                         <Animated.View
-                          style={[styles.progressBar, progressStyle, {
-                            backgroundColor: isCompleted ? '#4CAF50' : '#FF6B6B'
-                          }]}
+                          style={[
+                            styles.progressBar,
+                            progressStyle,
+                            {
+                              backgroundColor: isCompleted ? '#4CAF50' : '#FF6B6B',
+                            },
+                          ]}
                         />
                       </View>
                       <Text style={[styles.progressText, { color: colors.homeCardDescription }]}>
@@ -537,7 +555,7 @@ export default function TaskModal({ visible, task, players, onComplete, onClose 
                   <View style={styles.actionButtons}>
                     <TouchableOpacity
                       style={[styles.actionButton, { opacity: isProcessing ? 0.6 : 1 }]}
-                      onPress={() => showConfirmDialog(true)}
+                      onPress={() => showWebCompatibleConfirmDialog(true)}
                       disabled={isProcessing}
                       activeOpacity={0.8}
                     >
@@ -556,7 +574,7 @@ export default function TaskModal({ visible, task, players, onComplete, onClose 
 
                     <TouchableOpacity
                       style={[styles.actionButton, { opacity: isProcessing ? 0.6 : 1 }]}
-                      onPress={() => showConfirmDialog(false)}
+                      onPress={() => showWebCompatibleConfirmDialog(false)}
                       disabled={isProcessing}
                       activeOpacity={0.8}
                     >
@@ -602,15 +620,14 @@ export default function TaskModal({ visible, task, players, onComplete, onClose 
                   <View style={styles.resultStats}>
                     <View style={[styles.statItem, { backgroundColor: resultInfo.color + '15' }]}>
                       <Ionicons
-                        name={resultInfo.success ? "trending-up" : "trending-down"}
+                        name={resultInfo.success ? 'trending-up' : 'trending-down'}
                         size={16}
                         color={resultInfo.color}
                       />
                       <Text style={[styles.statText, { color: resultInfo.color }]}>
                         {resultInfo.success
                           ? t('taskModal.positive', '正面效果')
-                          : t('taskModal.negative', '负面效果')
-                        }
+                          : t('taskModal.negative', '负面效果')}
                       </Text>
                     </View>
                   </View>
@@ -638,11 +655,7 @@ export default function TaskModal({ visible, task, players, onComplete, onClose 
                                 { backgroundColor: executor.color },
                               ]}
                             >
-                              <PlayerIcon
-                                type={getPlayerIconType(executor.id)}
-                                size={12}
-                                color="white"
-                              />
+                              <PlayerIcon see={executor.iconType} />
                             </View>
                             <Text style={[styles.affectedPlayerName, { color: executor.color }]}>
                               {executor.name}

@@ -1,16 +1,16 @@
 import React from 'react'
 import { StyleSheet, View } from 'react-native'
-import { PlayerIcon, PlayerIconType } from './icons'
+import { PlayerIcon } from './icons'
 
 interface PlayerAvatarProps {
-  iconType: PlayerIconType
+  see: number
   color: string
   size?: number
   backgroundColor?: string
 }
 
 export const PlayerAvatar: React.FC<PlayerAvatarProps> = ({
-  iconType,
+  see,
   color,
   size = 40,
   backgroundColor,
@@ -29,7 +29,7 @@ export const PlayerAvatar: React.FC<PlayerAvatarProps> = ({
         },
       ]}
     >
-      <PlayerIcon type={iconType} size={iconSize} color="white" />
+      <PlayerIcon see={see} />
     </View>
   )
 }

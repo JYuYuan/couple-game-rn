@@ -279,11 +279,7 @@ const PlayerPiece: React.FC<PlayerPieceProps> = ({ player, index, total }) => {
           },
         ]}
       >
-        <PlayerIcon
-          type={(player.iconType as any) || (player.id === 1 ? 'airplane' : 'helicopter')}
-          size={CELL_SIZE * 0.4}
-          color="white"
-        />
+        <PlayerIcon see={player.iconType} />
       </View>
     </Animated.View>
   )

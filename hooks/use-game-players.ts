@@ -1,7 +1,6 @@
 import { useCallback, useState } from 'react'
 import { Alert } from 'react-native'
 import { useTranslation } from 'react-i18next'
-import { PlayerIconType } from '@/components/icons'
 
 export interface GamePlayer {
   id: number
@@ -9,13 +8,12 @@ export interface GamePlayer {
   color: string
   position: number
   score: number
-  iconType: PlayerIconType // 改为SVG图标类型
+  iconType: number // 改为SVG图标类型
   completedTasks: string[]
   achievements: string[]
 }
 
 const PLAYER_COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4']
-const PLAYER_ICON_TYPES: PlayerIconType[] = ['airplane', 'helicopter', 'rocket', 'ufo']
 
 export const useGamePlayers = (initialPlayerCount: number = 2, boardSize: number = 48) => {
   const { t } = useTranslation()
@@ -39,7 +37,7 @@ export const useGamePlayers = (initialPlayerCount: number = 2, boardSize: number
       color: PLAYER_COLORS[index],
       position: 0,
       score: 0,
-      iconType: PLAYER_ICON_TYPES[index],
+      iconType: index,
       completedTasks: [],
       achievements: [],
     }))
