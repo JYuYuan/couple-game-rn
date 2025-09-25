@@ -389,8 +389,37 @@ export default function TaskModal({ visible, task, players, onComplete, onClose 
                         ? t('taskModal.executors', '执行者们')
                         : t('taskModal.executor', '执行者')}
                     </Text>
-                    {/* 如果执行者较多，使用横向滚动 */}
-                    {task.executors.length > 3 ? (
+
+                    {task.executors.length === 1 ? (
+                      // ✅ 单个执行者样式
+                      <View style={styles.singleExecutorWrapper}>
+                        {task.executors.map((executor) => (
+                          <View
+                            key={executor.id}
+                            style={[
+                              styles.executorCard,
+                              styles.singleExecutorCard,
+                              { backgroundColor: executor.color + '15' },
+                            ]}
+                          >
+                            <View
+                              style={[
+                                styles.executorAvatarLarge,
+                                { backgroundColor: executor.color },
+                              ]}
+                            >
+                              <PlayerIcon see={executor.iconType} />
+                            </View>
+                            <Text
+                              style={[styles.executorNameSingle, { color: colors.homeCardTitle }]}
+                            >
+                              {executor.name}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                    ) : task.executors.length > 4 ? (
+                      // ✅ 大于 4 个 → 横向滚动
                       <ScrollView
                         horizontal
                         showsHorizontalScrollIndicator={false}
@@ -409,24 +438,24 @@ export default function TaskModal({ visible, task, players, onComplete, onClose 
                             >
                               <PlayerIcon see={executor.iconType} />
                             </View>
-                            <Text style={[styles.executorName, { color: colors.homeCardTitle }]}>
+                            <Text
+                              style={[styles.executorName, { color: colors.homeCardTitle }]}
+                              numberOfLines={1}
+                            >
                               {executor.name}
                             </Text>
                           </View>
                         ))}
                       </ScrollView>
                     ) : (
+                      // ✅ 2~4 个 → 平铺展示
                       <View style={styles.executorsContainer}>
                         {task.executors.map((executor) => (
                           <View
                             key={executor.id}
                             style={[
                               styles.executorCard,
-                              {
-                                backgroundColor: executor.color + '15',
-                                flex: task.executors.length > 1 ? 1 : undefined,
-                                marginRight: task.executors.length > 1 ? 8 : 0,
-                              },
+                              { backgroundColor: executor.color + '15' },
                             ]}
                           >
                             <View
@@ -435,13 +464,7 @@ export default function TaskModal({ visible, task, players, onComplete, onClose 
                               <PlayerIcon see={executor.iconType} />
                             </View>
                             <Text
-                              style={[
-                                styles.executorName,
-                                {
-                                  color: colors.homeCardTitle,
-                                  fontSize: task.executors.length > 2 ? 14 : 16,
-                                },
-                              ]}
+                              style={[styles.executorName, { color: colors.homeCardTitle }]}
                               numberOfLines={1}
                             >
                               {executor.name}
@@ -669,6 +692,81 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
+  executorSection: {
+    marginBottom: 24,
+  },
+
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+
+  // 多个执行者（2~4 个 → 平铺展示）
+  executorsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    justifyContent: 'center',
+  },
+
+  // 多个执行者（>4 个 → 横向滚动）
+  executorsScrollContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingRight: 8,
+    paddingVertical: 4,
+  },
+
+  // 公共卡片
+  executorCard: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 12,
+    gap: 8,
+    minWidth: 90,
+  },
+
+  // 普通头像
+  executorAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  executorName: {
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
+    maxWidth: 80,
+  },
+
+  // 单个执行者模式
+  singleExecutorWrapper: {
+    alignItems: 'center',
+  },
+  singleExecutorCard: {
+    minWidth: undefined,
+    paddingVertical: 20,
+    paddingHorizontal: 28,
+  },
+  executorAvatarLarge: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  executorNameSingle: {
+    fontSize: 18,
+    fontWeight: '700',
+    textAlign: 'center',
+    maxWidth: 160,
+  },
   container: {
     flex: 1,
     justifyContent: 'center',
@@ -716,44 +814,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
     lineHeight: 20,
-  },
-  executorSection: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 12,
-  },
-  executorsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  executorsScrollContainer: {
-    flexDirection: 'row',
-    gap: 8,
-    paddingRight: 8,
-  },
-  executorCard: {
-    flexDirection: 'column',
-    alignItems: 'center',
-    padding: 12,
-    borderRadius: 12,
-    gap: 12,
-    minWidth: 100,
-  },
-  executorAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  executorName: {
-    fontSize: 16,
-    fontWeight: '600',
-    flex: 1,
   },
   taskSection: {
     marginBottom: 24,
