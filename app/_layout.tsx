@@ -7,6 +7,7 @@ import { useSettingsStore } from '@/store'
 import * as SplashScreen from 'expo-splash-screen'
 import '@/i18n'
 import { Platform } from 'react-native'
+import { ConfirmDialogProvider } from '@/components/ConfirmDialog'
 
 // 防止启动屏自动隐藏
 SplashScreen.preventAutoHideAsync()
@@ -78,6 +79,7 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }} onLayout={onLayoutRootView}>
+      <ConfirmDialogProvider />
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false, title: '主页' }} />
       </Stack>

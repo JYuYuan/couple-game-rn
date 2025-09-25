@@ -26,6 +26,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme'
 import { Colors } from '@/constants/theme'
 import { PlayerIcon } from './icons'
 import { useTranslation } from 'react-i18next'
+import { showConfirmDialog } from '@/components/ConfirmDialog'
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window')
 
@@ -268,41 +269,23 @@ export default function TaskModal({ visible, task, players, onComplete, onClose 
 
   // Web兼容的确认对话框
   const showWebCompatibleConfirmDialog = useCallback(
-    (completed: boolean) => {
-      if (Platform.OS === 'web') {
-        const title = completed ? '确认完成任务？' : '确认任务失败？'
-        const message = completed
-          ? '确定你已经成功完成了这个任务吗？'
-          : '确定任务没有完成吗？这可能会有惩罚。'
+    async (completed: boolean) => {
+      const title = completed
+        ? t('taskModal.confirmComplete', '确认完成任务？')
+        : t('taskModal.confirmFailed', '确认任务失败？')
 
-        if (window.confirm(`${title}\n\n${message}`)) {
-          handleTaskChoice(completed)
-        }
-      } else {
-        const title = completed
-          ? t('taskModal.confirmComplete', '确认完成任务？')
-          : t('taskModal.confirmFailed', '确认任务失败？')
+      const message = completed
+        ? t('taskModal.completeMessage', '确定你已经成功完成了这个任务吗？')
+        : t('taskModal.failedMessage', '确定任务没有完成吗？这可能会有惩罚。')
+      const ok = await showConfirmDialog({
+        title: title,
+        message: message,
+        destructive: true,
+        icon: 'info',
+      })
 
-        const message = completed
-          ? t('taskModal.completeMessage', '确定你已经成功完成了这个任务吗？')
-          : t('taskModal.failedMessage', '确定任务没有完成吗？这可能会有惩罚。')
-
-        Alert.alert(
-          title,
-          message,
-          [
-            {
-              text: t('taskModal.cancel', '取消'),
-              style: 'cancel',
-            },
-            {
-              text: t('taskModal.confirm', '确认'),
-              onPress: () => handleTaskChoice(completed),
-              style: completed ? 'default' : 'destructive',
-            },
-          ],
-          { cancelable: true },
-        )
+      if (ok) {
+        handleTaskChoice(completed)
       }
     },
     [handleTaskChoice, t],
@@ -753,7 +736,7 @@ const styles = StyleSheet.create({
     paddingRight: 8,
   },
   executorCard: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     alignItems: 'center',
     padding: 12,
     borderRadius: 12,
