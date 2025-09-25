@@ -257,23 +257,25 @@ export const useSocket = () => {
     [connectionType],
   )
 
-  const addEventListener = useCallback(
-    (event: string, listener: (...args: any[]) => void) => {
+  const on = useCallback(
+    (event: string, callback: Function) => {
       if (connectionType === 'lan') {
-        webrtcService?.on(event, listener)
+        // LANmode 暂时不支持自定义事件发送
+        console.warn('Custom emit not supported in LAN mode:', event)
       } else {
-        socketService.on(event, listener)
+        socketService.on(event, callback)
       }
     },
     [connectionType],
   )
 
-  const removeEventListener = useCallback(
-    (event: string, listener: (...args: any[]) => void) => {
+  const off = useCallback(
+    (event: string, callback: Function) => {
       if (connectionType === 'lan') {
-        webrtcService?.off(event, listener)
+        // LANmode 暂时不支持自定义事件发送
+        console.warn('Custom emit not supported in LAN mode:', event)
       } else {
-        socketService.off(event, listener)
+        socketService.off(event, callback)
       }
     },
     [connectionType],
@@ -322,6 +324,8 @@ export const useSocket = () => {
 
     // 事件管理
     emit,
+    on,
+    off,
 
     // 实用函数
     isHost: connectionType === 'lan' ? webrtcService?.isHost() : socketService.isHost(playerId),

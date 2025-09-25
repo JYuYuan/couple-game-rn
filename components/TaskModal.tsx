@@ -1,6 +1,24 @@
-import React, { useEffect, useState } from 'react'
-import { Dimensions, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated'
+import React, { useCallback, useEffect, useState } from 'react'
+import {
+  Dimensions,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  Vibration,
+  Alert,
+} from 'react-native'
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+  runOnJS,
+  interpolate,
+  Extrapolate
+} from 'react-native-reanimated'
 import { LinearGradient } from 'expo-linear-gradient'
 import { BlurView } from 'expo-blur'
 import { Ionicons } from '@expo/vector-icons'
@@ -16,68 +34,79 @@ export interface TaskModalData {
   title: string
   description: string
   type: 'trap' | 'star' | 'collision'
-  executor: 'current' | 'opponent'
+  executors: {
+    // 改为数组，支持多个执行者
+    id: number
+    name: string
+    color: string
+  }[]
   category: string
   difficulty: string
-  triggerPlayerId: number
-  executorPlayerId: number
+  triggerPlayerIds: number[] // 改为数组，支持多个触发者
 }
 
 interface TaskModalProps {
   visible: boolean
   task: TaskModalData | null
-  currentPlayer: {
+  players: {
+    // 传入所有玩家信息
     id: number
     name: string
     color: string
-  } | null
-  opponentPlayer: {
-    id: number
-    name: string
-    color: string
-  } | null
+  }[]
   onComplete: (completed: boolean) => void
   onClose: () => void
 }
 
-export default function TaskModal({
-  visible,
-  task,
-  currentPlayer,
-  opponentPlayer,
-  onComplete,
-  onClose,
-}: TaskModalProps) {
+export default function TaskModal({ visible, task, players, onComplete, onClose }: TaskModalProps) {
   const colorScheme = useColorScheme() ?? 'light'
   const colors = Colors[colorScheme] as any
   const { t } = useTranslation()
 
   const [isCompleted, setIsCompleted] = useState<boolean | null>(null)
   const [showResult, setShowResult] = useState(false)
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [timeRemaining, setTimeRemaining] = useState<number | null>(null)
+  const [hasError, setHasError] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string>('')
 
   // 动画值
   const modalScale = useSharedValue(0.8)
   const backdropOpacity = useSharedValue(0)
   const modalOpacity = useSharedValue(0)
   const modalTranslateY = useSharedValue(50)
+  const progressValue = useSharedValue(0)
+  const pulseAnimation = useSharedValue(1)
 
   useEffect(() => {
     if (visible) {
       // 重置状态
       setIsCompleted(null)
       setShowResult(false)
+      setIsProcessing(false)
+      setTimeRemaining(null)
+      setHasError(false)
+      setErrorMessage('')
+      progressValue.value = 0
 
-      // 直接设置为显示状态，不使用动画
-      backdropOpacity.value = 1
-      modalTranslateY.value = 0
-      modalScale.value = 1
-      modalOpacity.value = 1
+      // 进入动画
+      backdropOpacity.value = withTiming(1, { duration: 300 })
+      modalScale.value = withSpring(1, { damping: 15, stiffness: 150 })
+      modalTranslateY.value = withSpring(0, { damping: 15, stiffness: 150 })
+      modalOpacity.value = withTiming(1, { duration: 300 })
+
+      // 开始脉冲动画
+      pulseAnimation.value = withTiming(1.05, {
+        duration: 1000,
+      }, () => {
+        pulseAnimation.value = withTiming(1, { duration: 1000 })
+      })
     } else {
-      // 直接设置为隐藏状态，不使用动画
-      backdropOpacity.value = 0
-      modalTranslateY.value = 0
-      modalScale.value = 1
-      modalOpacity.value = 0
+      // 退出动画
+      backdropOpacity.value = withTiming(0, { duration: 200 })
+      modalScale.value = withTiming(0.8, { duration: 200 })
+      modalTranslateY.value = withTiming(50, { duration: 200 })
+      modalOpacity.value = withTiming(0, { duration: 200 })
     }
   }, [visible])
 
@@ -86,8 +115,15 @@ export default function TaskModal({
   }))
 
   const modalStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: modalScale.value }, { translateY: modalTranslateY.value }],
+    transform: [
+      { scale: modalScale.value * pulseAnimation.value },
+      { translateY: modalTranslateY.value }
+    ],
     opacity: modalOpacity.value,
+  }))
+
+  const progressStyle = useAnimatedStyle(() => ({
+    width: `${interpolate(progressValue.value, [0, 1], [0, 100], Extrapolate.CLAMP)}%`,
   }))
 
   // 获取任务类型信息
@@ -139,11 +175,11 @@ export default function TaskModal({
     }
   }
 
-  // 获取执行者信息
-  const getExecutor = () => {
-    if (!task || !currentPlayer) return null
-
-    return task.executor === 'current' ? currentPlayer : opponentPlayer
+  // 获取玩家图标类型
+  const getPlayerIconType = (playerId: number) => {
+    // 根据玩家ID返回不同的图标类型
+    const iconTypes = ['airplane', 'helicopter', 'rocket', 'boat']
+    return iconTypes[(playerId - 1) % iconTypes.length] as any
   }
 
   // 获取难度颜色
@@ -178,16 +214,77 @@ export default function TaskModal({
     }
   }
 
-  // 处理任务完成选择
-  const handleTaskChoice = (completed: boolean) => {
-    setIsCompleted(completed)
-    setShowResult(true)
+  // 添加触觉反馈
+  const triggerHaptic = useCallback(() => {
+    if (Vibration) {
+      Vibration.vibrate(50)
+    }
+  }, [])
 
-    // 延迟执行回调
-    setTimeout(() => {
-      onComplete(completed)
-    }, 1500)
-  }
+  // 处理任务完成选择（增强版）
+  const handleTaskChoice = useCallback((completed: boolean) => {
+    // 防止重复点击
+    if (isProcessing) return
+
+    setIsProcessing(true)
+    setHasError(false)
+    triggerHaptic()
+    setIsCompleted(completed)
+
+    try {
+      // 开始进度动画
+      progressValue.value = withTiming(1, { duration: 2000 })
+
+      // 显示结果界面
+      setTimeout(() => {
+        setShowResult(true)
+      }, 800)
+
+      // 延迟执行回调
+      setTimeout(() => {
+        try {
+          onComplete(completed)
+          setIsProcessing(false)
+        } catch (error) {
+          setHasError(true)
+          setErrorMessage(t('taskModal.submitError', '提交失败，请重试'))
+          setIsProcessing(false)
+        }
+      }, 2500)
+    } catch (error) {
+      setHasError(true)
+      setErrorMessage(t('taskModal.processError', '处理失败，请重试'))
+      setIsProcessing(false)
+    }
+  }, [isProcessing, triggerHaptic, onComplete, progressValue, t])
+
+  // 添加确认对话框
+  const showConfirmDialog = useCallback((completed: boolean) => {
+    const title = completed
+      ? t('taskModal.confirmComplete', '确认完成任务？')
+      : t('taskModal.confirmFailed', '确认任务失败？')
+
+    const message = completed
+      ? t('taskModal.completeMessage', '确定你已经成功完成了这个任务吗？')
+      : t('taskModal.failedMessage', '确定任务没有完成吗？这可能会有惩罚。')
+
+    Alert.alert(
+      title,
+      message,
+      [
+        {
+          text: t('taskModal.cancel', '取消'),
+          style: 'cancel',
+        },
+        {
+          text: t('taskModal.confirm', '确认'),
+          onPress: () => handleTaskChoice(completed),
+          style: completed ? 'default' : 'destructive',
+        },
+      ],
+      { cancelable: true }
+    )
+  }, [handleTaskChoice, t])
 
   // 获取结果信息
   const getResultInfo = () => {
@@ -216,8 +313,8 @@ export default function TaskModal({
           ? t('taskModal.results.luckyBonus', '幸运加成！')
           : t('taskModal.results.missedChance', '错失机会！'),
         description: isCompleted
-          ? t('taskModal.results.starReward', '幸运奖励：前进 3-6')
-          : t('taskModal.results.starPenalty', '遗憾惩罚：后退 3-6'),
+          ? t('taskModal.results.starReward', '幸运奖励：前进 3-6 格')
+          : t('taskModal.results.starPenalty', '遗憾惩罚：后退 3-6 格'),
       }
     } else if (task.type === 'collision') {
       // 碰撞任务：完成停留原地，未完成回到起点
@@ -240,7 +337,6 @@ export default function TaskModal({
   if (!visible || !task) return null
 
   const taskTypeInfo = getTaskTypeInfo()
-  const executor = getExecutor()
   const resultInfo = getResultInfo()
 
   return (
@@ -280,24 +376,83 @@ export default function TaskModal({
                   </Text>
                 </View>
 
-                {/* 执行者信息 */}
-                {executor && (
+                {/* 执行者信息 - 支持多个执行者 */}
+                {task.executors && task.executors.length > 0 && (
                   <View style={styles.executorSection}>
                     <Text style={[styles.sectionTitle, { color: colors.homeCardTitle }]}>
-                      {t('taskModal.executor', '执行者')}
+                      {task.executors.length > 1
+                        ? t('taskModal.executors', '执行者们')
+                        : t('taskModal.executor', '执行者')}
                     </Text>
-                    <View style={[styles.executorCard, { backgroundColor: executor.color + '15' }]}>
-                      <View style={[styles.executorAvatar, { backgroundColor: executor.color }]}>
-                        <PlayerIcon
-                          type={executor.id === 1 ? 'airplane' : 'helicopter'}
-                          size={20}
-                          color="white"
-                        />
+                    {/* 如果执行者较多，使用横向滚动 */}
+                    {task.executors.length > 3 ? (
+                      <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.executorsScrollContainer}
+                      >
+                        {task.executors.map((executor) => (
+                          <View
+                            key={executor.id}
+                            style={[
+                              styles.executorCard,
+                              { backgroundColor: executor.color + '15' },
+                            ]}
+                          >
+                            <View
+                              style={[styles.executorAvatar, { backgroundColor: executor.color }]}
+                            >
+                              <PlayerIcon
+                                type={getPlayerIconType(executor.id)}
+                                size={20}
+                                color="white"
+                              />
+                            </View>
+                            <Text style={[styles.executorName, { color: colors.homeCardTitle }]}>
+                              {executor.name}
+                            </Text>
+                          </View>
+                        ))}
+                      </ScrollView>
+                    ) : (
+                      <View style={styles.executorsContainer}>
+                        {task.executors.map((executor) => (
+                          <View
+                            key={executor.id}
+                            style={[
+                              styles.executorCard,
+                              {
+                                backgroundColor: executor.color + '15',
+                                flex: task.executors.length > 1 ? 1 : undefined,
+                                marginRight: task.executors.length > 1 ? 8 : 0,
+                              },
+                            ]}
+                          >
+                            <View
+                              style={[styles.executorAvatar, { backgroundColor: executor.color }]}
+                            >
+                              <PlayerIcon
+                                type={getPlayerIconType(executor.id)}
+                                size={20}
+                                color="white"
+                              />
+                            </View>
+                            <Text
+                              style={[
+                                styles.executorName,
+                                {
+                                  color: colors.homeCardTitle,
+                                  fontSize: task.executors.length > 2 ? 14 : 16,
+                                },
+                              ]}
+                              numberOfLines={1}
+                            >
+                              {executor.name}
+                            </Text>
+                          </View>
+                        ))}
                       </View>
-                      <Text style={[styles.executorName, { color: colors.homeCardTitle }]}>
-                        {executor.name}
-                      </Text>
-                    </View>
+                    )}
                   </View>
                 )}
 
@@ -341,10 +496,49 @@ export default function TaskModal({
                     {t('taskModal.chooseCompletion', '请选择任务完成情况：')}
                   </Text>
 
+                  {/* 错误提示 */}
+                  {hasError && (
+                    <View style={styles.errorContainer}>
+                      <Ionicons name="warning" size={20} color="#FF6B6B" />
+                      <Text style={[styles.errorText, { color: '#FF6B6B' }]}>
+                        {errorMessage}
+                      </Text>
+                      <TouchableOpacity
+                        style={styles.retryButton}
+                        onPress={() => {
+                          setHasError(false)
+                          setErrorMessage('')
+                          setIsProcessing(false)
+                        }}
+                      >
+                        <Text style={[styles.retryText, { color: colors.settingsAccent }]}>
+                          {t('taskModal.retry', '重试')}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+
+                  {/* 进度条 */}
+                  {isProcessing && (
+                    <View style={styles.progressContainer}>
+                      <View style={[styles.progressTrack, { backgroundColor: colors.homeCardBorder }]}>
+                        <Animated.View
+                          style={[styles.progressBar, progressStyle, {
+                            backgroundColor: isCompleted ? '#4CAF50' : '#FF6B6B'
+                          }]}
+                        />
+                      </View>
+                      <Text style={[styles.progressText, { color: colors.homeCardDescription }]}>
+                        {t('taskModal.processing', '处理中...')}
+                      </Text>
+                    </View>
+                  )}
+
                   <View style={styles.actionButtons}>
                     <TouchableOpacity
-                      style={styles.actionButton}
-                      onPress={() => handleTaskChoice(true)}
+                      style={[styles.actionButton, { opacity: isProcessing ? 0.6 : 1 }]}
+                      onPress={() => showConfirmDialog(true)}
+                      disabled={isProcessing}
                       activeOpacity={0.8}
                     >
                       <LinearGradient
@@ -361,8 +555,9 @@ export default function TaskModal({
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                      style={styles.actionButton}
-                      onPress={() => handleTaskChoice(false)}
+                      style={[styles.actionButton, { opacity: isProcessing ? 0.6 : 1 }]}
+                      onPress={() => showConfirmDialog(false)}
+                      disabled={isProcessing}
                       activeOpacity={0.8}
                     >
                       <LinearGradient
@@ -378,15 +573,22 @@ export default function TaskModal({
                       </LinearGradient>
                     </TouchableOpacity>
                   </View>
+
+                  {/* 快捷操作提示 */}
+                  <Text style={[styles.quickTip, { color: colors.homeCardDescription }]}>
+                    {t('taskModal.quickTip', '💡 点击按钮会显示确认对话框')}
+                  </Text>
                 </View>
               </>
             ) : (
               // 结果展示界面
               resultInfo && (
                 <View style={styles.resultContainer}>
-                  <View style={[styles.resultIcon, { backgroundColor: resultInfo.color + '20' }]}>
+                  <Animated.View
+                    style={[styles.resultIcon, { backgroundColor: resultInfo.color + '20' }]}
+                  >
                     <Ionicons name={resultInfo.icon as any} size={48} color={resultInfo.color} />
-                  </View>
+                  </Animated.View>
 
                   <Text style={[styles.resultTitle, { color: colors.homeCardTitle }]}>
                     {resultInfo.title}
@@ -395,6 +597,61 @@ export default function TaskModal({
                   <Text style={[styles.resultDescription, { color: colors.homeCardDescription }]}>
                     {resultInfo.description}
                   </Text>
+
+                  {/* 添加成功/失败统计 */}
+                  <View style={styles.resultStats}>
+                    <View style={[styles.statItem, { backgroundColor: resultInfo.color + '15' }]}>
+                      <Ionicons
+                        name={resultInfo.success ? "trending-up" : "trending-down"}
+                        size={16}
+                        color={resultInfo.color}
+                      />
+                      <Text style={[styles.statText, { color: resultInfo.color }]}>
+                        {resultInfo.success
+                          ? t('taskModal.positive', '正面效果')
+                          : t('taskModal.negative', '负面效果')
+                        }
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* 显示受影响的执行者 */}
+                  {task.executors && task.executors.length > 0 && (
+                    <View style={styles.affectedPlayersContainer}>
+                      <Text
+                        style={[styles.affectedPlayersTitle, { color: colors.homeCardDescription }]}
+                      >
+                        {t('taskModal.affectedPlayers', '受影响玩家：')}
+                      </Text>
+                      <View style={styles.affectedPlayersList}>
+                        {task.executors.map((executor) => (
+                          <View
+                            key={executor.id}
+                            style={[
+                              styles.affectedPlayerChip,
+                              { backgroundColor: executor.color + '20' },
+                            ]}
+                          >
+                            <View
+                              style={[
+                                styles.affectedPlayerIcon,
+                                { backgroundColor: executor.color },
+                              ]}
+                            >
+                              <PlayerIcon
+                                type={getPlayerIconType(executor.id)}
+                                size={12}
+                                color="white"
+                              />
+                            </View>
+                            <Text style={[styles.affectedPlayerName, { color: executor.color }]}>
+                              {executor.name}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                    </View>
+                  )}
 
                   <View style={styles.resultFooter}>
                     <Text style={[styles.resultFooterText, { color: colors.homeCardDescription }]}>
@@ -472,12 +729,23 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 12,
   },
+  executorsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  executorsScrollContainer: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingRight: 8,
+  },
   executorCard: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
     borderRadius: 12,
     gap: 12,
+    minWidth: 100,
   },
   executorAvatar: {
     width: 40,
@@ -489,6 +757,7 @@ const styles = StyleSheet.create({
   executorName: {
     fontSize: 16,
     fontWeight: '600',
+    flex: 1,
   },
   taskSection: {
     marginBottom: 24,
@@ -574,11 +843,109 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     marginBottom: 20,
   },
+  affectedPlayersContainer: {
+    marginTop: 16,
+    alignItems: 'center',
+  },
+  affectedPlayersTitle: {
+    fontSize: 14,
+    marginBottom: 8,
+  },
+  affectedPlayersList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  affectedPlayerChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
+    gap: 6,
+  },
+  affectedPlayerIcon: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  affectedPlayerName: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
   resultFooter: {
     marginTop: 10,
   },
   resultFooterText: {
     fontSize: 14,
     fontStyle: 'italic',
+  },
+  progressContainer: {
+    marginVertical: 16,
+    alignItems: 'center',
+  },
+  progressTrack: {
+    width: '100%',
+    height: 6,
+    borderRadius: 3,
+    overflow: 'hidden',
+    marginBottom: 8,
+  },
+  progressBar: {
+    height: '100%',
+    borderRadius: 3,
+  },
+  progressText: {
+    fontSize: 12,
+    fontStyle: 'italic',
+  },
+  quickTip: {
+    fontSize: 12,
+    textAlign: 'center',
+    fontStyle: 'italic',
+    marginTop: 8,
+    opacity: 0.7,
+  },
+  resultStats: {
+    marginTop: 16,
+    alignItems: 'center',
+  },
+  statItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    gap: 6,
+  },
+  statText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FF6B6B15',
+    padding: 12,
+    borderRadius: 8,
+    marginVertical: 8,
+    gap: 8,
+  },
+  errorText: {
+    flex: 1,
+    fontSize: 14,
+  },
+  retryButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  retryText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
 })

@@ -1,8 +1,8 @@
-import React, { useMemo, useState } from 'react'
+import React, { useMemo, useState, useEffect } from 'react'
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated'
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useColorScheme } from '@/hooks/use-color-scheme'
 import { Colors } from '@/constants/theme'
@@ -44,13 +44,10 @@ export default function FlyingChessGame() {
     return onlineGameHook.players
   }, [onlineGameHook.players])
 
-  // 游戏状态
-  const [diceValue, setDiceValue] = useState(0)
   const [isRolling, setIsRolling] = useState(false)
   const [isMoving, setIsMoving] = useState(false)
   const [showTaskModal, setShowTaskModal] = useState(false)
   const [taskModalData, setTaskModalData] = useState<TaskModalData | null>(null)
-  const [pendingTaskType, setPendingTaskType] = useState<'trap' | 'star' | 'collision' | null>(null)
 
   // 胜利弹窗状态
   const [showVictoryModal, setShowVictoryModal] = useState(false)
@@ -63,48 +60,218 @@ export default function FlyingChessGame() {
   // 动画值
   const diceRotation = useSharedValue(0)
 
-  // 处理胜利
-  const handleVictory = async (victoryPlayer: GamePlayer) => {}
+  // 处理胜利显示
+  const showVictory = (victoryPlayer: GamePlayer) => {
+    console.log('🏆 显示胜利界面:', victoryPlayer.name)
 
-  // 检查格子类型并触发任务
-  const checkCellAndTriggerTask = (playerId: number, position: number) => {}
+    audioManager.playSoundEffect('victory')
+    setWinner(victoryPlayer)
+    setShowVictoryModal(true)
+  }
 
-  // 触发任务弹窗
-  const triggerTask = (taskType: 'trap' | 'star' | 'collision', triggerPlayerId: number) => {}
+  // 用于动画的本地玩家状态
+  const [animatedPlayers, setAnimatedPlayers] = useState<OnlinePlayer[]>([])
 
-  // 处理任务完成结果（统一处理线上线下）
-  const handleTaskComplete = (completed: boolean) => {}
+  // 任务完成反馈 - 只发送结果给服务端
+  const handleTaskComplete = (completed: boolean) => {
+    if (!taskModalData) return
 
-  // 任务完成后的回调处理（统一处理线上线下）
-  const handleTaskCompleteCallback = (playerId: number, finalPosition: number) => {}
+    console.log(`📋 任务完成反馈: ${completed ? '成功' : '失败'}`)
 
-  const rollDice = async () => {}
+    // 播放音效
+    audioManager.playSoundEffect(completed ? 'victory' : 'step')
 
-  // 统一的玩家移动处理函数
-  const handlePlayerMove = (steps: number) => {}
+    // 发送结果给服务端，服务端处理所有逻辑
+    onlineGameHook.socket.completeTask({
+      roomId: onlineGameHook.room?.id,
+      taskId: taskModalData.id,
+      playerId: taskModalData.executors[0]?.id.toString() || '',
+      completed,
+    })
 
-  const handleResetGame = () => {}
+    // 关闭弹窗
+    setShowTaskModal(false)
+    setTaskModalData(null)
+  }
 
-  // 任务奖惩逐步移动
-  const movePlayerByTaskReward = (
-    playerId: number,
-    steps: number,
-    isForward: boolean,
-    onComplete?: (playerId: number, finalPosition: number) => void,
-  ) => {}
+  // 投骰子 - 只发送请求，不处理逻辑
+  const rollDice = async () => {
+    if (isRolling || isMoving || !onlineGameHook.isOwnTurn) {
+      console.warn('不能投掷骰子: 状态不允许')
+      return
+    }
 
-  const movePlayerStepByStep = (
-    playerIndex: number,
-    steps: number,
-    onComplete?: (playerId: number, finalPosition: number) => void,
-  ) => {}
+    console.log('🎲 请求投掷骰子')
+    setIsRolling(true)
+
+    try {
+      // 只发送投骰子请求给服务端，由服务端生成结果
+      onlineGameHook.socket.rollDice({
+        roomId: onlineGameHook.room?.id,
+        playerId: onlineGameHook.currentPlayer?.id,
+      })
+
+      // 等待服务端响应
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+    } catch (error) {
+      console.error('投掷骰子请求失败:', error)
+      audioManager.playSoundEffect('step')
+    } finally {
+      setIsRolling(false)
+    }
+  }
+
 
   const diceAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ rotate: `${diceRotation.value}deg` }],
   }))
 
+  useEffect(() => {
+    if (!onlineGameHook.socket) return
+
+    // 监听骰子结果
+    const handleDiceRolled = (data: any) => {
+      console.log('🎲 收到骰子结果:', data.diceValue)
+
+      // 如果是当前玩家的回合，显示骰子动画
+      if (data.playerId === onlineGameHook.currentPlayer?.id) {
+        // 骰子旋转动画
+        diceRotation.value = withTiming(360 * 4, { duration: 1200 })
+        // 播放音效
+        audioManager.playSoundEffect('dice')
+        // 重置滚动状态
+        setIsRolling(false)
+      }
+    }
+
+    // 监听玩家移动指令
+    const handlePlayerMove = (data: any) => {
+      console.log(
+        `🚶 收到移动指令: 玩家 ${data.playerId} 从 ${data.fromPosition} 移动到 ${data.toPosition}`,
+      )
+
+      setIsMoving(true)
+
+      // 调用逐步移动动画
+      movePlayerStepByStep(data.playerId, data.fromPosition, data.toPosition, () => {
+        // 动画结束后，将权威状态同步到动画状态
+        setAnimatedPlayers(onlineGameHook.players as OnlinePlayer[])
+        setIsMoving(false)
+        console.log(`✅ 玩家 ${data.playerId} 移动动画完成`)
+      })
+    }
+
+    // 监听任务触发
+    const handleTaskTrigger = (data: any) => {
+      console.log(`🎯 收到任务触发:`, data)
+
+      // 查找执行者信息
+      const executorPlayers = onlineGameHook.players.filter((p) =>
+        data.executorPlayerIds.includes(p.id),
+      )
+
+      // 显示任务弹窗
+      setTaskModalData({
+        id: data.task.id,
+        type: data.taskType,
+        title: data.task.title,
+        description: data.task.description,
+        category: data.task.category,
+        difficulty: data.task.difficulty,
+        triggerPlayerIds: data.triggerPlayerIds,
+        executors: executorPlayers.map(p => ({ id: parseInt(p.id), name: p.name, color: p.color })), // 转换ID类型
+      })
+      setShowTaskModal(true)
+    }
+
+    // 监听游戏胜利
+    const handleGameVictory = (data: { winnerId: string }) => {
+      console.log(`🏆 游戏胜利: 玩家 ${data.winnerId} 获胜`)
+
+      // 显示胜利弹窗
+      const winnerPlayer = onlineGameHook.players.find((p) => p.id === data.winnerId)
+      if (winnerPlayer) {
+        // 转换为GamePlayer类型
+        const gameWinner = {
+          id: parseInt(winnerPlayer.id),
+          name: winnerPlayer.name,
+          color: winnerPlayer.color,
+          position: winnerPlayer.position,
+          iconType: winnerPlayer.iconType
+        } as GamePlayer
+        showVictory(gameWinner)
+      }
+    }
+
+    // 监听游戏状态更新
+    const handleGameStateUpdate = (data: any) => {
+      console.log('🔄 游戏状态更新:', data)
+      // 这里可以处理其他游戏状态更新，比如当前玩家切换等
+    }
+
+    // 注册事件监听器
+    const socket = onlineGameHook.socket
+    socket.on('game:dice-roll', handleDiceRolled)
+    socket.on('game:player-move', handlePlayerMove)
+    socket.on('game:task-trigger', handleTaskTrigger)
+    socket.on('game:victory', handleGameVictory)
+    socket.on('game:state', handleGameStateUpdate)
+
+    // 清理函数
+    return () => {
+      if (socket) {
+        socket.off('game:dice-roll', handleDiceRolled)
+        socket.off('game:player-move', handlePlayerMove)
+        socket.off('game:task-trigger', handleTaskTrigger)
+        socket.off('game:victory', handleGameVictory)
+        socket.off('game:state', handleGameStateUpdate)
+      }
+    }
+  }, [onlineGameHook.socket.isConnected, onlineGameHook.currentPlayer, onlineGameHook.players])
+
+  // 同步动画玩家状态与服务器状态
+  useEffect(() => {
+    // 仅在没有动画进行时同步，防止中断正在进行的移动动画
+    if (!isMoving) {
+      setAnimatedPlayers(onlineGameHook.players as OnlinePlayer[])
+    }
+  }, [onlineGameHook.players, isMoving])
+
+  // 逐步移动玩家的动画函数
+  const movePlayerStepByStep = (
+    playerId: string,
+    from: number,
+    to: number,
+    onComplete?: () => void,
+  ) => {
+    const steps = Math.abs(to - from)
+    const isForward = to > from
+    let currentStep = 0
+
+    const moveOneStep = () => {
+      if (currentStep >= steps) {
+        // 动画结束
+        onComplete?.()
+        return
+      }
+
+      currentStep++
+      const nextPosition = isForward ? from + currentStep : from - currentStep
+
+      setAnimatedPlayers((prevPlayers) =>
+        prevPlayers.map((p) => (p.id === playerId ? { ...p, position: nextPosition } : p)),
+      )
+
+      audioManager.playSoundEffect('step')
+
+      setTimeout(moveOneStep, 300) // 每一步的动画间隔
+    }
+
+    moveOneStep()
+  }
+
   if (!room) return <LoadingScreen />
-  console.log(room)
+
   return (
     <>
       <Stack.Screen
@@ -192,16 +359,16 @@ export default function FlyingChessGame() {
                       styles.diceButton,
                       {
                         backgroundColor:
-                          isRolling || isMoving || !!onlineGameHook?.currentPlayer
+                          isRolling || isMoving || !onlineGameHook.isOwnTurn
                             ? '#FF6B6B'
                             : colors.settingsAccent,
                         borderWidth: 3,
                         borderColor: 'white',
-                        opacity: isRolling || isMoving || !!onlineGameHook?.currentPlayer ? 0.6 : 1,
+                        opacity: isRolling || isMoving || !onlineGameHook.isOwnTurn ? 0.6 : 1,
                       },
                     ]}
                     onPress={rollDice}
-                    disabled={isRolling || isMoving || !!onlineGameHook?.currentPlayer}
+                    disabled={isRolling || isMoving || !onlineGameHook.isOwnTurn}
                     activeOpacity={0.8}
                   >
                     {isRolling ? (
@@ -222,7 +389,7 @@ export default function FlyingChessGame() {
                     { color: colors.homeCardDescription, fontWeight: '600' },
                   ]}
                 >
-                  {!!onlineGameHook.currentPlayer
+                  {!onlineGameHook.isOwnTurn
                     ? t('flyingChess.dice.waitingTurn', '等待其他玩家')
                     : isRolling
                       ? t('flyingChess.dice.rolling', '投掷中...')
@@ -240,7 +407,7 @@ export default function FlyingChessGame() {
               {t('flyingChess.playersStatus', '玩家状态')}
             </Text>
             <View style={styles.playersGrid}>
-              {players.map((player) => (
+              {animatedPlayers.map((player) => (
                 <View
                   key={player.id}
                   style={[
@@ -292,9 +459,12 @@ export default function FlyingChessGame() {
           {/* 游戏棋盘 */}
           <View style={[styles.boardSection, { backgroundColor: colors.homeCardBackground }]}>
             <GameBoard
-              players={players as any}
-              currentPlayer={onlineGameHook.currentPlayerIndex as number}
+              players={animatedPlayers.map(p => ({ ...p, id: parseInt(p.id) }))} // 转换ID类型为number
+              currentPlayer={onlineGameHook.currentPlayerIndex || 0}
               boardData={boardPath}
+              onCellPress={(_cell) => {
+                // TODO: 处理点击棋盘格子的逻辑
+              }}
             />
           </View>
         </ScrollView>
@@ -303,8 +473,7 @@ export default function FlyingChessGame() {
         <TaskModal
           visible={showTaskModal}
           task={taskModalData}
-          currentPlayer={onlineGameHook.currentPlayer as any}
-          opponentPlayer={onlineGameHook.currentPlayer as any}
+          players={players.map(p => ({ id: parseInt(p.id), name: p.name, color: p.color }))}
           onComplete={handleTaskComplete}
           onClose={() => setShowTaskModal(false)}
         />
@@ -313,14 +482,13 @@ export default function FlyingChessGame() {
         <VictoryModal
           visible={showVictoryModal}
           winner={winner}
-          availableTasks={onlineGameHook.taskSet?.tasks as any}
+          availableTasks={[]}
           onTasksSelected={() => {}}
           onRestart={() => {
-            handleResetGame()
+            // TODO: 实现重新开始逻辑，例如通知服务器
             setShowVictoryModal(false)
           }}
           onExit={() => {
-            onlineGameHook.socket.emit('game:exit', onlineGameHook.room?.id)
             setShowVictoryModal(false)
             router.back()
           }}

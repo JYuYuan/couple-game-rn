@@ -76,6 +76,31 @@ export default function OfflineGame() {
   // 动画值
   const diceRotation = useSharedValue(0)
 
+  // 统一的胜利检查函数
+  const checkAndHandleVictory = (playerId: number, finalPosition: number): boolean => {
+    const finishPosition = boardPath.length - 1
+
+    // 首先检查是否到达终点
+    if (finalPosition >= finishPosition) {
+      const player = players.find(p => p.id === playerId)
+      if (player && gameStatus === 'playing') {
+        console.log(`Victory! Player ${playerId} reached finish line at position ${finishPosition}`)
+        handleVictory(player)
+        return true
+      }
+    }
+
+    // 使用hook的胜利检查作为补充
+    const winResult = checkWinCondition(playerId, finalPosition)
+    if (winResult.hasWinner && winResult.winner && gameStatus === 'playing') {
+      console.log('Victory detected by hook:', winResult.winner)
+      handleVictory(winResult.winner)
+      return true
+    }
+
+    return false
+  }
+
   // 处理胜利
   const handleVictory = (victoryPlayer: GamePlayer) => {
     console.log('Game victory! Winner:', victoryPlayer.name)
@@ -163,16 +188,20 @@ export default function OfflineGame() {
 
     console.log(`Executor ID: ${executorPlayerId}, type: ${executorType}`)
 
+    const executorPlayer = players.find(p => p.id === executorPlayerId)
     const taskData: TaskModalData = {
       id: task.id,
       title: task.title,
       description: task.description || '',
       type: taskType,
-      executor: executorType === 'self' ? 'current' : 'opponent',
+      executors: executorPlayer ? [{
+        id: executorPlayer.id,
+        name: executorPlayer.name,
+        color: executorPlayer.color
+      }] : [],
       category: task.category,
       difficulty: task.difficulty,
-      triggerPlayerId: triggerPlayerId,
-      executorPlayerId: executorPlayerId,
+      triggerPlayerIds: [triggerPlayerId],
     }
 
     setTaskModalData(taskData)
@@ -180,12 +209,12 @@ export default function OfflineGame() {
     setShowTaskModal(true)
   }
 
-  // 处理任务完成结果
+  // 处理任务完成结果（优化版）
   const handleTaskComplete = (completed: boolean) => {
     if (!taskModalData || !pendingTaskType) return
 
-    const triggerPlayerId = taskModalData.triggerPlayerId!
-    const executorPlayerId = taskModalData.executorPlayerId!
+    const triggerPlayerId = taskModalData.triggerPlayerIds[0]
+    const executorPlayerId = taskModalData.executors[0]?.id
 
     console.log(
       `Task completed: type=${pendingTaskType}, trigger=${triggerPlayerId}, executor=${executorPlayerId}, completed=${completed}`,
@@ -207,74 +236,49 @@ export default function OfflineGame() {
       // 设置移动状态
       setIsMoving(true)
 
-      // 使用逐步移动
+      // 特殊处理碰撞任务失败
       if (pendingTaskType === 'collision' && !completed) {
-        // 特殊处理：碰撞任务失败直接回到起点
         movePlayer(executorPlayerId, 0)
         setTimeout(() => {
           setIsMoving(false)
           handleTaskCompleteCallback(executorPlayerId, 0)
         }, 500)
       } else {
-        // 正常的逐步移动
-        movePlayerByTaskReward(
+        // 使用统一的移动函数
+        movePlayerStepByStep(
           executorPlayerId,
           rewardInfo.actualSteps,
           rewardInfo.isForward,
           (playerId, finalPosition) => {
             setIsMoving(false)
             handleTaskCompleteCallback(playerId, finalPosition)
-          },
+          }
         )
       }
     } else {
-      // 没有移动或移动步数为0，直接处理后续逻辑
+      // 没有移动，直接处理后续逻辑
+      const currentPosition = players.find(p => p.id === executorPlayerId)?.position || 0
       setTimeout(() => {
-        handleTaskCompleteCallback(
-          executorPlayerId,
-          players.find((p) => p.id === executorPlayerId)?.position || 0,
-        )
+        handleTaskCompleteCallback(executorPlayerId, currentPosition)
       }, 300)
     }
   }
 
-  // 任务完成后的回调处理
+  // 任务完成后的回调处理（简化版）
   const handleTaskCompleteCallback = (playerId: number, finalPosition: number) => {
     console.log(`Task movement completed: Player ${playerId} at position ${finalPosition}`)
 
-    const finishPosition = boardPath.length - 1 // 终点位置
-    console.log(`Board length: ${boardPath.length}, Finish position: ${finishPosition}`)
+    // 统一的胜利检查
+    const hasWon = checkAndHandleVictory(playerId, finalPosition)
 
-    // 立即检查胜利条件，不使用setTimeout
-    const updatedPlayer = players.find((p) => p.id === playerId)
-    console.log(
-      `Player ${playerId} current position in state: ${updatedPlayer?.position}, final position from callback: ${finalPosition}`,
-    )
-
-    if (updatedPlayer && updatedPlayer.position === finishPosition) {
-      console.log(`Direct victory check: Player reached position ${finishPosition}!`)
-      handleVictory(updatedPlayer)
-      return // 立即返回，不再执行后续逻辑
-    }
-
-    // 使用hook的胜利检查作为备选，传入具体的玩家和位置信息
-    const winResult = checkWinCondition(playerId, finalPosition)
-    if (winResult.hasWinner && winResult.winner) {
-      console.log('Victory detected after task completion!', winResult.winner)
-      handleVictory(winResult.winner)
-    }
-
-    // 延迟检查游戏状态，确保胜利检查完成
-    setTimeout(() => {
-      // 只有当游戏仍在进行中时，才切换到下一个玩家
-      if (gameStatus === 'playing') {
+    if (!hasWon && gameStatus === 'playing') {
+      // 如果没有获胜，切换到下一个玩家
+      setTimeout(() => {
         setDiceValue(0)
         nextPlayer()
         console.log('Task completed, switching to next player')
-      } else {
-        console.log('Game ended, not switching player')
-      }
-    }, 100)
+      }, 100)
+    }
   }
 
   const rollDice = () => {
@@ -299,20 +303,18 @@ export default function OfflineGame() {
         setIsMoving(true)
         diceRotation.value = 0
 
-        // 移动当前玩家
+        // 移动当前玩家，使用统一的移动函数
         movePlayerStepByStep(
-          currentPlayerIndex,
+          currentPlayer.id,
           newDiceValue,
+          true,
           (playerId: number, finalPosition: number) => {
             // 移动完成的回调函数
             setIsMoving(false)
 
-            // 先检查胜利条件，传入具体的玩家和位置信息
-            const winResult = checkWinCondition(playerId, finalPosition)
-            if (winResult.hasWinner && winResult.winner) {
-              handleVictory(winResult.winner)
-              return // 如果有人获胜，直接返回
-            }
+            // 统一的胜利检查
+            const hasWon = checkAndHandleVictory(playerId, finalPosition)
+            if (hasWon) return
 
             // 检查是否触发了任务
             const hasTask = checkCellAndTriggerTask(playerId, finalPosition)
@@ -325,74 +327,73 @@ export default function OfflineGame() {
                 console.log('No task triggered, switching to next player')
               }, 500)
             } else if (hasTask) {
-              console.log('Task triggered, waiting for task completion before switching players')
+              console.log('Task triggered, waiting for task completion')
             }
-          },
+          }
         )
       }, 1000)
     }, 1200)
   }
 
-  const handleResetGame = () => {
-    resetGame()
-    setDiceValue(0)
-    setIsMoving(false)
-  }
-
-  // 任务奖惩逐步移动
-  const movePlayerByTaskReward = (
+  // 统一的逐步移动函数
+  const movePlayerStepByStep = (
     playerId: number,
     steps: number,
-    isForward: boolean,
+    isForward: boolean = true,
     onComplete?: (playerId: number, finalPosition: number) => void,
   ) => {
-    const player = players.find((p) => p.id === playerId)
-    if (!player) return
+    const player = players.find(p => p.id === playerId)
+    if (!player || gameStatus !== 'playing') return
 
     const startPosition = player.position
-    const finishLine = boardPath.length - 1 // 终点位置
+    const finishLine = boardPath.length - 1
     let stepCount = 0
-    let targetPosition
+    let targetPosition: number
 
+    // 计算目标位置
     if (isForward) {
-      // 前进逻辑（和投掷骰子相同）
+      // 前进逻辑：考虑反弹
       if (startPosition + steps > finishLine) {
         const excess = startPosition + steps - finishLine
         targetPosition = finishLine - excess
       } else {
         targetPosition = startPosition + steps
       }
-      targetPosition = Math.max(0, targetPosition)
     } else {
-      // 后退逻辑
+      // 后退逻辑：简单后退
       targetPosition = Math.max(startPosition - steps, 0)
     }
 
+    // 确保位置在有效范围内
+    targetPosition = Math.max(0, Math.min(finishLine, targetPosition))
+
     console.log(
-      `Task reward movement: Player ${playerId} from position ${startPosition}, ${isForward ? 'forward' : 'backward'} ${steps} steps, target: ${targetPosition}`,
+      `Moving player ${playerId} from ${startPosition} ${isForward ? 'forward' : 'backward'} ${steps} steps to ${targetPosition}`
     )
 
     const moveOneStep = () => {
       if (stepCount < steps && gameStatus === 'playing') {
         stepCount++
-        let currentMovePosition
+        let currentPosition: number
 
         if (isForward) {
           // 前进移动
           const currentStep = startPosition + stepCount
           if (currentStep <= finishLine) {
-            currentMovePosition = currentStep
+            currentPosition = currentStep
           } else {
+            // 反弹逻辑
             const stepsFromFinish = currentStep - finishLine
-            currentMovePosition = finishLine - stepsFromFinish
+            currentPosition = finishLine - stepsFromFinish
           }
-          currentMovePosition = Math.max(0, Math.min(finishLine, currentMovePosition))
         } else {
           // 后退移动
-          currentMovePosition = Math.max(startPosition - stepCount, 0)
+          currentPosition = Math.max(startPosition - stepCount, 0)
         }
 
-        movePlayer(playerId, currentMovePosition)
+        // 确保位置有效
+        currentPosition = Math.max(0, Math.min(finishLine, currentPosition))
+        movePlayer(playerId, currentPosition)
 
         // 播放移动音效
         audioManager.playSoundEffect('step').catch(console.error)
@@ -401,14 +402,9 @@ export default function OfflineGame() {
           setTimeout(moveOneStep, 400)
         } else {
           // 移动完成
-          console.log(
-            `Task reward movement completed! Player ${playerId} moved from position ${startPosition} to position ${targetPosition}`,
-          )
-
+          console.log(`Movement completed! Player ${playerId} at position ${targetPosition}`)
           if (onComplete) {
-            setTimeout(() => {
-              onComplete(playerId, targetPosition)
-            }, 500)
+            setTimeout(() => onComplete(playerId, targetPosition), 300)
           }
         }
       }
@@ -417,74 +413,24 @@ export default function OfflineGame() {
     moveOneStep()
   }
 
-  const movePlayerStepByStep = (
-    playerIndex: number,
-    steps: number,
-    onComplete?: (playerId: number, finalPosition: number) => void,
-  ) => {
-    const startPlayer = players[playerIndex]
-    if (!startPlayer) return
+  const handleResetGame = () => {
+    // 重置游戏状态
+    resetGame()
 
-    const startPosition = startPlayer.position
-    const finishLine = boardPath.length - 1 // 终点位置
-    let stepCount = 0
-    let targetPosition
+    // 清理UI状态
+    setDiceValue(0)
+    setIsRolling(false)
+    setIsMoving(false)
+    setShowTaskModal(false)
+    setTaskModalData(null)
+    setPendingTaskType(null)
+    setShowVictoryModal(false)
+    setWinner(null)
 
-    // 计算最终位置，考虑倒着走的机制
-    if (startPosition + steps > finishLine) {
-      // 如果超过终点，需要倒着走
-      const excess = startPosition + steps - finishLine
-      targetPosition = finishLine - excess
-    } else {
-      targetPosition = startPosition + steps
-    }
+    // 重置动画
+    diceRotation.value = 0
 
-    // 确保位置不小于0（防止倒着走到负数位置）
-    targetPosition = Math.max(0, targetPosition)
-
-    const moveOneStep = () => {
-      if (stepCount < steps && gameStatus === 'playing') {
-        stepCount++
-        let currentMovePosition
-
-        // 计算当前步的位置
-        const currentStep = startPosition + stepCount
-
-        if (currentStep <= finishLine) {
-          // 向前移动阶段：还未到达终点
-          currentMovePosition = currentStep
-        } else {
-          // 已经越过终点，开始倒着走
-          const stepsFromFinish = currentStep - finishLine
-          currentMovePosition = finishLine - stepsFromFinish
-        }
-
-        // 确保位置在有效范围内
-        currentMovePosition = Math.max(0, Math.min(finishLine, currentMovePosition))
-        movePlayer(startPlayer.id, currentMovePosition)
-
-        // 播放移动音效
-        audioManager.playSoundEffect('step').catch(console.error)
-
-        if (stepCount < steps) {
-          setTimeout(moveOneStep, 400)
-        } else {
-          // 移动完成
-          console.log(
-            `Movement completed! Player ${startPlayer.id} moved from position ${startPosition} to position ${targetPosition}`,
-          )
-
-          // 调用完成回调
-          if (onComplete) {
-            setTimeout(() => {
-              onComplete(startPlayer.id, targetPosition)
-            }, 500)
-          }
-        }
-      }
-    }
-
-    moveOneStep()
+    console.log('Game reset completed')
   }
 
   const diceAnimatedStyle = useAnimatedStyle(() => ({
@@ -638,8 +584,7 @@ export default function OfflineGame() {
       <TaskModal
         visible={showTaskModal}
         task={taskModalData}
-        currentPlayer={currentPlayer}
-        opponentPlayer={currentPlayer ? getOpponentPlayer(currentPlayer.id) : null}
+        players={players}
         onComplete={handleTaskComplete}
         onClose={() => setShowTaskModal(false)}
       />
