@@ -1,15 +1,16 @@
-// socketHandlers.js
+// socketHandlers.ts
+import type { SocketIOServer, SocketIOSocket, PlayerInfo, RoomInfo, JoinData, GameData, SocketCallback } from '../typings/socket'
 import roomManager from '../core/RoomManager.js'
 import playerManager from '../core/PlayerManager.js'
 import GameRegistry from '../core/GameRegistry.js'
 
-export default function registerSocketHandlers(io) {
+export default function registerSocketHandlers(io: SocketIOServer) {
   // 存储游戏实例
   const activeGames = new Map()
   io.removeAllListeners('connection')
 
-  io.on('connection', async (socket) => {
-    const playerId = socket.handshake.query.playerId
+  io.on('connection', async (socket: SocketIOSocket) => {
+    const playerId = socket.handshake.query.playerId as string
     console.log(`玩家连接: ${playerId}`)
 
     // 尝试获取已存在的玩家信息
@@ -34,11 +35,11 @@ export default function registerSocketHandlers(io) {
     }
 
     // 玩家加入
-    socket.on('player:join', async (playerInfo, callback) => {
+    socket.on('player:join', async (playerInfo: PlayerInfo, callback?: SocketCallback) => {
       try {
-        const player = await playerManager.addPlayer(socket.id, {
+        const player = await playerManager.addPlayer(playerId, {
           playerId,
-          name: playerInfo.name || `Player_${socket.id.substring(0, 6)}`,
+          name: playerInfo.name || `Player_${playerId.substring(0, 6)}`,
           roomId: null,
           isHost: false,
         })
@@ -47,12 +48,12 @@ export default function registerSocketHandlers(io) {
         callback?.({ success: true, player })
         io.emit('player:list', await playerManager.getAllPlayers())
       } catch (error) {
-        callback?.({ success: false, message: error.message })
+        callback?.({ success: false, message: (error as Error).message })
       }
     })
 
     // 创建房间
-    socket.on('room:create', async (roomInfo, callback) => {
+    socket.on('room:create', async (roomInfo: RoomInfo, callback?: SocketCallback) => {
       try {
         const player = await playerManager.addPlayer(playerId, {
           playerId,
@@ -66,11 +67,15 @@ export default function registerSocketHandlers(io) {
           hostId: playerId,
           maxPlayers: roomInfo.maxPlayers || 2,
           gameType: roomInfo.gameType || 'fly',
-          ...roomInfo,
+          taskSet: roomInfo.taskSet || null,
         })
 
         // // 将创建者加入房间
-        room = await roomManager.addPlayerToRoom(room.id, player)
+        const roomResult = await roomManager.addPlayerToRoom(room.id, player)
+        if (!roomResult) {
+          throw new Error('Failed to add player to room')
+        }
+        room = roomResult
         player.isHost = true
         player.roomId = room.id
 
@@ -80,12 +85,12 @@ export default function registerSocketHandlers(io) {
         console.log(`房间创建: ${room.id}`)
         callback?.({ success: true, room })
       } catch (error) {
-        callback?.({ success: false, message: error.message })
+        callback?.({ success: false, message: (error as Error).message })
       }
     })
 
     // 加入房间
-    socket.on('room:join', async (joinData, callback) => {
+    socket.on('room:join', async (joinData: JoinData, callback?: SocketCallback) => {
       try {
         console.log(playerId)
         const roomId = joinData.roomId
@@ -112,12 +117,12 @@ export default function registerSocketHandlers(io) {
         io.to(roomId).emit('room:update', room)
       } catch (error) {
         console.log(error)
-        callback?.({ success: false, message: error.message })
+        callback?.({ success: false, message: (error as Error).message })
       }
     })
 
     // 开始游戏
-    socket.on('game:start', async (data, callback) => {
+    socket.on('game:start', async (data: GameData, callback?: SocketCallback) => {
       try {
         const room = await roomManager.getRoom(data.roomId)
         if (!room) {
@@ -145,58 +150,32 @@ export default function registerSocketHandlers(io) {
 
         game.onStart()
       } catch (error) {
-        callback?.({ success: false, message: error.message })
+        callback?.({ success: false, message: (error as Error).message })
       }
     })
 
     // 游戏动作（投骰子、移动等）
-    socket.on('game:action', (data, callback) => {
+    socket.on('game:action', (data: GameData, callback?: SocketCallback) => {
       try {
         const game = activeGames.get(data.roomId)
         if (!game) {
           return callback?.({ success: false, message: '游戏不存在' })
         }
 
-        game.onPlayerAction(io, socket.id, data)
+        game.onPlayerAction(io, playerId, data)
         callback?.({ success: true })
       } catch (error) {
-        callback?.({ success: false, message: error.message })
+        callback?.({ success: false, message: (error as Error).message })
       }
-    })
-
-    // 投骰子（简化接口）
-    socket.on('game:roll-dice', (data, callback) => {
-      const game = activeGames.get(data.roomId)
-      if (game) {
-        game.onPlayerAction(io, socket.id, {
-          type: 'roll_dice',
-          roomId: data.roomId,
-        })
-      }
-      callback?.({ success: true })
-    })
-
-    // 完成任务
-    socket.on('game:complete-task', (data, callback) => {
-      const game = activeGames.get(data.roomId)
-      if (game) {
-        game.onPlayerAction(io, socket.id, {
-          type: 'complete_task',
-          taskId: data.taskId,
-          success: data.success !== false,
-          roomId: data.roomId,
-        })
-      }
-      callback?.({ success: true })
     })
 
     // 离开房间
-    socket.on('room:leave', async (roomId, callback) => {
+    socket.on('room:leave', async (roomId: string, callback?: SocketCallback) => {
       try {
         const room = await roomManager.removePlayerFromRoom(roomId, playerId)
         if (room) {
           socket.leave(roomId)
-          console.log(`玩家 ${socket.id} 离开房间 ${roomId}`)
+          console.log(`玩家 ${playerId} 离开房间 ${roomId}`)
           io.to(roomId).emit('room:update', room)
         }
 
@@ -207,29 +186,29 @@ export default function registerSocketHandlers(io) {
 
         callback?.({ success: true })
       } catch (error) {
-        callback?.({ success: false, message: error.message })
+        callback?.({ success: false, message: (error as Error).message })
       }
     })
 
     // 获取房间列表
-    socket.on('room:list', async (callback) => {
+    socket.on('room:list', async (callback?: SocketCallback) => {
       callback?.(await roomManager.getAllRooms())
     })
 
     // 获取玩家列表
-    socket.on('player:list', async (callback) => {
+    socket.on('player:list', async (callback?: SocketCallback) => {
       callback?.(await playerManager.getAllPlayers())
     })
 
     // 断开连接
     socket.on('disconnect', async () => {
-      const player = await playerManager.getPlayer(socket.id)
+      const player = await playerManager.getPlayer(playerId)
       if (player) {
         console.log(`玩家断开: ${player.id}`)
 
         // 从房间中移除
         if (player.roomId) {
-          const room = await roomManager.removePlayerFromRoom(player.roomId, socket.id)
+          const room = await roomManager.removePlayerFromRoom(player.roomId, playerId)
           if (room) {
             io.to(player.roomId).emit('room:update', room)
 
@@ -240,14 +219,14 @@ export default function registerSocketHandlers(io) {
           }
         }
 
-        await playerManager.removePlayer(socket.id)
+        await playerManager.removePlayer(playerId)
         io.emit('player:list', await playerManager.getAllPlayers())
       }
     })
 
     // 错误处理
-    socket.on('error', (error) => {
-      console.error(`Socket错误 ${socket.id}:`, error)
+    socket.on('error', (error: any) => {
+      console.error(`Socket错误 ${playerId}:`, error)
     })
   })
 

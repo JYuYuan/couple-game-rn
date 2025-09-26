@@ -1,20 +1,29 @@
 import { v4 as uuidv4 } from 'uuid'
 import redis from './redisClient.js'
+import type { Room, Player } from '../typings/socket'
+
+interface CreateRoomParams {
+  name: string
+  hostId: string
+  maxPlayers?: number
+  gameType: 'fly' | 'wheel' | 'minesweeper'
+  [key: string]: any
+}
 
 class RoomManager {
   hashKey = 'rooms'
   /**
    * 创建房间
    */
-  async createRoom({ name, hostId, maxPlayers = 4, gameType,...rest }) {
+  async createRoom({ name, hostId, maxPlayers = 4, gameType,...rest }: CreateRoomParams): Promise<Room> {
     const roomId = uuidv4().slice(0, 6).toUpperCase()
-    const room = {
+    const room: Room = {
       id: roomId,
       name,
       hostId,
       players: [],
       maxPlayers,
-      gameStatus: 'waiting',
+      gameStatus: 'waiting' as const,
       gameType,
       createdAt: Date.now(),
       lastActivity: Date.now(),
@@ -28,18 +37,18 @@ class RoomManager {
   /**
    * 删除房间
    */
-  async deleteRoom(roomId) {
+  async deleteRoom(roomId: string): Promise<void> {
     await redis.hdel(this.hashKey, `${roomId}`)
   }
 
-  async updateRoom(room) {
+  async updateRoom(room: Room): Promise<void> {
     await redis.hset(this.hashKey, `${room.id}`, JSON.stringify(room))
   }
 
   /**
    * 获取房间
    */
-  async getRoom(roomId) {
+  async getRoom(roomId: string): Promise<Room | null> {
     const data = await redis.hget(this.hashKey, `${roomId}`)
     return data ? JSON.parse(data) : null
   }
@@ -47,7 +56,7 @@ class RoomManager {
   /**
    * 添加玩家
    */
-  async addPlayer(roomId, player) {
+  async addPlayer(roomId: string, player: Player): Promise<Room | null> {
     const room = await this.getRoom(roomId)
     if (!room) return null
     if (room.players.length >= room.maxPlayers) {
@@ -62,14 +71,14 @@ class RoomManager {
   /**
    * 移除玩家
    */
-  async removePlayer(roomId, playerId) {
+  async removePlayer(roomId: string, playerId: string): Promise<Room | null> {
     const room = await this.getRoom(roomId)
     if (!room) return null
     room.players = room.players.filter((p) => p.playerId !== playerId)
-    if (room.playerId === playerId && room.players.length > 0) {
-      room.hostId = room.players[0].socketId
-      room.players.forEach((p) => (p.isHost = false))
-      room.players[0].isHost = true
+    if (room.hostId === playerId && room.players.length > 0) {
+      room.hostId = room.players[0]?.playerId || room.players[0]?.id || ''
+      room.players.forEach((p: Player) => (p.isHost = false))
+      room.players[0]!.isHost = true
     }
     if (room.players.length === 0) {
       await this.deleteRoom(roomId)
@@ -83,7 +92,7 @@ class RoomManager {
   /**
    * 添加玩家到房间
    */
-  async addPlayerToRoom(roomId, player) {
+  async addPlayerToRoom(roomId: string, player: Player): Promise<Room | null> {
     const room = await this.getRoom(roomId)
     if (!room) return null
     if (room.players.length >= room.maxPlayers) {
@@ -99,32 +108,32 @@ class RoomManager {
   /**
    * 从房间移除玩家
    */
-  async removePlayerFromRoom(roomId, playerId) {
+  async removePlayerFromRoom(roomId: string, playerId: string): Promise<Room | null> {
     const room = await this.getRoom(roomId)
     if (!room) return null
     room.players = room.players.filter((p) => p.playerId !== playerId)
-    if (room.playerId === playerId && room.players.length > 0) {
-      room.hostId = room.players[0].socketId
-      room.players.forEach((p) => (p.isHost = false))
-      room.players[0].isHost = true
+    if (room.hostId === playerId && room.players.length > 0) {
+      room.hostId = room.players[0]?.playerId || room.players[0]?.id || ''
+      room.players.forEach((p: Player) => (p.isHost = false))
+      room.players[0]!.isHost = true
     }
     if (room.players.length === 0) {
       await this.deleteRoom(roomId)
       return null
     }
     room.lastActivity = Date.now()
-    await redis.set(this.hashKey, `${roomId}`, JSON.stringify(room))
+    await redis.hset(this.hashKey, `${roomId}`, JSON.stringify(room))
     return room
   }
 
   /**
    * 从所有房间移除玩家
    */
-  async removePlayerFromRooms(playerId) {
+  async removePlayerFromRooms(playerId: string): Promise<Room | null> {
     const roomIds = await redis.smembers('')
     for (const roomId of roomIds) {
       const room = await this.getRoom(roomId)
-      if (room && room.players.some((p) => p.playerId === playerId)) {
+      if (room && room.players.some((p: Player) => p.playerId === playerId)) {
         return await this.removePlayerFromRoom(roomId, playerId)
       }
     }
@@ -134,7 +143,7 @@ class RoomManager {
   /**
    * 获取所有房间
    */
-  async getAllRooms() {
+  async getAllRooms(): Promise<{ [key: string]: Room }> {
     const rooms = await redis.hgetall(this.hashKey)
     const parsedRooms = Object.fromEntries(
       Object.entries(rooms).map(([key, value]) => [key, JSON.parse(value)]),
@@ -145,23 +154,23 @@ class RoomManager {
   /**
    * 更新房间活跃时间
    */
-  async touchRoom(roomId) {
+  async touchRoom(roomId: string): Promise<void> {
     const room = await this.getRoom(roomId)
     if (room) {
       room.lastActivity = Date.now()
-      await redis.set(this.hashKey, `${roomId}`, JSON.stringify(room))
+      await redis.hset(this.hashKey, `${roomId}`, JSON.stringify(room))
     }
   }
 
   /**
    * 清理超时房间
    */
-  async cleanupInactiveRooms(timeoutMs = 30 * 60 * 1000) {
+  async cleanupInactiveRooms(timeoutMs: number = 30 * 60 * 1000): Promise<void> {
     const now = Date.now()
     const rooms = await this.getAllRooms()
-    for (const room of Object.values(rooms)) {
+    for (const room of Object.values(rooms) as Room[]) {
       if (room && now - room.lastActivity > timeoutMs) {
-        await this.deleteRoom(room.roomId)
+        await this.deleteRoom(room.id)
       }
     }
   }

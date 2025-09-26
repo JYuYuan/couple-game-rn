@@ -9,7 +9,6 @@ import { Colors } from '@/constants/theme'
 import GameBoard from '@/components/GameBoard'
 import TaskModal, { TaskModalData } from '@/components/TaskModal'
 import VictoryModal from '@/components/VictoryModal'
-import { PlayerAvatar } from '@/components/PlayerAvatar'
 import { RoomWaiting } from '@/components/RoomWaiting'
 import { GamePlayer } from '@/hooks/use-game-players'
 import { useAudioManager } from '@/hooks/use-audio-manager'
@@ -17,6 +16,7 @@ import { useOnlineFlyGame } from '@/hooks/use-online-fly-game'
 import { useTranslation } from 'react-i18next'
 import { OnlinePlayer } from '@/types/online'
 import LoadingScreen from '@/components/LoadingScreen'
+import { PlayerIcon } from '@/components/icons'
 
 export default function FlyingChessGame() {
   const router = useRouter()
@@ -178,11 +178,7 @@ export default function FlyingChessGame() {
         category: data.task.category,
         difficulty: data.task.difficulty,
         triggerPlayerIds: data.triggerPlayerIds,
-        executors: executorPlayers.map((p) => ({
-          id: parseInt(p.id),
-          name: p.name,
-          color: p.color,
-        })), // 转换ID类型
+        executors: executorPlayers, // 转换ID类型
       })
       setShowTaskModal(true)
     }
@@ -214,6 +210,7 @@ export default function FlyingChessGame() {
 
     // 注册事件监听器
     const socket = onlineGameHook.socket
+
     socket.on('game:dice-roll', handleDiceRolled)
     socket.on('game:player-move', handlePlayerMove)
     socket.on('game:task-trigger', handleTaskTrigger)
@@ -425,7 +422,7 @@ export default function FlyingChessGame() {
                     },
                   ]}
                 >
-                  <PlayerAvatar iconType={player.iconType} color={player.color} size={32} />
+                  <PlayerIcon see={player.iconType} />
                   <View style={styles.playerInfo}>
                     <View style={styles.playerNameRow}>
                       <Text style={[styles.playerName, { color: colors.homeCardTitle }]}>
@@ -474,9 +471,9 @@ export default function FlyingChessGame() {
 
         {/* 任务弹窗 */}
         <TaskModal
+          players={players}
           visible={showTaskModal}
           task={taskModalData}
-          players={players.map((p) => ({ id: parseInt(p.id), name: p.name, color: p.color }))}
           onComplete={handleTaskComplete}
           onClose={() => setShowTaskModal(false)}
         />

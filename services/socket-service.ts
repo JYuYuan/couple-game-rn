@@ -8,7 +8,6 @@ import {
   PlayerMoveData,
   SocketError,
   TaskCompleteData,
-  TaskTriggerData,
 } from '@/types/online'
 
 const SOCKET_URL = __DEV__ ? 'http://localhost:3001' : 'https://your-production-server.com'
@@ -235,19 +234,19 @@ class SocketService {
   }
 
   rollDice(data: DiceRollData): void {
-    this.socketEmit('game:dice-roll', data)
+    this.runActions('roll_dice', data)
   }
 
   movePlayer(data: PlayerMoveData): void {
-    this.socketEmit('game:player-move', data)
-  }
-
-  triggerTask(data: TaskTriggerData): void {
-    this.socketEmit('game:task-trigger', data)
+    this.runActions('move_piece', data)
   }
 
   completeTask(data: TaskCompleteData): void {
-    this.socketEmit('game:task-complete', data)
+    this.socketEmit('complete_task', data)
+  }
+
+  runActions(type: string, data: any): void {
+    this.socketEmit('game:actions', { type, ...data })
   }
 
   // 便利属性

@@ -2,16 +2,19 @@
   "name": "couple-game-server",
   "version": "1.0.0",
   "description": "Socket.io server for couple game",
-  "main": "index.js",
+  "main": "dist/index.js",
   "type": "module",
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js",
-    "simulator": "node bot/simulator-cli.js",
-    "sim-quick": "node bot/simulator-cli.js --quick",
-    "sim-3p": "node bot/simulator-cli.js --players 3",
-    "sim-wheel": "node bot/simulator-cli.js --type wheel",
-    "sim-join": "node bot/simulator-cli.js --join"
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx watch index.ts",
+    "dev:build": "tsc --watch",
+    "clean": "rm -rf dist",
+    "simulator": "tsx bot/simulator-cli.js",
+    "sim-quick": "tsx bot/simulator-cli.js --quick",
+    "sim-3p": "tsx bot/simulator-cli.js --players 3",
+    "sim-wheel": "tsx bot/simulator-cli.js --type wheel",
+    "sim-join": "tsx bot/simulator-cli.js --join"
   },
   "dependencies": {
     "cors": "^2.8.5",
@@ -23,6 +26,13 @@
     "uuid": "^13.0.0"
   },
   "devDependencies": {
-    "nodemon": "^3.0.0"
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.5.2",
+    "@types/socket.io": "^3.0.2",
+    "@types/uuid": "^11.0.0",
+    "nodemon": "^3.0.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.9.2"
   }
 }

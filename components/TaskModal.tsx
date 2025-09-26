@@ -37,10 +37,11 @@ export interface TaskModalData {
   type: 'trap' | 'star' | 'collision'
   executors: {
     // 改为数组，支持多个执行者
-    id: number
+    id: any
     name: string
     color: string
     iconType: number
+    [key: string]: any
   }[]
   category: string
   difficulty: string
@@ -52,9 +53,11 @@ interface TaskModalProps {
   task: TaskModalData | null
   players: {
     // 传入所有玩家信息
-    id: number
+    id: any
     name: string
     color: string
+    iconType: number
+    [key: string]: any
   }[]
   onComplete: (completed: boolean) => void
   onClose: () => void

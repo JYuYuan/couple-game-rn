@@ -223,17 +223,6 @@ export const useSocket = () => {
     [connectionType],
   )
 
-  const triggerTask = useCallback(
-    (data: any) => {
-      if (connectionType === 'lan') {
-        webrtcService?.triggerTask(data)
-      } else {
-        socketService.triggerTask(data)
-      }
-    },
-    [connectionType],
-  )
-
   const completeTask = useCallback(
     (data: any) => {
       if (connectionType === 'lan') {
@@ -319,7 +308,6 @@ export const useSocket = () => {
     startGame,
     rollDice,
     movePlayer,
-    triggerTask,
     completeTask,
 
     // 事件管理

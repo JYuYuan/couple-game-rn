@@ -1,21 +1,22 @@
 import BaseGame from '../../core/BaseGame.js'
 import { createBoardPath } from '../../utils/index.js'
 import roomManager from '../../core/RoomManager.js'
+import type { SocketIOServer, Room, Player } from '../../typings/socket'
 
 class FlyingGame extends BaseGame {
-  constructor(room, io) {
+  constructor(room: Room, io: SocketIOServer) {
     super(room, io)
-    this.boardSize = 49
     this.boardPath = createBoardPath() // 创建棋盘路径
+    this.boardSize = this.boardPath.length
   }
 
   onStart() {
     super.onStart()
     this.room.gameStatus = 'playing'
-    this.room.lastActivity = new Date()
+    this.room.lastActivity = Date.now()
 
     // 初始化玩家位置
-    this.room.players = this.room.players.map((player) => ({ ...player, position: 0 }))
+    this.room.players = this.room.players.map((player: Player) => ({ ...player, position: 0 }))
     this.room.currentUser = this.room.hostId
     this.room.boardPath = this.boardPath
     roomManager.updateRoom(this.room)
@@ -24,15 +25,12 @@ class FlyingGame extends BaseGame {
     this._notifyCurrentPlayer()
   }
 
-  onPlayerAction(io, playerId, action) {
+  onPlayerAction(_io: SocketIOServer, playerId: string, action: any) {
     if (this.gameState !== 'playing') return
 
     switch (action.type) {
       case 'roll_dice':
-        this._handleDiceRoll(playerId, action)
-        break
-      case 'move_piece':
-        this._handlePieceMove(playerId, action)
+        this._handleDiceRoll(playerId)
         break
       case 'complete_task':
         this._handleTaskComplete(playerId, action)
@@ -40,16 +38,16 @@ class FlyingGame extends BaseGame {
     }
   }
 
-  _handleDiceRoll(playerId) {
+  _handleDiceRoll(playerId: string) {
     const currentPlayer = this.room.players[this.currentPlayerIndex]
-    if (currentPlayer.id !== playerId) {
+    if (!currentPlayer || currentPlayer.id !== playerId) {
       return // 不是当前玩家
     }
 
     const diceValue = Math.floor(Math.random() * 6) + 1
     this.socket.to(this.room.id).emit('game:dice-roll', {
       playerId,
-      playerName: currentPlayer.name,
+      playerName: currentPlayer!.name,
       diceValue,
     })
 
@@ -59,8 +57,8 @@ class FlyingGame extends BaseGame {
     }, 1000)
   }
 
-  _movePlayer(playerId, steps) {
-    const currentPos = this.playerPositions.get(playerId) || 0
+  _movePlayer(playerId: string, steps: number) {
+    const currentPos = this.playerPositions[playerId] || 0
     const finishLine = this.boardSize - 1 // 终点位置
     let newPos
 
@@ -76,7 +74,7 @@ class FlyingGame extends BaseGame {
     // 确保位置不小于0
     newPos = Math.max(0, newPos)
 
-    this.playerPositions.set(playerId, newPos)
+    this.playerPositions[playerId] = newPos
 
     this.socket.to(this.room.id).emit('game:player-move', {
       playerId,
@@ -104,8 +102,8 @@ class FlyingGame extends BaseGame {
   }
 
   // 检查碰撞
-  _checkCollision(playerId, position) {
-    for (const [otherPlayerId, otherPosition] of this.playerPositions.entries()) {
+  _checkCollision(playerId: string, position: number): boolean {
+    for (const [otherPlayerId, otherPosition] of Object.entries(this.playerPositions)) {
       if (otherPlayerId !== playerId && otherPosition === position) {
         return true
       }
@@ -114,13 +112,13 @@ class FlyingGame extends BaseGame {
   }
 
   // 获取格子类型
-  _getCellType(position) {
+  _getCellType(position: number): string {
     const cell = this.boardPath.find((c) => c.position === position)
     return cell ? cell.type : 'path'
   }
 
   // 触发任务
-  _triggerTask(playerId, taskType = 'star') {
+  _triggerTask(playerId: string, taskType: string = 'star') {
     // 从房间的任务集合中随机选取任务
     const roomTasks = this.room.tasks || []
     let selectedTask = null
@@ -140,7 +138,7 @@ class FlyingGame extends BaseGame {
       }
     }
 
-    const taskDescriptions = {
+    const taskDescriptions: { [key: string]: string } = {
       trap: `陷阱任务：${selectedTask.title}`,
       star: `奖励任务：${selectedTask.title}`,
       collision: `碰撞任务：${selectedTask.title}`,
@@ -150,9 +148,9 @@ class FlyingGame extends BaseGame {
     let executorPlayerId = playerId
     if (taskType === 'star' || taskType === 'collision') {
       // 星星任务和碰撞任务由对手执行
-      const opponents = this.room.players.filter((p) => p.id !== playerId)
+      const opponents = this.room.players.filter((p: Player) => p.id !== playerId)
       if (opponents.length > 0) {
-        executorPlayerId = opponents[0].id // 取第一个对手
+        executorPlayerId = opponents[0]!.id // 取第一个对手
       }
     }
 
@@ -179,7 +177,7 @@ class FlyingGame extends BaseGame {
   }
 
   _checkWinCondition() {
-    for (const [playerId, position] of this.playerPositions.entries()) {
+    for (const [playerId, position] of Object.entries(this.playerPositions)) {
       if (position >= this.boardSize - 1) {
         this._endGame(playerId)
         return
@@ -194,6 +192,8 @@ class FlyingGame extends BaseGame {
 
   _notifyCurrentPlayer() {
     const currentPlayer = this.room.players[this.currentPlayerIndex]
+    if (!currentPlayer) return
+
     this.socket.to(this.room.id).emit('game:turn-change', {
       currentPlayerIndex: this.currentPlayerIndex,
       currentPlayerId: currentPlayer.id,
@@ -201,14 +201,14 @@ class FlyingGame extends BaseGame {
     })
   }
 
-  _endGame(winnerId) {
-    this.gameState = 'finished'
-    const winner = this.room.players.find((p) => p.id === winnerId)
+  _endGame(winnerId: string) {
+    this.gameState = 'ended'
+    const winner = this.room.players.find((p: Player) => p.id === winnerId)
 
     this.socket.to(this.room.id).emit('game:victory', {
       winnerId,
-      winnerName: winner.name,
-      finalPositions: Array.from(this.playerPositions.entries()),
+      winnerName: winner?.name || '未知玩家',
+      finalPositions: Object.entries(this.playerPositions),
     })
 
     this.onEnd(this.socket)
@@ -218,16 +218,18 @@ class FlyingGame extends BaseGame {
     const gameState = {
       currentPlayerIndex: this.currentPlayerIndex,
       gameState: this.gameState,
-      playerPositions: Array.from(this.playerPositions.entries()),
+      playerPositions: Object.entries(this.playerPositions),
       boardSize: this.boardSize,
     }
 
     this.socket.to(this.room.id).emit('game:state', gameState)
   }
 
-  onEnd(io) {
-    this.room.gameStatus = 'finished'
-    io.to(this.room.id).emit('game:ended', { room: this.room })
+  onEnd(io?: SocketIOServer) {
+    this.room.gameStatus = 'ended'
+    if (io) {
+      io.to(this.room.id).emit('game:ended', { room: this.room })
+    }
   }
 }
 
