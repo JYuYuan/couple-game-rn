@@ -80,15 +80,6 @@ const Settings: React.FC = () => {
 
   const handleAboutPress = async (type: string) => {
     switch (type) {
-      case 'version':
-        Alert.alert(
-          t('settings.version.alertTitle', '版本信息'),
-          t('settings.version.alertMessage', '版本：{{version}}\n构建：{{buildDate}}', {
-            version: appInfo.version,
-            buildDate: appInfo.buildDate,
-          }),
-        )
-        break
       case 'update':
         setIsCheckingUpdate(true)
         try {
@@ -215,7 +206,6 @@ const Settings: React.FC = () => {
           icon: 'information-circle',
           label: t('settings.version.label', '版本信息'),
           value: appInfo.version,
-          onPress: () => handleAboutPress('version'),
         },
         {
           icon: 'refresh',
