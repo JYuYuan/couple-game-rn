@@ -4,7 +4,7 @@ import { LANRoom, OnlineRoom } from '@/types/online'
 import { useDebounceEffect } from 'ahooks'
 import { useSettingsStore } from '@/store'
 
-export const useOnlineGame = () => {
+export const useOnlineFlyGame = () => {
   const socket = useSocket()
 
   const { playerId } = useSettingsStore()

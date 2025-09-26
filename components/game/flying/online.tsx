@@ -13,7 +13,7 @@ import { PlayerAvatar } from '@/components/PlayerAvatar'
 import { RoomWaiting } from '@/components/RoomWaiting'
 import { GamePlayer } from '@/hooks/use-game-players'
 import { useAudioManager } from '@/hooks/use-audio-manager'
-import { useOnlineGame } from '@/hooks/use-online-game'
+import { useOnlineFlyGame } from '@/hooks/use-online-fly-game'
 import { useTranslation } from 'react-i18next'
 import { OnlinePlayer } from '@/types/online'
 import LoadingScreen from '@/components/LoadingScreen'
@@ -28,7 +28,7 @@ export default function FlyingChessGame() {
   // 获取传入的参数
   const roomId = params.roomId as string
 
-  const onlineGameHook = useOnlineGame()
+  const onlineGameHook = useOnlineFlyGame()
 
   const audioManager = useAudioManager()
 
@@ -121,7 +121,6 @@ export default function FlyingChessGame() {
     }
   }
 
-
   const diceAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ rotate: `${diceRotation.value}deg` }],
   }))
@@ -179,7 +178,11 @@ export default function FlyingChessGame() {
         category: data.task.category,
         difficulty: data.task.difficulty,
         triggerPlayerIds: data.triggerPlayerIds,
-        executors: executorPlayers.map(p => ({ id: parseInt(p.id), name: p.name, color: p.color })), // 转换ID类型
+        executors: executorPlayers.map((p) => ({
+          id: parseInt(p.id),
+          name: p.name,
+          color: p.color,
+        })), // 转换ID类型
       })
       setShowTaskModal(true)
     }
@@ -197,7 +200,7 @@ export default function FlyingChessGame() {
           name: winnerPlayer.name,
           color: winnerPlayer.color,
           position: winnerPlayer.position,
-          iconType: winnerPlayer.iconType
+          iconType: winnerPlayer.iconType,
         } as GamePlayer
         showVictory(gameWinner)
       }
@@ -459,7 +462,7 @@ export default function FlyingChessGame() {
           {/* 游戏棋盘 */}
           <View style={[styles.boardSection, { backgroundColor: colors.homeCardBackground }]}>
             <GameBoard
-              players={animatedPlayers.map(p => ({ ...p, id: parseInt(p.id) }))} // 转换ID类型为number
+              players={animatedPlayers.map((p) => ({ ...p, id: parseInt(p.id) }))} // 转换ID类型为number
               currentPlayer={onlineGameHook.currentPlayerIndex || 0}
               boardData={boardPath}
               onCellPress={(_cell) => {
@@ -473,7 +476,7 @@ export default function FlyingChessGame() {
         <TaskModal
           visible={showTaskModal}
           task={taskModalData}
-          players={players.map(p => ({ id: parseInt(p.id), name: p.name, color: p.color }))}
+          players={players.map((p) => ({ id: parseInt(p.id), name: p.name, color: p.color }))}
           onComplete={handleTaskComplete}
           onClose={() => setShowTaskModal(false)}
         />
