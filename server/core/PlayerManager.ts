@@ -7,12 +7,18 @@ interface AddPlayerParams {
   roomId?: string | null
   name: string
   isHost?: boolean
+  [key: string]: any
 }
 
 class PlayerManager {
   hashKey = 'players'
 
-  async addPlayer(socketId: string, { playerId, roomId, name, isHost }: AddPlayerParams): Promise<Player> {
+  async addPlayer(
+    socketId: string,
+    { playerId, roomId, name, isHost, ...rest }: AddPlayerParams,
+  ): Promise<Player> {
+    const num = Math.floor(Math.random() * 10) + 1
+
     const player: Player = {
       id: playerId, // 一律用 id
       socketId,
@@ -20,11 +26,12 @@ class PlayerManager {
       name,
       color: getRandomColor(),
       isHost: !!isHost,
-      iconType: 'airplane',
+      iconType: num,
       isConnected: true,
       joinedAt: Date.now(), // 存时间戳
       lastSeen: Date.now(),
       playerId, // 为了兼容性
+      ...rest,
     }
     await redis.hset(this.hashKey, player.id, JSON.stringify(player))
     return player

@@ -3,23 +3,23 @@ import { useSocket } from '@/hooks/use-socket'
 import { LANRoom, OnlineRoom } from '@/types/online'
 import { useDebounceEffect } from 'ahooks'
 import { useSettingsStore } from '@/store'
+import { useRouter } from 'expo-router'
 
 export const useOnlineFlyGame = () => {
   const socket = useSocket()
-
+  const router = useRouter()
   const { playerId } = useSettingsStore()
   // 仅保留房间和游戏状态，移除玩家状态管理
   const [room, setRoom] = useState<OnlineRoom | LANRoom | null>(null)
   const [isGameReady, setIsGameReady] = useState(false)
   const [isWaitingForPlayers, setIsWaitingForPlayers] = useState(true)
-  // 连接Socket并加入房间
+  // 连接Socket - 只在挂载时连接一次
   useEffect(() => {
     if (!socket.isConnected) {
+      console.log('use-online-game: Connecting socket...')
       socket.connect()
-    } else {
-      console.log('use-online-game: Socket already connected, no need to connect')
     }
-  }, [socket.isConnected])
+  }, []) // 移除依赖，只在组件挂载时执行一次
 
   // 自动加载房间信息 - 直接依赖 socket.currentRoom 变化
   useDebounceEffect(() => {
@@ -42,6 +42,7 @@ export const useOnlineFlyGame = () => {
       setIsWaitingForPlayers(true)
       setIsGameReady(false)
     } else {
+      router.back()
       console.log('⏳ use-online-game: No room data to sync')
     }
   }, [socket.currentRoom])
@@ -62,7 +63,12 @@ export const useOnlineFlyGame = () => {
     players: room?.players || [],
     boardPath: room?.boardPath || [],
     taskSet: room?.taskSet,
-    diceValue: room?.diceValue,
+    // 从 gameState 中获取骰子值
+    diceValue: room?.gameState?.lastDiceRoll?.diceValue,
+    // 从 gameState 中获取当前任务
+    currentTask: room?.gameState?.currentTask,
+    // 从 gameState 中获取胜利信息
+    winner: room?.gameState?.winner,
     // 游戏数据
     gameStatus: room?.gameStatus || 'waiting',
     // Socket引用

@@ -1,5 +1,6 @@
 import type { Server, Socket } from 'socket.io'
 import type { TaskSet } from './tasks'
+import type { TaskModalData } from './room'
 
 export type SocketIOServer = Server
 export type SocketIOSocket = Socket
@@ -39,7 +40,7 @@ export interface Player {
   roomId: string | null
   color: string
   isHost: boolean
-  iconType: string
+  iconType: number
   isConnected: boolean
   joinedAt: number
   lastSeen: number
@@ -61,6 +62,23 @@ export interface Room {
   engine: any
   currentUser?: string
   boardPath?: any[]
+  // 统一的游戏状态对象
+  gameState?: {
+    playerPositions: { [playerId: string]: number }
+    turnCount: number
+    gamePhase: string
+    startTime: number
+    lastDiceRoll?: {
+      playerId: string
+      playerName: string
+      diceValue: number
+      timestamp: number
+    }
+    currentTask?: TaskModalData
+    boardSize: number
+    [key: string]: any
+  }
+  taskSet?: TaskSet
   [key: string]: any
 }
 

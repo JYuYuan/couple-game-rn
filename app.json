@@ -1,16 +1,16 @@
 {
   "expo": {
     "name": "卿轻游",
-    "slug": "couple-game-rn",
+    "slug": "qqs-game-rn",
     "version": "1.0.9",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "couplegamern",
+    "scheme": "qqs",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.coupleup.game",
+      "bundleIdentifier": "com.qqs.game",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -24,7 +24,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.coupleup.game"
+      "package": "com.qqs.game"
     },
     "web": {
       "output": "static",

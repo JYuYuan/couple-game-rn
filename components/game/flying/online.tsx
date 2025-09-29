@@ -7,14 +7,14 @@ import { LinearGradient } from 'expo-linear-gradient'
 import { useColorScheme } from '@/hooks/use-color-scheme'
 import { Colors } from '@/constants/theme'
 import GameBoard from '@/components/GameBoard'
-import TaskModal, { TaskModalData } from '@/components/TaskModal'
+import TaskModal from '@/components/TaskModal'
 import VictoryModal from '@/components/VictoryModal'
 import { RoomWaiting } from '@/components/RoomWaiting'
 import { GamePlayer } from '@/hooks/use-game-players'
 import { useAudioManager } from '@/hooks/use-audio-manager'
 import { useOnlineFlyGame } from '@/hooks/use-online-fly-game'
 import { useTranslation } from 'react-i18next'
-import { OnlinePlayer } from '@/types/online'
+import { OnlinePlayer, TaskModalData } from '@/types/online'
 import LoadingScreen from '@/components/LoadingScreen'
 import { PlayerIcon } from '@/components/icons'
 
@@ -63,8 +63,6 @@ export default function FlyingChessGame() {
   // 处理胜利显示
   const showVictory = (victoryPlayer: GamePlayer) => {
     console.log('🏆 显示胜利界面:', victoryPlayer.name)
-
-    audioManager.playSoundEffect('victory')
     setWinner(victoryPlayer)
     setShowVictoryModal(true)
   }
@@ -125,72 +123,46 @@ export default function FlyingChessGame() {
     transform: [{ rotate: `${diceRotation.value}deg` }],
   }))
 
+  // 监听房间状态变化，响应游戏事件
   useEffect(() => {
-    if (!onlineGameHook.socket) return
+    if (!room) return
 
-    // 监听骰子结果
-    const handleDiceRolled = (data: any) => {
-      console.log('🎲 收到骰子结果:', data.diceValue)
-
-      // 如果是当前玩家的回合，显示骰子动画
-      if (data.playerId === onlineGameHook.currentPlayer?.id) {
-        // 骰子旋转动画
-        diceRotation.value = withTiming(360 * 4, { duration: 1200 })
-        // 播放音效
-        audioManager.playSoundEffect('dice')
-        // 重置滚动状态
-        setIsRolling(false)
-      }
+    // 检查骰子结果变化 - 触发动画
+    const lastDiceRoll = room.gameState?.lastDiceRoll
+    if (lastDiceRoll && lastDiceRoll.playerId === onlineGameHook.currentPlayer?.id) {
+      // 骰子旋转动画
+      diceRotation.value = withTiming(360 * 4, { duration: 1200 })
+      // 播放音效
+      audioManager.playSoundEffect('dice')
+      // 重置滚动状态
+      setIsRolling(false)
     }
 
-    // 监听玩家移动指令
-    const handlePlayerMove = (data: any) => {
-      console.log(
-        `🚶 收到移动指令: 玩家 ${data.playerId} 从 ${data.fromPosition} 移动到 ${data.toPosition}`,
-      )
+    // 检查当前任务变化 - 显示任务弹窗
+    const currentTask = onlineGameHook.currentTask
+    if (currentTask && !showTaskModal) {
+      console.log(`🎯 显示任务:`, currentTask)
 
-      setIsMoving(true)
-
-      // 调用逐步移动动画
-      movePlayerStepByStep(data.playerId, data.fromPosition, data.toPosition, () => {
-        // 动画结束后，将权威状态同步到动画状态
-        setAnimatedPlayers(onlineGameHook.players as OnlinePlayer[])
-        setIsMoving(false)
-        console.log(`✅ 玩家 ${data.playerId} 移动动画完成`)
-      })
-    }
-
-    // 监听任务触发
-    const handleTaskTrigger = (data: any) => {
-      console.log(`🎯 收到任务触发:`, data)
-
-      // 查找执行者信息
-      const executorPlayers = onlineGameHook.players.filter((p) =>
-        data.executorPlayerIds.includes(p.id),
-      )
-
-      // 显示任务弹窗
       setTaskModalData({
-        id: data.task.id,
-        type: data.taskType,
-        title: data.task.title,
-        description: data.task.description,
-        category: data.task.category,
-        difficulty: data.task.difficulty,
-        triggerPlayerIds: data.triggerPlayerIds,
-        executors: executorPlayers, // 转换ID类型
+        id: currentTask.id,
+        type: currentTask.type,
+        title: currentTask.title,
+        description: currentTask.description,
+        category: currentTask.category,
+        difficulty: currentTask.difficulty,
+        triggerPlayerIds: currentTask.triggerPlayerIds,
+        executors: currentTask.executors,
       })
       setShowTaskModal(true)
     }
 
-    // 监听游戏胜利
-    const handleGameVictory = (data: { winnerId: string }) => {
-      console.log(`🏆 游戏胜利: 玩家 ${data.winnerId} 获胜`)
+    // 检查胜利状态 - 显示胜利弹窗
+    const winner = onlineGameHook.winner
+    if (winner && !showVictoryModal) {
+      console.log(`🏆 游戏胜利: 玩家 ${winner.winnerId} 获胜`)
 
-      // 显示胜利弹窗
-      const winnerPlayer = onlineGameHook.players.find((p) => p.id === data.winnerId)
+      const winnerPlayer = onlineGameHook.players.find((p) => p.id === winner.winnerId)
       if (winnerPlayer) {
-        // 转换为GamePlayer类型
         const gameWinner = {
           id: parseInt(winnerPlayer.id),
           name: winnerPlayer.name,
@@ -201,39 +173,35 @@ export default function FlyingChessGame() {
         showVictory(gameWinner)
       }
     }
+  }, [room, onlineGameHook.currentTask, onlineGameHook.winner, showTaskModal, showVictoryModal])
 
-    // 监听游戏状态更新
-    const handleGameStateUpdate = (data: any) => {
-      console.log('🔄 游戏状态更新:', data)
-      // 这里可以处理其他游戏状态更新，比如当前玩家切换等
-    }
-
-    // 注册事件监听器
-    const socket = onlineGameHook.socket
-
-    socket.on('game:dice-roll', handleDiceRolled)
-    socket.on('game:player-move', handlePlayerMove)
-    socket.on('game:task-trigger', handleTaskTrigger)
-    socket.on('game:victory', handleGameVictory)
-    socket.on('game:state', handleGameStateUpdate)
-
-    // 清理函数
-    return () => {
-      if (socket) {
-        socket.off('game:dice-roll', handleDiceRolled)
-        socket.off('game:player-move', handlePlayerMove)
-        socket.off('game:task-trigger', handleTaskTrigger)
-        socket.off('game:victory', handleGameVictory)
-        socket.off('game:state', handleGameStateUpdate)
-      }
-    }
-  }, [onlineGameHook.socket.isConnected, onlineGameHook.currentPlayer, onlineGameHook.players])
-
-  // 同步动画玩家状态与服务器状态
+  // 同步动画玩家状态与服务器状态，并检测位置变化来触发移动动画
   useEffect(() => {
-    // 仅在没有动画进行时同步，防止中断正在进行的移动动画
+    if (isMoving) return // 动画进行中时不同步
+
+    const newPlayers = onlineGameHook.players as OnlinePlayer[]
+
+    // 检测位置变化，触发移动动画
+    newPlayers.forEach((newPlayer) => {
+      const oldPlayer = animatedPlayers.find((p) => p.id === newPlayer.id)
+      if (oldPlayer && oldPlayer.position !== newPlayer.position && !isMoving) {
+        console.log(
+          `🚶 玩家 ${newPlayer.id} 位置变化: ${oldPlayer.position} -> ${newPlayer.position}`,
+        )
+
+        setIsMoving(true)
+        movePlayerStepByStep(newPlayer.id, oldPlayer.position, newPlayer.position, () => {
+          setAnimatedPlayers(newPlayers)
+          setIsMoving(false)
+          console.log(`✅ 玩家 ${newPlayer.id} 移动动画完成`)
+        })
+        return // 一次只处理一个玩家的移动
+      }
+    })
+
+    // 如果没有检测到移动，直接同步状态
     if (!isMoving) {
-      setAnimatedPlayers(onlineGameHook.players as OnlinePlayer[])
+      setAnimatedPlayers(newPlayers)
     }
   }, [onlineGameHook.players, isMoving])
 

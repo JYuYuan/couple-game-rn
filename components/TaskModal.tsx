@@ -27,26 +27,9 @@ import { Colors } from '@/constants/theme'
 import { PlayerIcon } from './icons'
 import { useTranslation } from 'react-i18next'
 import { showConfirmDialog } from '@/components/ConfirmDialog'
+import { TaskModalData } from '@/types/online'
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window')
-
-export interface TaskModalData {
-  id: string
-  title: string
-  description: string
-  type: 'trap' | 'star' | 'collision'
-  executors: {
-    // 改为数组，支持多个执行者
-    id: any
-    name: string
-    color: string
-    iconType: number
-    [key: string]: any
-  }[]
-  category: string
-  difficulty: string
-  triggerPlayerIds: number[] // 改为数组，支持多个触发者
-}
 
 interface TaskModalProps {
   visible: boolean
@@ -71,7 +54,6 @@ export default function TaskModal({ visible, task, players, onComplete, onClose 
   const [isCompleted, setIsCompleted] = useState<boolean | null>(null)
   const [showResult, setShowResult] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
-  const [timeRemaining, setTimeRemaining] = useState<number | null>(null)
   const [hasError, setHasError] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string>('')
 
@@ -89,7 +71,6 @@ export default function TaskModal({ visible, task, players, onComplete, onClose 
       setIsCompleted(null)
       setShowResult(false)
       setIsProcessing(false)
-      setTimeRemaining(null)
       setHasError(false)
       setErrorMessage('')
       progressValue.value = 0

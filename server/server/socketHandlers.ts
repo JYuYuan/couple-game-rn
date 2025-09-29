@@ -1,12 +1,18 @@
 // socketHandlers.ts
-import type { SocketIOServer, SocketIOSocket, PlayerInfo, RoomInfo, JoinData, GameData, SocketCallback } from '../typings/socket'
+import type {
+  SocketIOServer,
+  SocketIOSocket,
+  PlayerInfo,
+  RoomInfo,
+  JoinData,
+  GameData,
+  SocketCallback,
+} from '../typings/socket'
 import roomManager from '../core/RoomManager.js'
 import playerManager from '../core/PlayerManager.js'
-import GameRegistry from '../core/GameRegistry.js'
+import gameInstanceManager from '../core/GameInstanceManager.js'
 
 export default function registerSocketHandlers(io: SocketIOServer) {
-  // 存储游戏实例
-  const activeGames = new Map()
   io.removeAllListeners('connection')
 
   io.on('connection', async (socket: SocketIOSocket) => {
@@ -29,8 +35,11 @@ export default function registerSocketHandlers(io: SocketIOServer) {
       }
 
       // 如果玩家在游戏中
-      if (player.roomId && activeGames.has(player.roomId)) {
-        socket.emit('game:resume', { roomId: player.roomId })
+      if (player.roomId) {
+        const game = await gameInstanceManager.getGameInstance(player.roomId, io)
+        if (game) {
+          socket.emit('game:resume', { roomId: player.roomId })
+        }
       }
     }
 
@@ -55,12 +64,21 @@ export default function registerSocketHandlers(io: SocketIOServer) {
     // 创建房间
     socket.on('room:create', async (roomInfo: RoomInfo, callback?: SocketCallback) => {
       try {
-        const player = await playerManager.addPlayer(playerId, {
-          playerId,
-          name: roomInfo.playerName,
-          roomId: null,
-          isHost: true,
-        })
+        // 获取或创建玩家
+        let player = await playerManager.getPlayer(playerId)
+        if (!player) {
+          player = await playerManager.addPlayer(playerId, {
+            playerId,
+            name: roomInfo.playerName,
+            roomId: null,
+            isHost: true,
+          })
+        } else {
+          // 更新玩家信息
+          player.name = roomInfo.playerName
+          player.isHost = true
+          await playerManager.updatePlayer(player)
+        }
 
         let room = await roomManager.createRoom({
           name: roomInfo.roomName || `Room_${Date.now()}`,
@@ -70,13 +88,12 @@ export default function registerSocketHandlers(io: SocketIOServer) {
           taskSet: roomInfo.taskSet || null,
         })
 
-        // // 将创建者加入房间
+        // 将创建者加入房间
         const roomResult = await roomManager.addPlayerToRoom(room.id, player)
         if (!roomResult) {
           throw new Error('Failed to add player to room')
         }
         room = roomResult
-        player.isHost = true
         player.roomId = room.id
 
         await playerManager.updatePlayer(player)
@@ -92,17 +109,31 @@ export default function registerSocketHandlers(io: SocketIOServer) {
     // 加入房间
     socket.on('room:join', async (joinData: JoinData, callback?: SocketCallback) => {
       try {
-        console.log(playerId)
         const roomId = joinData.roomId
-        const player = await playerManager.addPlayer(playerId, {
-          playerId,
-          name: joinData.playerName || `Player_${playerId.substring(0, 6)}`,
-          roomId: joinData.roomId,
-          isHost: false,
-        })
+        let room = await roomManager.getRoom(roomId)
+        if (!room) {
+          return callback?.({ success: false, message: '房间不存在或已满' })
+        }
 
-        const room = await roomManager.addPlayerToRoom(roomId, player)
+        // 获取或创建玩家
+        let player = await playerManager.getPlayer(playerId)
+        if (!player) {
+          player = await playerManager.addPlayer(playerId, {
+            playerId,
+            name: joinData.playerName || `Player_${playerId.substring(0, 6)}`,
+            roomId: joinData.roomId,
+            isHost: false,
+            iconType: room?.players.length,
+          })
+        } else {
+          // 更新玩家信息
+          player.name = joinData.playerName || player.name
+          player.isHost = false
+          player.iconType = room?.players.length
+          await playerManager.updatePlayer(player)
+        }
 
+        room = await roomManager.addPlayerToRoom(roomId, player)
         if (!room) {
           return callback?.({ success: false, message: '房间不存在或已满' })
         }
@@ -140,13 +171,11 @@ export default function registerSocketHandlers(io: SocketIOServer) {
         }
 
         // 创建游戏实例
-        const game = GameRegistry.createGame(room.gameType, room, io)
+        const game = await gameInstanceManager.createGameInstance(room, io)
 
         if (!game) {
-          return callback?.({ success: false, message: '游戏类型不支持' })
+          return callback?.({ success: false, message: '游戏创建失败' })
         }
-
-        activeGames.set(room.id, game)
 
         game.onStart()
       } catch (error) {
@@ -155,14 +184,20 @@ export default function registerSocketHandlers(io: SocketIOServer) {
     })
 
     // 游戏动作（投骰子、移动等）
-    socket.on('game:action', (data: GameData, callback?: SocketCallback) => {
+    socket.on('game:action', async (data: GameData, callback?: SocketCallback) => {
       try {
-        const game = activeGames.get(data.roomId)
+        const game = await gameInstanceManager.getGameInstance(data.roomId, io)
+        console.log(game)
         if (!game) {
           return callback?.({ success: false, message: '游戏不存在' })
         }
+        console.log(playerId)
 
         game.onPlayerAction(io, playerId, data)
+
+        // 更新游戏状态到 Redis
+        await gameInstanceManager.updateGameInstance(data.roomId, game)
+
         callback?.({ success: true })
       } catch (error) {
         callback?.({ success: false, message: (error as Error).message })
@@ -181,7 +216,7 @@ export default function registerSocketHandlers(io: SocketIOServer) {
 
         // 清理游戏实例
         if (room && room.players.length === 0) {
-          activeGames.delete(roomId)
+          await gameInstanceManager.removeGameInstance(roomId)
         }
 
         callback?.({ success: true })
@@ -205,22 +240,6 @@ export default function registerSocketHandlers(io: SocketIOServer) {
       const player = await playerManager.getPlayer(playerId)
       if (player) {
         console.log(`玩家断开: ${player.id}`)
-
-        // 从房间中移除
-        if (player.roomId) {
-          const room = await roomManager.removePlayerFromRoom(player.roomId, playerId)
-          if (room) {
-            io.to(player.roomId).emit('room:update', room)
-
-            // 清理游戏实例
-            if (room.players.length === 0) {
-              activeGames.delete(player.roomId)
-            }
-          }
-        }
-
-        await playerManager.removePlayer(playerId)
-        io.emit('player:list', await playerManager.getAllPlayers())
       }
     })
 
@@ -228,13 +247,18 @@ export default function registerSocketHandlers(io: SocketIOServer) {
     socket.on('error', (error: any) => {
       console.error(`Socket错误 ${playerId}:`, error)
     })
+
+    socket.onAny((event, ...args) => {
+      console.log('收到事件:', event, args)
+    })
   })
 
-  // 定期清理不活跃的房间和玩家
+  // 定期清理不活跃的房间、玩家和游戏
   setInterval(
     async () => {
       await roomManager.cleanupInactiveRooms()
       await playerManager.cleanupInactivePlayers()
+      await gameInstanceManager.cleanupExpiredGames()
     },
     5 * 60 * 1000,
   ) // 每5分钟清理一次

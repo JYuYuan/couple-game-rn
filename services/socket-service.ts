@@ -20,6 +20,7 @@ class SocketService {
   private isConnected: boolean = false
   private connectionError: string | null = null
   private listeners: Map<string, Set<Function>> = new Map()
+  private connecting: boolean = false // 添加连接状态标识
 
   private constructor() {}
 
@@ -76,11 +77,26 @@ class SocketService {
       return
     }
 
+    if (this.connecting) {
+      console.log('SocketService: Connection already in progress, skipping...')
+      return
+    }
+
+    // 如果已经有socket但是未连接，先清理
+    if (this.socket && !this.socket.connected) {
+      console.log('SocketService: Cleaning up existing disconnected socket')
+      this.socket.removeAllListeners()
+      this.socket.disconnect()
+      this.socket = null
+    }
+
     console.log('SocketService: Creating new connection to:', SOCKET_URL)
+    this.connecting = true // 设置连接状态
+
     this.socket = io(SOCKET_URL, {
       timeout: 10000,
       retries: 3,
-      forceNew: true,
+      forceNew: false, // 改为 false，避免强制创建新连接
       transports: ['websocket', 'polling'],
       query: {
         playerId: playerId,
@@ -96,18 +112,22 @@ class SocketService {
     this.socket.on('connect', () => {
       this.isConnected = true
       this.connectionError = null
+      this.connecting = false // 重置连接状态
+      console.log('SocketService: Connected successfully:', this.socket?.id)
       this.emit('connect')
     })
 
     this.socket.on('disconnect', (reason) => {
       console.log('SocketService: Disconnected:', reason)
       this.isConnected = false
+      this.connecting = false // 重置连接状态
       this.emit('disconnect', reason)
     })
 
     this.socket.on('connect_error', (error) => {
       console.error('SocketService: Connection error:', error)
       this.isConnected = false
+      this.connecting = false // 重置连接状态
       this.connectionError = `连接失败: ${error.message}`
       this.emit('connect_error', error)
     })
@@ -134,6 +154,7 @@ class SocketService {
       this.socket.disconnect()
       this.socket = null
       this.isConnected = false
+      this.connecting = false // 重置连接状态
       this.setCurrentRoom(null, 'disconnect')
     }
   }
@@ -246,7 +267,8 @@ class SocketService {
   }
 
   runActions(type: string, data: any): void {
-    this.socketEmit('game:actions', { type, ...data })
+    console.log('游戏事件：', type, data)
+    this.socketEmit('game:action', { type, ...data })
   }
 
   // 便利属性

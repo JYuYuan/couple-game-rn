@@ -2,6 +2,47 @@ import { GamePlayer } from '@/hooks/use-game-players'
 import { TaskSet } from '@/types/tasks'
 import { PathCell } from '@/types/game'
 
+// 服务端TaskModalData接口（从服务端同步）
+export interface TaskModalData {
+  id: string
+  title: string
+  description: string
+  type: 'trap' | 'star' | 'collision'
+  executors: {
+    id: any
+    name: string
+    color: string
+    iconType: number
+    [key: string]: any
+  }[]
+  category: string
+  difficulty: string
+  triggerPlayerIds: number[]
+}
+
+// 游戏状态接口（匹配服务端结构）
+export interface GameState {
+  playerPositions: { [playerId: string]: number }
+  turnCount: number
+  gamePhase: string
+  startTime: number
+  lastDiceRoll?: {
+    playerId: string
+    playerName: string
+    diceValue: number
+    timestamp: number
+  }
+  currentTask?: TaskModalData
+  boardSize: number
+  winner?: {
+    winnerId: string
+    winnerName: string
+    endTime: number
+    finalPositions: [string, number][]
+  }
+  [key: string]: any
+}
+
 // 网络游戏玩家接口（扩展基础 GamePlayer，使用 string 类型的 ID）
 export interface NetworkPlayer extends Omit<GamePlayer, 'id'> {
   id: string // 网络模式使用 string ID
@@ -28,27 +69,32 @@ export type ConnectionType = 'online' | 'lan'
 // WebRTC 连接状态
 export type WebRTCConnectionState = 'disconnected' | 'connecting' | 'connected' | 'failed'
 
-// 基础房间接口（通用结构）
+// 基础房间接口（通用结构，匹配服务端）
 export interface BaseRoom {
   id: string
   name: string
-  hostId: string // 统一使用 hostId，在线模式是 socketId，局域网模式是 peerId
-  players: NetworkPlayer[] // 使用网络玩家类型
-  diceValue: number
-  boardPath: PathCell[]
+  hostId: string
+  players: NetworkPlayer[]
   maxPlayers: number
-  gameStatus: RoomStatus
-  currentUser: string
-  taskSetId: string
+  gameStatus: 'waiting' | 'playing' | 'ended'
   gameType: 'fly' | 'wheel' | 'minesweeper'
-  createdAt: Date
-  lastActivity: Date
-  taskSet: TaskSet
+  createdAt: number
+  lastActivity: number
+  engine?: any
+  currentUser?: string
+  boardPath?: PathCell[]
+  // 统一的游戏状态对象（匹配服务端结构）
+  gameState?: GameState
+  taskSet?: TaskSet
+  // 兼容性字段
+  taskSetId?: string
+  diceValue?: number // 保留用于向后兼容
   gameData?: {
     diceValue?: number
     boardPath?: any[]
     currentTasks?: any[]
   }
+  [key: string]: any
 }
 
 // 在线房间接口（继承基础房间，添加在线特有属性）

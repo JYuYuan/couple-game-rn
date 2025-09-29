@@ -10,16 +10,16 @@
     "dev": "tsx watch index.ts",
     "dev:build": "tsc --watch",
     "clean": "rm -rf dist",
-    "simulator": "tsx bot/simulator-cli.js",
-    "sim-quick": "tsx bot/simulator-cli.js --quick",
-    "sim-3p": "tsx bot/simulator-cli.js --players 3",
-    "sim-wheel": "tsx bot/simulator-cli.js --type wheel",
-    "sim-join": "tsx bot/simulator-cli.js --join"
+    "bot": "node bot/simple-bot.js",
+    "bot:create": "node bot/simple-bot.js create",
+    "bot:create:2": "node bot/simple-bot.js create 2",
+    "bot:create:3": "node bot/simple-bot.js create 3",
+    "bot:create:4": "node bot/simple-bot.js create 4",
+    "bot:join": "node bot/simple-bot.js join"
   },
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^5.1.0",
-    "http": "^0.0.1-security",
     "ioredis": "^5.8.0",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
