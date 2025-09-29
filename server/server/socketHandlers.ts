@@ -6,7 +6,6 @@ import type {
   RoomInfo,
   JoinData,
   GameData,
-  SocketCallback,
 } from '../typings/socket'
 import roomManager from '../core/RoomManager.js'
 import playerManager from '../core/PlayerManager.js'
@@ -17,7 +16,7 @@ export default function registerSocketHandlers(io: SocketIOServer) {
 
   io.on('connection', async (socket: SocketIOSocket) => {
     const playerId = socket.handshake.query.playerId as string
-    console.log(`玩家连接: ${playerId}`)
+    console.log(`玩家连接: ${playerId}`, socket.id)
 
     // 尝试获取已存在的玩家信息
     let player = await playerManager.getPlayer(playerId)
@@ -25,26 +24,28 @@ export default function registerSocketHandlers(io: SocketIOServer) {
     if (player) {
       // 更新 socketId，保证断线重连后能正常通信
       player.socketId = socket.id
+      player.isConnected = true
+      await playerManager.updatePlayer(player)
+
       // 如果玩家在房间
       if (player.roomId) {
         const room = await roomManager.getRoom(player.roomId)
         if (room) {
           socket.join(room.id)
           socket.emit('room:update', room)
-        }
-      }
 
-      // 如果玩家在游戏中
-      if (player.roomId) {
-        const game = await gameInstanceManager.getGameInstance(player.roomId, io)
-        if (game) {
-          socket.emit('game:resume', { roomId: player.roomId })
+          // 如果房间有游戏在进行，继续游戏
+          const game = await gameInstanceManager.getGameInstance(player.roomId, io)
+          if (game && room.gameStatus === 'playing') {
+            console.log(`🔄 玩家 ${playerId} 重新连接，继续游戏`)
+            await game.onResume()
+          }
         }
       }
     }
 
     // 玩家加入
-    socket.on('player:join', async (playerInfo: PlayerInfo, callback?: SocketCallback) => {
+    socket.on('player:join', async (playerInfo: PlayerInfo) => {
       try {
         const player = await playerManager.addPlayer(playerId, {
           playerId,
@@ -54,15 +55,14 @@ export default function registerSocketHandlers(io: SocketIOServer) {
         })
 
         console.log(`玩家加入:`, player)
-        callback?.({ success: true, player })
         io.emit('player:list', await playerManager.getAllPlayers())
       } catch (error) {
-        callback?.({ success: false, message: (error as Error).message })
+        console.error('玩家加入失败:', error)
       }
     })
 
     // 创建房间
-    socket.on('room:create', async (roomInfo: RoomInfo, callback?: SocketCallback) => {
+    socket.on('room:create', async (roomInfo: RoomInfo) => {
       try {
         // 获取或创建玩家
         let player = await playerManager.getPlayer(playerId)
@@ -100,19 +100,20 @@ export default function registerSocketHandlers(io: SocketIOServer) {
 
         socket.join(room.id)
         console.log(`房间创建: ${room.id}`)
-        callback?.({ success: true, room })
+        io.to(room.id).emit('room:update', room)
       } catch (error) {
-        callback?.({ success: false, message: (error as Error).message })
+        console.log(error)
+        socket.emit('error', { message: (error as Error).message })
       }
     })
 
     // 加入房间
-    socket.on('room:join', async (joinData: JoinData, callback?: SocketCallback) => {
+    socket.on('room:join', async (joinData: JoinData) => {
       try {
         const roomId = joinData.roomId
         let room = await roomManager.getRoom(roomId)
         if (!room) {
-          return callback?.({ success: false, message: '房间不存在或已满' })
+          return socket.emit('error', { message: '房间不存在或已满' })
         }
 
         // 获取或创建玩家
@@ -135,7 +136,7 @@ export default function registerSocketHandlers(io: SocketIOServer) {
 
         room = await roomManager.addPlayerToRoom(roomId, player)
         if (!room) {
-          return callback?.({ success: false, message: '房间不存在或已满' })
+          return socket.emit('error', { message: '房间不存在或已满' })
         }
 
         player.roomId = room.id
@@ -144,102 +145,97 @@ export default function registerSocketHandlers(io: SocketIOServer) {
         socket.join(roomId)
         console.log(`玩家 ${player.id} 加入房间 ${roomId}`)
 
-        callback?.({ success: true, room })
         io.to(roomId).emit('room:update', room)
       } catch (error) {
         console.log(error)
-        callback?.({ success: false, message: (error as Error).message })
+        socket.emit('error', { message: (error as Error).message })
       }
     })
 
     // 开始游戏
-    socket.on('game:start', async (data: GameData, callback?: SocketCallback) => {
+    socket.on('game:start', async (data: GameData) => {
       try {
         const room = await roomManager.getRoom(data.roomId)
         if (!room) {
-          return callback?.({ success: false, message: '房间不存在' })
+          return socket.emit('error', { message: '房间不存在' })
         }
 
         const player = await playerManager.getPlayer(playerId)
 
         if (!player || !player.isHost) {
-          return callback?.({ success: false, message: '只有房主可以开始游戏' })
+          return socket.emit('error', { message: '只有房主可以开始游戏' })
         }
 
         if (room.players.length < 2) {
-          return callback?.({ success: false, message: '至少需要2个玩家才能开始游戏' })
+          return socket.emit('error', { message: '至少需要2个玩家才能开始游戏' })
         }
 
         // 创建游戏实例
         const game = await gameInstanceManager.createGameInstance(room, io)
 
         if (!game) {
-          return callback?.({ success: false, message: '游戏创建失败' })
+          return socket.emit('error', { message: '游戏创建失败' })
         }
 
         game.onStart()
       } catch (error) {
-        callback?.({ success: false, message: (error as Error).message })
+        socket.emit('error', { message: (error as Error).message })
       }
     })
 
     // 游戏动作（投骰子、移动等）
-    socket.on('game:action', async (data: GameData, callback?: SocketCallback) => {
+    socket.on('game:action', async (data: GameData) => {
       try {
         const game = await gameInstanceManager.getGameInstance(data.roomId, io)
-        console.log(game)
         if (!game) {
-          return callback?.({ success: false, message: '游戏不存在' })
+          return socket.emit('error', { message: '游戏不存在' })
         }
-        console.log(playerId)
 
         game.onPlayerAction(io, playerId, data)
 
         // 更新游戏状态到 Redis
         await gameInstanceManager.updateGameInstance(data.roomId, game)
-
-        callback?.({ success: true })
       } catch (error) {
-        callback?.({ success: false, message: (error as Error).message })
+        socket.emit('error', { message: (error as Error).message })
       }
     })
 
     // 离开房间
-    socket.on('room:leave', async (roomId: string, callback?: SocketCallback) => {
+    socket.on('room:leave', async (data: any) => {
       try {
-        const room = await roomManager.removePlayerFromRoom(roomId, playerId)
+        const room = await roomManager.removePlayerFromRoom(data.roomId, playerId)
         if (room) {
-          socket.leave(roomId)
-          console.log(`玩家 ${playerId} 离开房间 ${roomId}`)
-          io.to(roomId).emit('room:update', room)
+          socket.leave(data.roomId)
+          console.log(`玩家 ${playerId} 离开房间 ${data.roomId}`)
+          io.to(data.roomId).emit('room:update', null)
         }
 
         // 清理游戏实例
         if (room && room.players.length === 0) {
-          await gameInstanceManager.removeGameInstance(roomId)
+          await gameInstanceManager.removeGameInstance(data.roomId)
         }
-
-        callback?.({ success: true })
       } catch (error) {
-        callback?.({ success: false, message: (error as Error).message })
+        socket.emit('error', { message: (error as Error).message })
       }
     })
 
     // 获取房间列表
-    socket.on('room:list', async (callback?: SocketCallback) => {
-      callback?.(await roomManager.getAllRooms())
+    socket.on('room:list', async () => {
+      const rooms = await roomManager.getAllRooms()
+      socket.emit('room:list', rooms)
     })
 
     // 获取玩家列表
-    socket.on('player:list', async (callback?: SocketCallback) => {
-      callback?.(await playerManager.getAllPlayers())
+    socket.on('player:list', async () => {
+      const players = await playerManager.getAllPlayers()
+      socket.emit('player:list', players)
     })
 
     // 断开连接
     socket.on('disconnect', async () => {
       const player = await playerManager.getPlayer(playerId)
       if (player) {
-        console.log(`玩家断开: ${player.id}`)
+        console.log(`玩家断开: ${player.id}`, socket.id)
       }
     })
 

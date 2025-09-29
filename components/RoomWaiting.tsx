@@ -6,8 +6,8 @@ import { useColorScheme } from '@/hooks/use-color-scheme'
 import { Colors } from '@/constants/theme'
 import { useTranslation } from 'react-i18next'
 import { OnlinePlayer } from '@/types/online'
-import { PlayerAvatar } from '@/components/PlayerAvatar'
 import * as Clipboard from 'expo-clipboard'
+import { PlayerIcon } from '@/components/icons'
 
 interface RoomWaitingProps {
   roomId: string
@@ -19,8 +19,8 @@ interface RoomWaitingProps {
 }
 
 export const RoomWaiting: React.FC<RoomWaitingProps> = ({
-  roomId,
-  players,
+  roomId = '',
+  players = [],
   maxPlayers,
   isHost,
   onStartGame,
@@ -108,7 +108,7 @@ export const RoomWaiting: React.FC<RoomWaitingProps> = ({
                 >
                   {player ? (
                     <>
-                      <PlayerAvatar iconType={player.iconType} color={player.color} size={40} />
+                      <PlayerIcon see={player.iconType} />
                       <View style={styles.playerInfo}>
                         <View style={styles.playerNameRow}>
                           <Text style={[styles.playerName, { color: colors.homeCardTitle }]}>

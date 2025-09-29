@@ -26,7 +26,7 @@ class SimpleBot {
 
     this.socket = io(this.serverUrl, {
       query: { playerId: this.playerId },
-      transports: ['websocket', 'polling']
+      transports: ['websocket', 'polling'],
     })
 
     return new Promise((resolve, reject) => {
@@ -79,24 +79,28 @@ class SimpleBot {
         reject(new Error('创建房间超时'))
       }, 10000)
 
-      this.socket.emit('room:create', {
-        roomName: `Bot_Room_${Date.now()}`,
-        playerName: this.playerName,
-        maxPlayers: 2,
-        gameType: 'fly',
-        taskSet: { id: 'default', name: '默认任务', tasks: [] }
-      }, (response) => {
-        clearTimeout(timeout)
-        if (response.success) {
-          console.log(`✅ ${this.playerName} 房间创建成功: ${response.room.id}`)
-          this.roomId = response.room.id
-          this.currentRoom = response.room
-          resolve(response.room)
-        } else {
-          console.error(`❌ ${this.playerName} 创建房间失败:`, response.message)
-          reject(new Error(response.message))
-        }
-      })
+      this.socket.emit(
+        'room:create',
+        {
+          roomName: `Bot_Room_${Date.now()}`,
+          playerName: this.playerName,
+          maxPlayers: 2,
+          gameType: 'fly',
+          taskSet: { id: 'default', name: '默认任务', tasks: [] },
+        },
+        (response) => {
+          clearTimeout(timeout)
+          if (response.success) {
+            console.log(`✅ ${this.playerName} 房间创建成功: ${response.room.id}`)
+            this.roomId = response.room.id
+            this.currentRoom = response.room
+            resolve(response.room)
+          } else {
+            console.error(`❌ ${this.playerName} 创建房间失败:`, response.message)
+            reject(new Error(response.message))
+          }
+        },
+      )
     })
   }
 
@@ -109,21 +113,25 @@ class SimpleBot {
         reject(new Error('加入房间超时'))
       }, 10000)
 
-      this.socket.emit('room:join', {
-        roomId: roomId,
-        playerName: this.playerName
-      }, (response) => {
-        clearTimeout(timeout)
-        if (response.success) {
-          console.log(`✅ ${this.playerName} 成功加入房间: ${response.room.id}`)
-          this.roomId = response.room.id
-          this.currentRoom = response.room
-          resolve(response.room)
-        } else {
-          console.error(`❌ ${this.playerName} 加入房间失败:`, response.message)
-          reject(new Error(response.message))
-        }
-      })
+      this.socket.emit(
+        'room:join',
+        {
+          roomId: roomId,
+          playerName: this.playerName,
+        },
+        (response) => {
+          clearTimeout(timeout)
+          if (response.success) {
+            console.log(`✅ ${this.playerName} 成功加入房间: ${response.room.id}`)
+            this.roomId = response.room.id
+            this.currentRoom = response.room
+            resolve(response.room)
+          } else {
+            console.error(`❌ ${this.playerName} 加入房间失败:`, response.message)
+            reject(new Error(response.message))
+          }
+        },
+      )
     })
   }
 
@@ -133,15 +141,19 @@ class SimpleBot {
 
     console.log(`🎮 ${this.playerName} 开始游戏...`)
 
-    this.socket.emit('game:start', {
-      roomId: this.roomId
-    }, (response) => {
-      if (response.success) {
-        console.log(`✅ ${this.playerName} 游戏开始成功`)
-      } else {
-        console.error(`❌ ${this.playerName} 开始游戏失败:`, response.message)
-      }
-    })
+    this.socket.emit(
+      'game:start',
+      {
+        roomId: this.roomId,
+      },
+      (response) => {
+        if (response.success) {
+          console.log(`✅ ${this.playerName} 游戏开始成功`)
+        } else {
+          console.error(`❌ ${this.playerName} 开始游戏失败:`, response.message)
+        }
+      },
+    )
   }
 
   // 检查游戏状态
@@ -184,17 +196,21 @@ class SimpleBot {
 
     console.log(`🎲 ${this.playerName} 投骰子...`)
 
-    this.socket.emit('game:action', {
-      type: 'roll_dice',
-      roomId: this.roomId,
-      playerId: this.playerId
-    }, (response) => {
-      if (response.success) {
-        console.log(`✅ ${this.playerName} 投骰子成功`)
-      } else {
-        console.error(`❌ ${this.playerName} 投骰子失败:`, response.message)
-      }
-    })
+    this.socket.emit(
+      'game:action',
+      {
+        type: 'roll_dice',
+        roomId: this.roomId,
+        playerId: this.playerId,
+      },
+      (response) => {
+        if (response.success) {
+          console.log(`✅ ${this.playerName} 投骰子成功`)
+        } else {
+          console.error(`❌ ${this.playerName} 投骰子失败:`, response.message)
+        }
+      },
+    )
   }
 
   // 完成任务
@@ -207,19 +223,23 @@ class SimpleBot {
 
     console.log(`📋 ${this.playerName} 完成任务: ${completed ? '成功' : '失败'}`)
 
-    this.socket.emit('game:action', {
-      type: 'complete_task',
-      roomId: this.roomId,
-      playerId: this.playerId,
-      taskId: task.id,
-      completed: completed
-    }, (response) => {
-      if (response.success) {
-        console.log(`✅ ${this.playerName} 任务完成响应成功`)
-      } else {
-        console.error(`❌ ${this.playerName} 任务完成失败:`, response.message)
-      }
-    })
+    this.socket.emit(
+      'game:action',
+      {
+        type: 'complete_task',
+        roomId: this.roomId,
+        playerId: this.playerId,
+        taskId: task.id,
+        completed: completed,
+      },
+      (response) => {
+        if (response.success) {
+          console.log(`✅ ${this.playerName} 任务完成响应成功`)
+        } else {
+          console.error(`❌ ${this.playerName} 任务完成失败:`, response.message)
+        }
+      },
+    )
   }
 
   // 断开连接
@@ -248,7 +268,6 @@ class SimpleBot {
       }
 
       console.log(`🚀 ${this.playerName} 启动完成！`)
-
     } catch (error) {
       console.error(`❌ ${this.playerName} 启动失败:`, error.message)
     }
@@ -261,7 +280,7 @@ function parseArgs() {
   const options = {
     mode: 'create',
     count: 1,
-    roomId: null
+    roomId: null,
   }
 
   for (let i = 0; i < args.length; i++) {
@@ -313,7 +332,7 @@ async function main() {
     const bot = new SimpleBot({
       playerName: `Bot_Player_${i + 1}`,
       mode: options.mode,
-      roomId: options.roomId
+      roomId: options.roomId,
     })
     bots.push(bot)
 
@@ -326,7 +345,7 @@ async function main() {
   // 监听退出信号
   process.on('SIGINT', () => {
     console.log('\n🛑 正在停止所有机器人...')
-    bots.forEach(bot => bot.disconnect())
+    bots.forEach((bot) => bot.disconnect())
     setTimeout(() => process.exit(0), 1000)
   })
 

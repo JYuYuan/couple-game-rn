@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
@@ -16,10 +16,12 @@ import { BlurView } from 'expo-blur'
 import { AntDesign, Ionicons, MaterialIcons } from '@expo/vector-icons'
 import { useColorScheme } from '@/hooks/use-color-scheme'
 import { Colors } from '@/constants/theme'
+import { useSocket } from '@/hooks/use-socket'
 
 export default function Home() {
   const router = useRouter()
   const { t } = useTranslation()
+  const socket = useSocket()
 
   // 主题颜色
   const colorScheme = useColorScheme() ?? 'light'
@@ -57,6 +59,7 @@ export default function Home() {
       href: '/game-mode?type=fly',
       gradient: ['#5E5CE6', '#BF5AF2'],
       accentColor: '#5E5CE6',
+      hasOnline: true,
     },
     {
       key: 'wheel',
@@ -68,6 +71,7 @@ export default function Home() {
       href: '/game-mode?type=wheel',
       gradient: ['#FF6482', '#FF9F40'],
       accentColor: '#FF6482',
+      hasOnline: false,
     },
     {
       key: 'minesweeper',
@@ -79,8 +83,15 @@ export default function Home() {
       href: '/game-mode?type=minesweeper',
       gradient: ['#34D399', '#10B981'],
       accentColor: '#10B981',
+      hasOnline: false,
     },
   ]
+
+  // 检查是否有在线游戏进行中 - 只检查支持在线模式的游戏
+  const hasOnlineGame =
+    socket.currentRoom &&
+    socket.currentRoom.gameStatus === 'playing' &&
+    gameOptions.find((game) => game.hasOnline && game.key === socket.currentRoom?.gameType)
 
   const GameCard = ({ game, colors }: any) => {
     const scale = useSharedValue(1)
@@ -219,6 +230,41 @@ export default function Home() {
           <Text style={[styles.subtitle, { color: colors.homeSubtitle }]}>
             {t('home.subtitle', '一起玩游戏，增进感情')}
           </Text>
+
+          {/* 在线游戏提示 */}
+          {hasOnlineGame && (
+            <View
+              style={[styles.onlineGameBanner, { backgroundColor: colors.settingsAccent + '15' }]}
+            >
+              <Ionicons name="game-controller" size={20} color={colors.settingsAccent} />
+              <Text style={[styles.onlineGameText, { color: colors.settingsAccent }]}>
+                {t('home.onlineGame.continue', '你有正在进行的在线游戏')}
+              </Text>
+              <Pressable
+                style={[styles.continueButton, { backgroundColor: colors.settingsAccent }]}
+                onPress={() => {
+                  if (socket.currentRoom?.gameStatus === 'playing') {
+                    router.push({
+                      pathname: '/flying-chess',
+                      params: {
+                        roomId: socket.currentRoom.id,
+                        onlineMode: 'true',
+                      },
+                    })
+                  } else {
+                    router.push({
+                      pathname: '/waiting-room',
+                      params: { roomId: socket.currentRoom?.id },
+                    })
+                  }
+                }}
+              >
+                <Text style={styles.continueButtonText}>
+                  {t('home.onlineGame.continueButton', '继续')}
+                </Text>
+              </Pressable>
+            </View>
+          )}
         </Animated.View>
 
         {/* 游戏卡片 */}
@@ -393,5 +439,28 @@ const styles = StyleSheet.create({
   footerText: {
     fontSize: 14,
     fontWeight: '500',
+  },
+  onlineGameBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    marginTop: 20,
+    gap: 12,
+  },
+  onlineGameText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  continueButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  continueButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
   },
 })

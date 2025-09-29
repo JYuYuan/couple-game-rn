@@ -1,5 +1,4 @@
-import type { SocketIOServer } from '../typings/socket'
-import type { Room } from '../typings/socket'
+import type { SocketIOServer, Room } from '../typings/socket'
 import roomManager from './RoomManager.js'
 
 abstract class BaseGame {
@@ -17,12 +16,14 @@ abstract class BaseGame {
         turnCount: 0,
         gamePhase: 'idle',
         startTime: Date.now(),
-        boardSize: 0
+        boardSize: 0,
       }
     }
   }
 
   abstract onStart(io?: SocketIOServer): void
+
+  abstract onResume(io?: SocketIOServer): void
 
   abstract onPlayerAction(io: SocketIOServer, playerId: string, action: any): void
 
@@ -36,7 +37,7 @@ abstract class BaseGame {
   protected async updateRoomAndNotify(): Promise<void> {
     this.room.lastActivity = Date.now()
     await roomManager.updateRoom(this.room)
-    this.socket.to(this.room.id).emit('room:update', this.room)
+    // this.socket.to(this.room.id).emit('room:update', this.room)
   }
 
   /**

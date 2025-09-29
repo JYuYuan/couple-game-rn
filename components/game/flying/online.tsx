@@ -1,6 +1,6 @@
-import React, { useMemo, useState, useEffect } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
+import { Stack, useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 import { LinearGradient } from 'expo-linear-gradient'
@@ -9,40 +9,48 @@ import { Colors } from '@/constants/theme'
 import GameBoard from '@/components/GameBoard'
 import TaskModal from '@/components/TaskModal'
 import VictoryModal from '@/components/VictoryModal'
-import { RoomWaiting } from '@/components/RoomWaiting'
 import { GamePlayer } from '@/hooks/use-game-players'
 import { useAudioManager } from '@/hooks/use-audio-manager'
-import { useOnlineFlyGame } from '@/hooks/use-online-fly-game'
 import { useTranslation } from 'react-i18next'
 import { OnlinePlayer, TaskModalData } from '@/types/online'
-import LoadingScreen from '@/components/LoadingScreen'
 import { PlayerIcon } from '@/components/icons'
+import { useSocket } from '@/hooks/use-socket'
+import { useRoomStore, useSettingsStore } from '@/store'
+import { useDeepCompareEffect } from 'ahooks'
 
 export default function FlyingChessGame() {
   const router = useRouter()
-  const params = useLocalSearchParams()
   const colorScheme = useColorScheme() ?? 'light'
   const colors = Colors[colorScheme] as any
   const { t } = useTranslation()
+  const { playerId } = useSettingsStore()
+  const socket = useSocket()
 
-  // 获取传入的参数
-  const roomId = params.roomId as string
+  // 使用 roomStore 管理状态，避免空值问题
+  const { currentRoom: room } = useRoomStore()
+  // 从房间获取数据，提供默认值
+  const players = room?.players || []
+  const boardPath = room?.boardPath || []
+  const taskSet = room?.taskSet
+  const currentUserId = room?.currentUser
 
-  const onlineGameHook = useOnlineFlyGame()
+  const isOwnTurn = useMemo(() => {
+    return currentUserId === playerId
+  }, [currentUserId])
+
+  const isHost = useMemo(() => {
+    return room?.hostId === playerId
+  }, [room?.hostId])
+
+  const currentPlayer = useMemo(() => {
+    return players?.find((item) => currentUserId === item.id) || null
+  }, [players, currentUserId])
+
+  const currentPlayerIndex = useMemo(() => {
+    return players?.findIndex((item) => currentUserId === item.id) ?? -1
+  }, [players, currentUserId])
 
   const audioManager = useAudioManager()
-
-  const taskSet = useMemo(() => {
-    return onlineGameHook.taskSet
-  }, [onlineGameHook.taskSet])
-
-  const room = useMemo(() => {
-    return onlineGameHook.room
-  }, [onlineGameHook.room])
-
-  const players = useMemo(() => {
-    return onlineGameHook.players
-  }, [onlineGameHook.players])
 
   const [isRolling, setIsRolling] = useState(false)
   const [isMoving, setIsMoving] = useState(false)
@@ -53,9 +61,18 @@ export default function FlyingChessGame() {
   const [showVictoryModal, setShowVictoryModal] = useState(false)
   const [winner, setWinner] = useState<GamePlayer | null>(null)
 
-  const boardPath = useMemo(() => {
-    return onlineGameHook.boardPath
-  }, [onlineGameHook.boardPath])
+  useEffect(() => {
+    if (room?.gameStatus === 'waiting') {
+      router.replace({
+        pathname: '/waiting-room',
+        params: {
+          taskSetId: taskSet?.id || '',
+          onlineMode: 'true',
+          roomId: room?.id || '',
+        },
+      })
+    }
+  }, [room?.gameStatus])
 
   // 动画值
   const diceRotation = useSharedValue(0)
@@ -70,6 +87,16 @@ export default function FlyingChessGame() {
   // 用于动画的本地玩家状态
   const [animatedPlayers, setAnimatedPlayers] = useState<OnlinePlayer[]>([])
 
+  // 本地骰子状态 - 通过 game:dice 事件更新
+  const [currentDiceValue, setCurrentDiceValue] = useState<number | null>(null)
+
+  // 重新开始游戏
+  const handleRestartGame = () => {
+    console.log('🔄 请求重新开始游戏')
+    // 发送重新开始请求给服务端
+    socket.emit('game:start', { roomId: room?.id })
+  }
+
   // 任务完成反馈 - 只发送结果给服务端
   const handleTaskComplete = (completed: boolean) => {
     if (!taskModalData) return
@@ -80,8 +107,8 @@ export default function FlyingChessGame() {
     audioManager.playSoundEffect(completed ? 'victory' : 'step')
 
     // 发送结果给服务端，服务端处理所有逻辑
-    onlineGameHook.socket.completeTask({
-      roomId: onlineGameHook.room?.id,
+    socket.completeTask({
+      roomId: room?.id,
       taskId: taskModalData.id,
       playerId: taskModalData.executors[0]?.id.toString() || '',
       completed,
@@ -94,7 +121,7 @@ export default function FlyingChessGame() {
 
   // 投骰子 - 只发送请求，不处理逻辑
   const rollDice = async () => {
-    if (isRolling || isMoving || !onlineGameHook.isOwnTurn) {
+    if (isRolling || isMoving || !isOwnTurn) {
       console.warn('不能投掷骰子: 状态不允许')
       return
     }
@@ -102,11 +129,15 @@ export default function FlyingChessGame() {
     console.log('🎲 请求投掷骰子')
     setIsRolling(true)
 
+    // 立即开始骰子旋转动画，提供即时反馈
+    diceRotation.value = withTiming(360 * 4, { duration: 1200 })
+
     try {
       // 只发送投骰子请求给服务端，由服务端生成结果
-      onlineGameHook.socket.rollDice({
-        roomId: onlineGameHook.room?.id,
-        playerId: onlineGameHook.currentPlayer?.id,
+      console.log('🎲 发送投骰子请求到服务端')
+      socket.rollDice({
+        roomId: room?.id,
+        playerId: currentPlayer?.id,
       })
 
       // 等待服务端响应
@@ -114,8 +145,12 @@ export default function FlyingChessGame() {
     } catch (error) {
       console.error('投掷骰子请求失败:', error)
       audioManager.playSoundEffect('step')
+      // 如果请求失败，重置骰子动画
+      diceRotation.value = withTiming(0, { duration: 200 })
+      setIsRolling(false) // 在错误情况下重置状态
     } finally {
-      setIsRolling(false)
+      // 注意：isRolling 的重置现在由 game:dice 事件处理
+      // setIsRolling(false) 将在接收到服务端响应时执行
     }
   }
 
@@ -123,45 +158,62 @@ export default function FlyingChessGame() {
     transform: [{ rotate: `${diceRotation.value}deg` }],
   }))
 
-  // 监听房间状态变化，响应游戏事件
-  useEffect(() => {
-    if (!room) return
-
-    // 检查骰子结果变化 - 触发动画
-    const lastDiceRoll = room.gameState?.lastDiceRoll
-    if (lastDiceRoll && lastDiceRoll.playerId === onlineGameHook.currentPlayer?.id) {
-      // 骰子旋转动画
-      diceRotation.value = withTiming(360 * 4, { duration: 1200 })
-      // 播放音效
-      audioManager.playSoundEffect('dice')
-      // 重置滚动状态
-      setIsRolling(false)
+  // 监听游戏事件 - 独立的事件监听，不依赖room状态
+  useDeepCompareEffect(() => {
+    if (!socket.isConnected) {
+      console.log('❌ Socket 未连接，跳过事件监听器注册')
+      return
     }
 
-    // 检查当前任务变化 - 显示任务弹窗
-    const currentTask = onlineGameHook.currentTask
-    if (currentTask && !showTaskModal) {
-      console.log(`🎯 显示任务:`, currentTask)
+    console.log('✅ 注册游戏事件监听器')
+    // 监听骰子事件
+    const handleDiceRoll = (data: { playerId: string; diceValue: number; timestamp: number }) => {
+      console.log('🎲 收到骰子事件:', data)
 
+      // 更新本地骰子状态
+      setCurrentDiceValue(data.diceValue)
+
+      // 动态获取当前玩家ID，避免依赖闭包
+      const currentPlayerId = currentPlayer?.id
+      if (data.playerId === currentPlayerId) {
+        // 播放音效（动画已在点击时开始）
+        audioManager.playSoundEffect('dice')
+        // 重置滚动状态
+        setIsRolling(false)
+      }
+    }
+
+    // 监听任务事件
+    const handleTaskTrigger = (data: {
+      task: any
+      taskType: string
+      executorPlayerIds: string[]
+      triggerPlayerIds: string[]
+    }) => {
+      console.log('🎯 收到任务事件:', data)
+
+      // 查找执行者信息
+      const executorPlayers = players?.filter((p) => data.executorPlayerIds.includes(p.id)) || []
+
+      // 显示任务弹窗
       setTaskModalData({
-        id: currentTask.id,
-        type: currentTask.type,
-        title: currentTask.title,
-        description: currentTask.description,
-        category: currentTask.category,
-        difficulty: currentTask.difficulty,
-        triggerPlayerIds: currentTask.triggerPlayerIds,
-        executors: currentTask.executors,
+        id: data.task.id,
+        type: data.taskType as 'trap' | 'star' | 'collision',
+        title: data.task.title,
+        description: data.task.description,
+        category: data.task.category,
+        difficulty: data.task.difficulty,
+        triggerPlayerIds: data.triggerPlayerIds.map((id) => parseInt(id)),
+        executors: executorPlayers,
       })
       setShowTaskModal(true)
     }
 
-    // 检查胜利状态 - 显示胜利弹窗
-    const winner = onlineGameHook.winner
-    if (winner && !showVictoryModal) {
-      console.log(`🏆 游戏胜利: 玩家 ${winner.winnerId} 获胜`)
+    // 监听胜利事件
+    const handleGameVictory = (data: { winnerId: string; winnerName: string }) => {
+      console.log('🏆 收到胜利事件:', data)
 
-      const winnerPlayer = onlineGameHook.players.find((p) => p.id === winner.winnerId)
+      const winnerPlayer = players?.find((p) => p.id === data.winnerId)
       if (winnerPlayer) {
         const gameWinner = {
           id: parseInt(winnerPlayer.id),
@@ -173,37 +225,87 @@ export default function FlyingChessGame() {
         showVictory(gameWinner)
       }
     }
-  }, [room, onlineGameHook.currentTask, onlineGameHook.winner, showTaskModal, showVictoryModal])
 
-  // 同步动画玩家状态与服务器状态，并检测位置变化来触发移动动画
-  useEffect(() => {
-    if (isMoving) return // 动画进行中时不同步
+    // 监听玩家移动事件
+    const handlePlayerMove = (data: {
+      playerId: string
+      fromPosition: number
+      toPosition: number
+    }) => {
+      console.log('🚶 收到移动事件:', data)
 
-    const newPlayers = onlineGameHook.players as OnlinePlayer[]
-
-    // 检测位置变化，触发移动动画
-    newPlayers.forEach((newPlayer) => {
-      const oldPlayer = animatedPlayers.find((p) => p.id === newPlayer.id)
-      if (oldPlayer && oldPlayer.position !== newPlayer.position && !isMoving) {
-        console.log(
-          `🚶 玩家 ${newPlayer.id} 位置变化: ${oldPlayer.position} -> ${newPlayer.position}`,
+      setIsMoving(true)
+      movePlayerStepByStep(data.playerId, data.fromPosition, data.toPosition, () => {
+        // 动画完成后确保玩家在最终位置
+        setAnimatedPlayers((prevPlayers) =>
+          prevPlayers.map((p) =>
+            p.id === data.playerId ? { ...p, position: data.toPosition } : p,
+          ),
         )
-
-        setIsMoving(true)
-        movePlayerStepByStep(newPlayer.id, oldPlayer.position, newPlayer.position, () => {
-          setAnimatedPlayers(newPlayers)
-          setIsMoving(false)
-          console.log(`✅ 玩家 ${newPlayer.id} 移动动画完成`)
-        })
-        return // 一次只处理一个玩家的移动
-      }
-    })
-
-    // 如果没有检测到移动，直接同步状态
-    if (!isMoving) {
-      setAnimatedPlayers(newPlayers)
+        socket.runActions('move_complete', { roomId: room?.id })
+        setIsMoving(false)
+        console.log(`✅ 玩家 ${data.playerId} 移动动画完成，最终位置: ${data.toPosition}`)
+      })
     }
-  }, [onlineGameHook.players, isMoving])
+
+    // 监听用户切换事件
+    const handleNextPlayer = (data: { currentUser: string; roomId: string }) => {
+      console.log('🔄 收到用户切换事件:', data)
+
+      // 动态获取当前玩家信息和用户ID
+      const currentPlayerId = currentPlayer?.id
+      const isMyTurn = data.currentUser === currentPlayerId
+
+      // 查找切换到的玩家信息
+      const nextPlayer = players?.find((p) => p.id === data.currentUser)
+
+      if (isMyTurn) {
+        console.log('✨ 轮到我了，可以投掷骰子')
+        // 重置骰子状态，允许当前玩家投掷
+        setCurrentDiceValue(null)
+        setIsRolling(false)
+        setIsMoving(false)
+
+        // 播放提示音效
+        audioManager.playSoundEffect('dice')
+      } else {
+        console.log(`⏳ 等待 ${nextPlayer?.name || '其他玩家'} 投掷骰子`)
+        // 重置状态，防止非当前玩家操作
+        setIsRolling(false)
+        setIsMoving(false)
+      }
+
+      // 强制更新UI显示当前玩家状态
+      // 这个事件确保UI能够立即反映玩家切换
+    }
+
+    // 注册事件监听器
+    socket.on('game:dice', handleDiceRoll)
+    socket.on('game:task', handleTaskTrigger)
+    socket.on('game:victory', handleGameVictory)
+    socket.on('game:move', handlePlayerMove)
+    socket.on('game:next', handleNextPlayer)
+
+    // 清理函数
+    return () => {
+      console.log('🧹 清理游戏事件监听器')
+      socket.off('game:dice', handleDiceRoll)
+      socket.off('game:task', handleTaskTrigger)
+      socket.off('game:victory', handleGameVictory)
+      socket.off('game:move', handlePlayerMove)
+      socket.off('game:next', handleNextPlayer)
+    }
+  }, [socket.isConnected])
+
+  // 监听房间状态变化 - 同步玩家位置
+  useEffect(() => {
+    if (!room || !players.length) return
+
+    // 只在非移动状态时同步玩家位置
+    if (!isMoving) {
+      setAnimatedPlayers(players as OnlinePlayer[])
+    }
+  }, [players, isMoving, room])
 
   // 逐步移动玩家的动画函数
   const movePlayerStepByStep = (
@@ -232,13 +334,11 @@ export default function FlyingChessGame() {
 
       audioManager.playSoundEffect('step')
 
-      setTimeout(moveOneStep, 300) // 每一步的动画间隔
+      setTimeout(moveOneStep, 1000) // 每一步的动画间隔
     }
 
     moveOneStep()
   }
-
-  if (!room) return <LoadingScreen />
 
   return (
     <>
@@ -258,26 +358,7 @@ export default function FlyingChessGame() {
         }}
       />
 
-      {/* 根据模式渲染不同内容 */}
-      {
-        // 在线模式：等待玩家 或 游戏界面
-        onlineGameHook.isWaitingForPlayers ? (
-          <RoomWaiting
-            isHost={onlineGameHook.isHost}
-            maxPlayers={onlineGameHook.room?.maxPlayers || 2}
-            roomId={onlineGameHook.room?.id || roomId || 'UNKNOWN'}
-            players={onlineGameHook.players as OnlinePlayer[]}
-            onStartGame={() => onlineGameHook.socket.startGame({ roomId: onlineGameHook.room?.id })}
-            onLeaveRoom={() => {
-              onlineGameHook.socket.emit('room:leave')
-              router.back()
-            }}
-          />
-        ) : (
-          // 使用统一的游戏界面
-          <GameContent />
-        )
-      }
+      <GameContent />
     </>
   )
 
@@ -308,12 +389,10 @@ export default function FlyingChessGame() {
                     ? t('flyingChess.gameStatus.playing', '游戏进行中')
                     : t('flyingChess.gameStatus.finished', '游戏结束')}
               </Text>
-              {room?.gameStatus === 'playing' && onlineGameHook?.currentPlayer && (
-                <Text
-                  style={[styles.currentPlayerText, { color: onlineGameHook.currentPlayer.color }]}
-                >
+              {room?.gameStatus === 'playing' && currentPlayer && (
+                <Text style={[styles.currentPlayerText, { color: currentPlayer.color }]}>
                   {t('flyingChess.currentPlayer', '轮到 {{playerName}}', {
-                    playerName: onlineGameHook.currentPlayer.name,
+                    playerName: currentPlayer.name,
                   })}
                 </Text>
               )}
@@ -327,16 +406,14 @@ export default function FlyingChessGame() {
                       styles.diceButton,
                       {
                         backgroundColor:
-                          isRolling || isMoving || !onlineGameHook.isOwnTurn
-                            ? '#FF6B6B'
-                            : colors.settingsAccent,
+                          isRolling || isMoving || !isOwnTurn ? '#FF6B6B' : colors.settingsAccent,
                         borderWidth: 3,
                         borderColor: 'white',
-                        opacity: isRolling || isMoving || !onlineGameHook.isOwnTurn ? 0.6 : 1,
+                        opacity: isRolling || isMoving || !isOwnTurn ? 0.6 : 1,
                       },
                     ]}
                     onPress={rollDice}
-                    disabled={isRolling || isMoving || !onlineGameHook.isOwnTurn}
+                    disabled={isRolling || isMoving || !isOwnTurn}
                     activeOpacity={0.8}
                   >
                     {isRolling ? (
@@ -345,7 +422,7 @@ export default function FlyingChessGame() {
                       </Animated.View>
                     ) : (
                       <Text style={[styles.diceResultText, { color: 'white' }]}>
-                        {onlineGameHook.diceValue || '🎲'}
+                        {currentDiceValue || '🎲'}
                       </Text>
                     )}
                   </TouchableOpacity>
@@ -357,13 +434,34 @@ export default function FlyingChessGame() {
                     { color: colors.homeCardDescription, fontWeight: '600' },
                   ]}
                 >
-                  {!onlineGameHook.isOwnTurn
+                  {!isOwnTurn
                     ? t('flyingChess.dice.waitingTurn', '等待其他玩家')
                     : isRolling
                       ? t('flyingChess.dice.rolling', '投掷中...')
                       : isMoving
                         ? t('flyingChess.dice.moving', '棋子移动中...')
                         : t('flyingChess.dice.clickToRoll', '点击投掷骰子')}
+                </Text>
+              </View>
+            )}
+            {/* 重新开始按钮 - 游戏结束时显示，只有房主可以操作 */}
+            {room?.gameStatus === 'ended' && isHost && (
+              <TouchableOpacity
+                style={[styles.restartButton, { backgroundColor: colors.settingsAccent }]}
+                onPress={handleRestartGame}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="refresh" size={18} color="white" />
+                <Text style={[styles.restartButtonText, { color: 'white' }]}>
+                  {t('flyingChess.restart', '重新开始')}
+                </Text>
+              </TouchableOpacity>
+            )}
+            {/* 非房主显示等待重新开始的提示 */}
+            {room?.gameStatus === 'ended' && !isHost && (
+              <View style={[styles.waitingRestart, { backgroundColor: colors.homeCardBackground }]}>
+                <Text style={[styles.waitingRestartText, { color: colors.homeCardDescription }]}>
+                  {t('flyingChess.waitingRestart', '等待房主重新开始游戏')}
                 </Text>
               </View>
             )}
@@ -382,11 +480,8 @@ export default function FlyingChessGame() {
                     styles.playerCard,
                     {
                       backgroundColor: player.color + '15',
-                      borderColor:
-                        onlineGameHook.currentPlayer?.id === player.id
-                          ? player.color
-                          : 'transparent',
-                      borderWidth: onlineGameHook.currentPlayer?.id === player.id ? 2 : 0,
+                      borderColor: currentPlayer?.id === player.id ? player.color : 'transparent',
+                      borderWidth: currentPlayer?.id === player.id ? 2 : 0,
                     },
                   ]}
                 >
@@ -427,19 +522,16 @@ export default function FlyingChessGame() {
           {/* 游戏棋盘 */}
           <View style={[styles.boardSection, { backgroundColor: colors.homeCardBackground }]}>
             <GameBoard
-              players={animatedPlayers.map((p) => ({ ...p, id: parseInt(p.id) }))} // 转换ID类型为number
-              currentPlayer={onlineGameHook.currentPlayerIndex || 0}
+              players={animatedPlayers.map((p) => ({ ...p, id: p.id }))} // 转换ID类型为number
+              currentPlayer={currentPlayerIndex >= 0 ? currentPlayerIndex : 0}
               boardData={boardPath}
-              onCellPress={(_cell) => {
-                // TODO: 处理点击棋盘格子的逻辑
-              }}
             />
           </View>
         </ScrollView>
 
         {/* 任务弹窗 */}
         <TaskModal
-          players={players}
+          players={players || []}
           visible={showTaskModal}
           task={taskModalData}
           onComplete={handleTaskComplete}
@@ -600,5 +692,34 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 12,
     overflow: 'hidden',
+  },
+  restartButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  restartButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  waitingRestart: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  waitingRestartText: {
+    fontSize: 14,
+    fontWeight: '500',
+    textAlign: 'center',
   },
 })

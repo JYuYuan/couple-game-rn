@@ -5,10 +5,10 @@ import {
   GameStartData,
   JoinRoomData,
   OnlineRoom,
-  PlayerMoveData,
   SocketError,
   TaskCompleteData,
 } from '@/types/online'
+import { showError } from '@/utils/toast'
 
 const SOCKET_URL = __DEV__ ? 'http://localhost:3001' : 'https://your-production-server.com'
 
@@ -90,7 +90,7 @@ class SocketService {
       this.socket = null
     }
 
-    console.log('SocketService: Creating new connection to:', SOCKET_URL)
+    console.log('SocketService: Creating new connection to:', SOCKET_URL, 'for player:', playerId)
     this.connecting = true // 设置连接状态
 
     this.socket = io(SOCKET_URL, {
@@ -103,17 +103,26 @@ class SocketService {
       },
     })
 
+    // 添加连接ID日志，方便调试
+    this.socket.on('connect', () => {
+      console.log(
+        `SocketService: Connected with socket ID: ${this.socket?.id} for player: ${playerId}`,
+      )
+    })
+
     this.setupEventListeners()
   }
 
   private setupEventListeners(): void {
     if (!this.socket) return
 
+    // 清理之前的监听器，防止重复注册
+    this.socket.removeAllListeners()
+
     this.socket.on('connect', () => {
       this.isConnected = true
       this.connectionError = null
       this.connecting = false // 重置连接状态
-      console.log('SocketService: Connected successfully:', this.socket?.id)
       this.emit('connect')
     })
 
@@ -129,6 +138,8 @@ class SocketService {
       this.isConnected = false
       this.connecting = false // 重置连接状态
       this.connectionError = `连接失败: ${error.message}`
+      // 使用Toast显示连接错误
+      showError('连接失败', error.message || '无法连接到服务器')
       this.emit('connect_error', error)
     })
 
@@ -140,7 +151,35 @@ class SocketService {
     this.socket.on('error', (error: SocketError) => {
       console.error('SocketService: Socket error:', error)
       this.connectionError = error.message
+      // 使用Toast显示错误信息
+      showError('连接错误', error.message)
       this.emit('error', error)
+    })
+
+    // 游戏相关事件转发
+    this.socket.on('game:dice', (data) => {
+      console.log('SocketService: Forwarding game:dice event')
+      this.emit('game:dice', data)
+    })
+
+    this.socket.on('game:task', (data) => {
+      console.log('SocketService: Forwarding game:task event')
+      this.emit('game:task', data)
+    })
+
+    this.socket.on('game:victory', (data) => {
+      console.log('SocketService: Forwarding game:victory event')
+      this.emit('game:victory', data)
+    })
+
+    this.socket.on('game:move', (data) => {
+      console.log('SocketService: Forwarding game:move event')
+      this.emit('game:move', data)
+    })
+
+    this.socket.on('game:next', (data) => {
+      console.log('SocketService: Forwarding game:next event')
+      this.emit('game:next', data)
     })
 
     // 添加通用事件监听器用于调试
@@ -171,71 +210,42 @@ class SocketService {
 
   // Socket 操作
   socketEmit(event: string, ...args: any[]): void {
-    if (this.socket) {
+    if (this.socket && this.socket.connected) {
+      console.log(`[SocketService] Emitting ${event} with socket ID: ${this.socket.id}`, args)
       this.socket.emit(event, ...args)
       console.log(`[SocketService] Event ${event} emitted successfully`)
     } else {
-      console.error(`[SocketService] Cannot emit ${event}: socket is null`)
+      const reason = !this.socket ? 'socket is null' : 'socket not connected'
+      console.error(`[SocketService] Cannot emit ${event}: ${reason}`)
+      console.log(
+        `[SocketService] Connection status: connected=${this.socket?.connected}, id=${this.socket?.id}`,
+      )
     }
   }
 
   // 房间操作
-  async createRoom(data: CreateRoomData): Promise<OnlineRoom> {
-    return new Promise((resolve, reject) => {
-      if (!this.socket || !this.socket.connected) {
-        reject(new Error('Socket未连接'))
-        return
-      }
+  async createRoom(data: CreateRoomData): Promise<void> {
+    if (!this.socket || !this.socket.connected) {
+      const errorMsg = 'Socket未连接'
+      showError('创建房间失败', errorMsg)
+      throw new Error(errorMsg)
+    }
 
-      const timeout = setTimeout(() => {
-        reject(new Error('创建房间超时'))
-      }, 15000)
-
-      this.socket.emit(
-        'room:create',
-        data,
-        (response: { success: boolean; room?: OnlineRoom; error?: string }) => {
-          console.log(response)
-          clearTimeout(timeout)
-          if (response.success && response.room) {
-            this.setCurrentRoom(response.room, 'createRoom callback')
-            resolve(response.room)
-          } else {
-            reject(new Error(response.error || '创建房间失败'))
-          }
-        },
-      )
-    })
+    this.socket.emit('room:create', data)
   }
 
-  async joinRoom(data: JoinRoomData): Promise<OnlineRoom> {
-    return new Promise((resolve, reject) => {
-      if (!this.socket) {
-        reject(new Error('Socket未连接'))
-        return
-      }
+  async joinRoom(data: JoinRoomData): Promise<void> {
+    if (!this.socket) {
+      const errorMsg = 'Socket未连接'
+      showError('加入房间失败', errorMsg)
+      throw new Error(errorMsg)
+    }
 
-      const timeout = setTimeout(() => {
-        reject(new Error('加入房间超时'))
-      }, 10000)
-
-      this.socket.emit(
-        'room:join',
-        data,
-        (response: { success: boolean; room?: OnlineRoom; error?: string }) => {
-          clearTimeout(timeout)
-          if (response.success && response.room) {
-            this.setCurrentRoom(response.room, 'joinRoom callback')
-            resolve(response.room)
-          } else {
-            reject(new Error(response.error || '加入房间失败'))
-          }
-        },
-      )
-    })
+    this.socket.emit('room:join', data)
   }
 
   leaveRoom(): void {
+    console.log(this.socket && this.currentRoom)
     if (this.socket && this.currentRoom) {
       console.log('SocketService: Leaving room:', this.currentRoom.id)
       this.socket.emit('room:leave', { roomId: this.currentRoom.id })
@@ -256,10 +266,6 @@ class SocketService {
 
   rollDice(data: DiceRollData): void {
     this.runActions('roll_dice', data)
-  }
-
-  movePlayer(data: PlayerMoveData): void {
-    this.runActions('move_piece', data)
   }
 
   completeTask(data: TaskCompleteData): void {

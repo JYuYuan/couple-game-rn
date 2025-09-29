@@ -40,6 +40,7 @@ export interface GameState {
     endTime: number
     finalPositions: [string, number][]
   }
+
   [key: string]: any
 }
 
@@ -94,6 +95,7 @@ export interface BaseRoom {
     boardPath?: any[]
     currentTasks?: any[]
   }
+
   [key: string]: any
 }
 
@@ -112,28 +114,6 @@ export interface LANRoom extends BaseRoom {
     ssid?: string // WiFi 网络名称
   }
   // 局域网房间特有的属性可以在这里添加
-}
-
-// Socket事件类型
-export interface SocketEvents {
-  // 房间管理
-  'room:create': (data: CreateRoomData) => void
-  'room:join': (data: JoinRoomData) => void
-  'room:leave': (data: LeaveRoomData) => void
-  'room:update': (room: OnlineRoom) => void
-
-  // 游戏事件
-  'game:start': (data: GameStartData) => void
-  'game:dice-roll': (data: DiceRollData) => void
-  'game:player-move': (data: PlayerMoveData) => void
-  'game:task-trigger': (data: TaskTriggerData) => void
-  'game:task-complete': (data: TaskCompleteData) => void
-  'game:victory': (data: GameVictoryData) => void
-
-  // 连接事件
-  'player:connected': (player: OnlinePlayer) => void
-  'player:disconnected': (playerId: string) => void
-  error: (error: SocketError) => void
 }
 
 // 创建房间数据

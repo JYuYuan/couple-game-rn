@@ -1,23 +1,27 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { socketService } from '@/services/socket-service'
 import { webrtcService } from '@/services/webrtc-service'
 import {
-  CreateRoomData,
-  JoinRoomData,
-  OnlineRoom,
-  LANRoom,
-  CreateLANRoomData,
-  JoinLANRoomData,
   ConnectionType,
+  CreateLANRoomData,
+  CreateRoomData,
+  JoinLANRoomData,
+  JoinRoomData,
+  LANRoom,
+  OnlineRoom,
   WebRTCConnectionState,
 } from '@/types/online'
 import { useSettingsStore } from '@/store'
+import { useRoomStore } from '@/store/roomStore'
+
+let socketListenersRegistered = false
+let webrtcListenersRegistered = false
 
 export const useSocket = () => {
   const { playerId } = useSettingsStore()
   const [isConnected, setIsConnected] = useState(socketService.getIsConnected())
   const [connectionError, setConnectionError] = useState(socketService.getConnectionError())
-  const [currentRoom, setCurrentRoom] = useState(socketService.getCurrentRoom())
+  const { currentRoom, setCurrentRoom } = useRoomStore()
 
   // 局域网相关状态
   const [connectionType, setConnectionType] = useState<ConnectionType>('online')
@@ -28,6 +32,9 @@ export const useSocket = () => {
 
   // 监听 SocketService 的状态变化
   useEffect(() => {
+    if (socketListenersRegistered) return
+    socketListenersRegistered = true
+
     const handleConnect = () => {
       setIsConnected(true)
       setConnectionError(null)
@@ -45,7 +52,8 @@ export const useSocket = () => {
     }
 
     const handleCurrentRoomChanged = (room: OnlineRoom | null) => {
-      console.log('useSocket: Received currentRoomChanged event:', room?.id)
+      if (!room) return
+      room.isHost = room.hostId === playerId
       setCurrentRoom(room)
     }
 
@@ -73,6 +81,9 @@ export const useSocket = () => {
 
   // 监听 WebRTC 服务的状态变化
   useEffect(() => {
+    if (webrtcListenersRegistered) return
+    webrtcListenersRegistered = true
+
     const handleRoomCreated = (room: LANRoom) => {
       console.log('useSocket: WebRTC room created:', room.id)
       setCurrentLANRoom(room)
@@ -131,19 +142,19 @@ export const useSocket = () => {
 
   // 包装的方法
   const connect = useCallback(() => {
-    socketService.connect(playerId)
-  }, [])
+    if (!socketService.getIsConnected()) socketService.connect(playerId)
+  }, [playerId])
 
   const disconnect = useCallback(() => {
     socketService.disconnect()
   }, [])
 
-  const createRoom = useCallback((data: CreateRoomData): Promise<OnlineRoom> => {
-    return socketService.createRoom(data)
+  const createRoom = useCallback((data: CreateRoomData) => {
+    socketService.createRoom(data)
   }, [])
 
-  const joinRoom = useCallback((data: JoinRoomData): Promise<OnlineRoom> => {
-    return socketService.joinRoom(data)
+  const joinRoom = useCallback((data: JoinRoomData) => {
+    socketService.joinRoom(data)
   }, [])
 
   const currentUser = useCallback(() => {
@@ -191,36 +202,47 @@ export const useSocket = () => {
 
   // 游戏事件
   const startGame = useCallback(
-    (data: any) => {
+    async (data: any) => {
+      // 确保连接状态稳定
+      if (!isConnected || !socketService.getSocket()?.connected) {
+        console.warn('Socket未连接，等待连接完成...')
+        // 等待连接完成
+        await new Promise((resolve) => {
+          const checkConnection = () => {
+            if (socketService.getSocket()?.connected) {
+              resolve(void 0)
+            } else {
+              setTimeout(checkConnection, 100)
+            }
+          }
+          checkConnection()
+        })
+      }
+
       if (connectionType === 'lan') {
         webrtcService?.startGame(data)
       } else {
         socketService.startGame(data)
       }
     },
-    [connectionType],
+    [connectionType, isConnected],
   )
 
   const rollDice = useCallback(
-    (data: any) => {
+    async (data: any) => {
+      // 确保连接状态稳定
+      if (connectionType === 'online' && (!isConnected || !socketService.getSocket()?.connected)) {
+        console.warn('Socket未连接，无法投掷骰子')
+        return
+      }
+
       if (connectionType === 'lan') {
         webrtcService?.rollDice(data)
       } else {
         socketService.rollDice(data)
       }
     },
-    [connectionType],
-  )
-
-  const movePlayer = useCallback(
-    (data: any) => {
-      if (connectionType === 'lan') {
-        webrtcService?.movePlayer(data)
-      } else {
-        socketService.movePlayer(data)
-      }
-    },
-    [connectionType],
+    [connectionType, isConnected],
   )
 
   const completeTask = useCallback(
@@ -270,6 +292,31 @@ export const useSocket = () => {
     [connectionType],
   )
 
+  const runActions = useCallback(
+    (event: string, data: any) => {
+      if (connectionType === 'lan') {
+        // LANmode 暂时不支持自定义事件发送
+        console.warn('Custom emit not supported in LAN mode:', event)
+      } else {
+        socketService.runActions(event, data)
+      }
+    },
+    [connectionType],
+  )
+
+  // 初始连接逻辑 - 只在首次加载时连接，并且只连接一次
+  useEffect(() => {
+    // 只有在真正没有连接的情况下才尝试连接
+    const shouldConnect = !socketService.getIsConnected() && !socketService.getSocket()?.connected
+
+    if (shouldConnect) {
+      console.log('useSocket: 尝试初始连接, playerId:', playerId)
+      connect()
+    } else {
+      console.log('useSocket: 跳过连接，已有连接或正在连接中')
+    }
+  }, [playerId]) // 只依赖playerId，确保同一个玩家不会重复连接
+
   return {
     // 连接状态
     isConnected: connectionType === 'lan' ? currentLANRoom !== null : isConnected,
@@ -307,10 +354,10 @@ export const useSocket = () => {
     // 游戏事件
     startGame,
     rollDice,
-    movePlayer,
     completeTask,
 
     // 事件管理
+    runActions,
     emit,
     on,
     off,

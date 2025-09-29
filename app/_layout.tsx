@@ -8,6 +8,7 @@ import * as SplashScreen from 'expo-splash-screen'
 import '@/i18n'
 import { Platform } from 'react-native'
 import { ConfirmDialogProvider } from '@/components/ConfirmDialog'
+import { ToastProvider } from '@/components/Toast'
 
 // 防止启动屏自动隐藏
 SplashScreen.preventAutoHideAsync()
@@ -79,10 +80,12 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }} onLayout={onLayoutRootView}>
-      <ConfirmDialogProvider />
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false, title: '主页' }} />
-      </Stack>
+      <ToastProvider>
+        <ConfirmDialogProvider />
+        <Stack>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false, title: '主页' }} />
+        </Stack>
+      </ToastProvider>
     </GestureHandlerRootView>
   )
 }

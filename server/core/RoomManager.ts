@@ -99,9 +99,27 @@ class RoomManager {
       throw new Error('房间已满')
     }
     player.roomId = roomId
+
+    // 初始化玩家位置
+    player.position = 0
+
+    // 初始化房间的gameState（如果不存在）
+    if (!room.gameState) {
+      room.gameState = {
+        playerPositions: {},
+        turnCount: 0,
+        gamePhase: 'waiting',
+        startTime: Date.now(),
+        boardSize: room.boardPath?.length || 0
+      }
+    }
+
+    // 设置玩家初始位置
+    room.gameState.playerPositions[player.id] = 0
+
     room.players.push(player)
     room.lastActivity = Date.now()
-    await redis.hset(this.hashKey, `${roomId}`, JSON.stringify(room))
+    await this.updateRoom(room)
     return room
   }
 
@@ -110,8 +128,10 @@ class RoomManager {
    */
   async removePlayerFromRoom(roomId: string, playerId: string): Promise<Room | null> {
     const room = await this.getRoom(roomId)
+    console.log(roomId)
     if (!room) return null
     room.players = room.players.filter((p) => p.playerId !== playerId)
+    
     if (room.hostId === playerId && room.players.length > 0) {
       room.hostId = room.players[0]?.playerId || room.players[0]?.id || ''
       room.players.forEach((p: Player) => (p.isHost = false))

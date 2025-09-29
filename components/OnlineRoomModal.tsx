@@ -67,16 +67,6 @@ export const OnlineRoomModal: React.FC<OnlineRoomModalProps> = ({
     }
   }, [isLANSupported, connectionMode])
 
-  // 连接Socket（只有在模态框显示且未连接时才连接）
-  useEffect(() => {
-    if (visible && connectionMode === 'online' && !socket.isConnected) {
-      console.log('OnlineRoomModal: Socket not connected, connecting...')
-      socket.connect()
-    } else if (visible && connectionMode === 'online' && socket.isConnected) {
-      console.log('OnlineRoomModal: Socket already connected:', socket.isConnected)
-    }
-  }, [visible, connectionMode, socket.isConnected])
-
   // 根据游戏类型和任务集设置默认房间名
   useEffect(() => {
     if (visible) {

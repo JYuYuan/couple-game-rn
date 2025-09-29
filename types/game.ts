@@ -7,7 +7,7 @@ export interface PathCell {
 }
 
 export interface Player {
-  id: number
+  id: any
   name: string
   color: string
   position: number

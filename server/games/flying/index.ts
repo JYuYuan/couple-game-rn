@@ -1,34 +1,35 @@
 import BaseGame from '../../core/BaseGame.js'
 import { createBoardPath } from '../../utils/index.js'
-import type { SocketIOServer, Room, Player } from '../../typings/socket'
+import type { Player, SocketIOServer, Room } from '../../typings/socket'
 import type { TaskModalData } from '../../typings/room'
 
 class FlyingGame extends BaseGame {
   constructor(room: Room, io: SocketIOServer) {
     super(room, io)
-
-    // 初始化飞行棋特有状态
-    const boardPath = createBoardPath()
-    this.room.boardPath = boardPath
-
-    if (this.room.gameState) {
-      this.room.gameState.boardSize = boardPath.length
-    }
+    console.log('🎮 飞行棋游戏实例创建')
   }
 
   async onStart() {
+    console.log('🚀 开始飞行棋游戏')
     this.gamePhase = 'playing'
     this.room.gameStatus = 'playing'
+    this.room.tasks = this.room.taskSet?.tasks || []
+    // 初始化飞行棋棋盘路径
+    if (!this.room.boardPath) {
+      console.log('📋 初始化飞行棋棋盘路径')
+      const boardPath = createBoardPath()
+      this.room.boardPath = boardPath
 
-    // 初始化玩家位置
+      if (this.room.gameState) {
+        this.room.gameState.boardSize = boardPath.length
+      }
+    }
+
     this.room.players = this.room.players.map((player: Player) => ({
       ...player,
       position: 0,
     }))
-
-    // 设置第一个玩家为当前用户
     this.room.currentUser = this.room.players[0]?.id || this.room.hostId
-
     const positions: { [playerId: string]: number } = {}
     this.room.players.forEach((player) => {
       positions[player.id] = 0
@@ -36,14 +37,43 @@ class FlyingGame extends BaseGame {
     this.playerPositions = positions
 
     await this.updateRoomAndNotify()
+    this.socket.to(this.room.id).emit('room:update', this.room)
+  }
+
+  async onResume() {
+    console.log('🔄 继续飞行棋游戏')
+
+    // 确保棋盘路径存在
+    if (!this.room.boardPath) {
+      console.log('📋 重新创建棋盘路径')
+      this.room.boardPath = createBoardPath()
+      if (this.room.gameState) {
+        this.room.gameState.boardSize = this.room.boardPath.length
+      }
+    }
+
+    // 发送当前游戏状态给所有玩家
+    await this.updateRoomAndNotify()
+    this.socket.to(this.room.id).emit('room:update', this.room)
+
+    console.log('✅ 游戏继续，当前状态:', {
+      gameStatus: this.room.gameStatus,
+      currentUser: this.room.currentUser,
+      playersCount: this.room.players.length,
+      boardPathLength: this.room.boardPath?.length,
+      playerPositions: this.playerPositions,
+    })
   }
 
   async onPlayerAction(_io: SocketIOServer, playerId: string, action: any) {
-    if (this.gamePhase !== 'playing') return
+    if (this.room.gameStatus !== 'playing') return
 
     switch (action.type) {
       case 'roll_dice':
         await this._handleDiceRoll(playerId)
+        break
+      case 'move_complete':
+        await this._nextPlayer()
         break
       case 'complete_task':
         await this._handleTaskComplete(playerId, action)
@@ -70,7 +100,13 @@ class FlyingGame extends BaseGame {
       }
     }
 
-    await this.updateRoomAndNotify()
+    // 发送独立的骰子事件
+    this.socket.to(this.room.id).emit('game:dice', {
+      playerId,
+      playerName: currentPlayer.name,
+      diceValue,
+      timestamp: Date.now(),
+    })
 
     // 延迟移动棋子
     setTimeout(async () => {
@@ -104,6 +140,17 @@ class FlyingGame extends BaseGame {
       this.room.players[playerIndex]!.position = newPos
     }
 
+    // 发送独立的移动事件
+    this.socket.to(this.room.id).emit('game:move', {
+      playerId,
+      fromPosition: currentPos,
+      toPosition: newPos,
+      steps,
+    })
+
+    // 更新房间状态（不包含gameState中的移动数据）
+    await this.updateRoomAndNotify()
+
     // 检查碰撞和特殊格子
     const hasCollision = this._checkCollision(playerId, newPos)
     const cellType = this._getCellType(newPos)
@@ -114,8 +161,6 @@ class FlyingGame extends BaseGame {
       await this._triggerTask(playerId, 'trap')
     } else if (cellType === 'star') {
       await this._triggerTask(playerId, 'star')
-    } else {
-      await this._nextPlayer()
     }
 
     await this._checkWinCondition()
@@ -175,6 +220,21 @@ class FlyingGame extends BaseGame {
       this.room.gameState.currentTask = currentTask
     }
 
+    // 发送独立的任务事件
+    this.socket.to(this.room.id).emit('game:task', {
+      task: {
+        id: taskSet?.id || '',
+        title: selectedTask,
+        description: taskSet?.description || '',
+        category: taskSet?.categoryName || 'default',
+        difficulty: taskSet?.difficulty || 'medium',
+      },
+      taskType,
+      executorPlayerIds: executorPlayers.map((p) => p.id),
+      triggerPlayerIds: [playerId],
+    })
+
+    // 只更新房间基础状态，不发送gameState
     await this.updateRoomAndNotify()
   }
 
@@ -196,6 +256,9 @@ class FlyingGame extends BaseGame {
     this.room.currentUser = this.room.players[nextIndex]?.id || ''
 
     this.incrementTurn()
+    this.socket
+      .to(this.room.id)
+      .emit('game:next', { currentUser: this.room.currentUser, roomId: this.room.id })
     await this.updateRoomAndNotify()
   }
 
@@ -215,8 +278,17 @@ class FlyingGame extends BaseGame {
       }
     }
 
+    // 发送独立的胜利事件
+    this.socket.to(this.room.id).emit('game:victory', {
+      winnerId,
+      winnerName: winner?.name || '未知玩家',
+      endTime: Date.now(),
+      finalPositions: Object.entries(this.playerPositions),
+    })
+
+    // 更新房间状态
     await this.updateRoomAndNotify()
-    this.onEnd(this.socket)
+    await this.onEnd(this.socket)
   }
 
   async _handleTaskComplete(_playerId: string, _action: any) {
@@ -225,21 +297,20 @@ class FlyingGame extends BaseGame {
       const completedTask = this.room.gameState.currentTask.description
 
       // 从任务集中删除已完成的任务
-      if (this.room.taskSet?.tasks && completedTask) {
-        this.room.taskSet.tasks = this.room.taskSet.tasks.filter((task) => task !== completedTask)
+      if (this.room.tasks && completedTask) {
+        this.room.tasks = this.room.tasks.filter((task: string) => task !== completedTask)
       }
 
       // 清除当前任务
       delete this.room.gameState.currentTask
     }
-
-    await this._nextPlayer()
   }
 
   async onEnd(_io?: SocketIOServer) {
     this.gamePhase = 'ended'
     this.room.gameStatus = 'ended'
     await this.updateRoomAndNotify()
+    this.socket.to(this.room.id).emit('room:update', this.room)
   }
 }
 

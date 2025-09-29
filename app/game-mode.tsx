@@ -41,6 +41,17 @@ export default function GameMode() {
   // 从store获取数据
   const { categories, taskSets } = useTasksStore()
 
+  // 游戏类型配置 - 包含在线模式支持状态
+  const gameTypeConfig = {
+    fly: { hasOnline: true },
+    wheel: { hasOnline: false },
+    minesweeper: { hasOnline: false },
+  }
+
+  // 检查当前游戏类型是否支持在线模式
+  const supportsOnlineMode =
+    gameTypeConfig[gameType as keyof typeof gameTypeConfig]?.hasOnline || false
+
   // 状态管理
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [modalVisible, setModalVisible] = useState(false)
@@ -247,6 +258,12 @@ export default function GameMode() {
     }
 
     const handleOnlineGame = () => {
+      // 检查当前游戏类型是否支持在线模式
+      if (!supportsOnlineMode) {
+        alert(t('gameMode.onlineNotSupported', '该游戏类型暂不支持在线模式'))
+        return
+      }
+
       setSelectedTaskSet(taskSet)
 
       // 检查是否已经在房间中
@@ -266,18 +283,6 @@ export default function GameMode() {
         // 如果没有房间，显示创建/加入房间的模态框
         setShowOnlineModal(true)
       }
-    }
-
-    const handleOnlineRoomJoined = (roomId: string) => {
-      if (!routeConfig[gameType]) return
-      router.push({
-        pathname: routeConfig[gameType] as any,
-        params: {
-          taskSetId: taskSet.id,
-          onlineMode: 'true',
-          roomId: roomId,
-        },
-      })
     }
 
     return (
@@ -365,16 +370,28 @@ export default function GameMode() {
             </TouchableOpacity>
 
             {/* 在线模式 */}
-            <TouchableOpacity style={styles.gameModeButton} onPress={handleOnlineGame}>
+            <TouchableOpacity
+              style={[styles.gameModeButton, !supportsOnlineMode && styles.disabledButton]}
+              onPress={handleOnlineGame}
+              disabled={!supportsOnlineMode}
+            >
               <LinearGradient
-                colors={['#4CAF50', '#66BB6A']}
+                colors={supportsOnlineMode ? ['#4CAF50', '#66BB6A'] : ['#9E9E9E', '#BDBDBD']}
                 style={styles.gameModeButtonGradient}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
               >
-                <Ionicons name="people" size={16} color="white" />
-                <Text style={styles.gameModeButtonText}>
-                  {t('gameMode.onlineMode', '在线模式')}
+                <Ionicons
+                  name="people"
+                  size={16}
+                  color={supportsOnlineMode ? 'white' : '#E0E0E0'}
+                />
+                <Text
+                  style={[styles.gameModeButtonText, !supportsOnlineMode && { color: '#E0E0E0' }]}
+                >
+                  {supportsOnlineMode
+                    ? t('gameMode.onlineMode', '在线模式')
+                    : t('gameMode.onlineComingSoon', '在线模式 (敬请期待)')}
                 </Text>
               </LinearGradient>
             </TouchableOpacity>
@@ -387,7 +404,7 @@ export default function GameMode() {
   const handleOnlineRoomJoined = (roomId: string) => {
     if (!routeConfig[gameType]) return
     router.push({
-      pathname: routeConfig[gameType] as any,
+      pathname: '/waiting-room',
       params: {
         taskSetId: selectedTaskSet?.id || '',
         onlineMode: 'true',
@@ -739,6 +756,9 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: 10,
     overflow: 'hidden',
+  },
+  disabledButton: {
+    opacity: 0.6,
   },
   gameModeButtonGradient: {
     flexDirection: 'row',
