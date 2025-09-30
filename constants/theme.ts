@@ -8,6 +8,93 @@ import { Platform } from 'react-native'
 const tintColorLight = '#0a7ea4'
 const tintColorDark = '#fff'
 
+// 布局常量
+export const Layout = {
+  // 容器最大宽度 - 适用于Web端大屏幕
+  maxWidth: 1200,
+
+  // 内容最大宽度 - 适用于内容区域
+  contentMaxWidth: 1000,
+
+  // 响应式断点
+  breakpoints: {
+    xs: 320,   // 小手机
+    sm: 480,   // 大手机
+    md: 768,   // 平板
+    lg: 1024,  // 小桌面
+    xl: 1200,  // 大桌面
+  },
+
+  // 通用内边距
+  padding: {
+    xs: 8,
+    sm: 12,
+    md: 16,
+    lg: 20,
+    xl: 24,
+  },
+
+  // 通用间距
+  spacing: {
+    xs: 4,
+    sm: 8,
+    md: 12,
+    lg: 16,
+    xl: 20,
+    xxl: 24,
+  },
+}
+
+// 通用容器样式
+export const CommonStyles = {
+  // 主容器样式 - 带最大宽度限制
+  container: {
+    flex: 1,
+    alignItems: 'center' as const,
+  },
+
+  // 内容容器样式
+  content: {
+    flex: 1,
+    width: '100%' as const,
+    maxWidth: Layout.maxWidth,
+  },
+
+  // 内容区域样式
+  contentContainer: {
+    padding: Layout.padding.md,
+    paddingBottom: 80,
+    maxWidth: Layout.maxWidth,
+    width: '100%' as const,
+    alignSelf: 'center' as const,
+  },
+
+  // 居中容器
+  centeredContainer: {
+    flex: 1,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
+    maxWidth: Layout.maxWidth,
+    width: '100%' as const,
+    alignSelf: 'center' as const,
+  },
+
+  // 卡片容器
+  cardContainer: {
+    borderRadius: 12,
+    padding: Layout.padding.md,
+    marginBottom: Layout.spacing.md,
+  },
+
+  // 响应式网格
+  responsiveGrid: {
+    flexDirection: 'row' as const,
+    flexWrap: 'wrap' as const,
+    gap: Layout.spacing.sm,
+    justifyContent: 'center' as const,
+  },
+}
+
 export const Colors = {
   light: {
     text: '#11181C',

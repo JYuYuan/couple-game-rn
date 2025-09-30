@@ -15,7 +15,8 @@
     "bot:create:2": "node bot/simple-bot.js create 2",
     "bot:create:3": "node bot/simple-bot.js create 3",
     "bot:create:4": "node bot/simple-bot.js create 4",
-    "bot:join": "node bot/simple-bot.js join"
+    "bot:join": "node bot/simple-bot.js join",
+    "lint": "expo lint"
   },
   "dependencies": {
     "cors": "^2.8.5",

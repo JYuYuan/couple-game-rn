@@ -1,11 +1,11 @@
-import React, { useEffect, useMemo, useState } from 'react'
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import React, { useEffect, useMemo, useState, useRef } from 'react'
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View, Dimensions } from 'react-native'
 import { Stack, useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useColorScheme } from '@/hooks/use-color-scheme'
-import { Colors } from '@/constants/theme'
+import { Colors, CommonStyles, Layout } from '@/constants/theme'
 import GameBoard from '@/components/GameBoard'
 import TaskModal from '@/components/TaskModal'
 import VictoryModal from '@/components/VictoryModal'
@@ -32,7 +32,17 @@ export default function FlyingChessGame() {
   const players = room?.players || []
   const boardPath = room?.boardPath || []
   const taskSet = room?.taskSet
-  const currentUserId = room?.currentUser
+
+  // 使用 state 管理 currentUserId，避免依赖 room 状态同步
+  const [currentUserId, setCurrentUserId] = useState<string | null>(room?.currentUser || null)
+
+  // 初始化和同步 currentUserId
+  useEffect(() => {
+    if (room?.currentUser) {
+      console.log(`🔄 初始化/同步 currentUserId: ${currentUserId} → ${room.currentUser}`)
+      setCurrentUserId(room.currentUser)
+    }
+  }, [room?.currentUser, room?.gameStatus]) // 当游戏状态变化时也同步
 
   const isOwnTurn = useMemo(() => {
     return currentUserId === playerId
@@ -56,6 +66,7 @@ export default function FlyingChessGame() {
   const [isMoving, setIsMoving] = useState(false)
   const [showTaskModal, setShowTaskModal] = useState(false)
   const [taskModalData, setTaskModalData] = useState<TaskModalData | null>(null)
+  const lastTaskIdRef = useRef<string | null>(null) // 使用ref避免闭包问题
 
   // 胜利弹窗状态
   const [showVictoryModal, setShowVictoryModal] = useState(false)
@@ -85,8 +96,21 @@ export default function FlyingChessGame() {
   }
 
   // 用于动画的本地玩家状态
-  const [animatedPlayers, setAnimatedPlayers] = useState<OnlinePlayer[]>([])
+  const [animatedPlayers, setAnimatedPlayers] = useState<OnlinePlayer[]>(players as OnlinePlayer[])
+  console.log(animatedPlayers)
 
+  // 动态计算玩家卡片宽度
+  const { width: screenWidth } = Dimensions.get('window')
+  const maxContainerWidth = Math.min(screenWidth - 32, Layout.maxWidth) // 减去外边距
+  const playerCount = animatedPlayers.length || 1
+  const availableWidth = maxContainerWidth - 32 // 减去padding
+  const cardSpacing = Layout.spacing.sm * (playerCount - 1) // 卡片间距
+  const calculatedCardWidth = Math.max(90, (availableWidth - cardSpacing) / playerCount) // 最小90px
+
+  const playerCardWidth =
+    playerCount <= 4
+      ? calculatedCardWidth // 4人以下平分宽度
+      : 90 // 4人以上固定90px，启用横向滚动
   // 本地骰子状态 - 通过 game:dice 事件更新
   const [currentDiceValue, setCurrentDiceValue] = useState<number | null>(null)
 
@@ -94,7 +118,7 @@ export default function FlyingChessGame() {
   const handleRestartGame = () => {
     console.log('🔄 请求重新开始游戏')
     // 发送重新开始请求给服务端
-    socket.emit('game:start', { roomId: room?.id })
+    socket.startGame({ roomId: room?.id })
   }
 
   // 任务完成反馈 - 只发送结果给服务端
@@ -114,9 +138,10 @@ export default function FlyingChessGame() {
       completed,
     })
 
-    // 关闭弹窗
+    // 关闭弹窗并重置防重复标识
     setShowTaskModal(false)
     setTaskModalData(null)
+    lastTaskIdRef.current = null // 重置ref
   }
 
   // 投骰子 - 只发送请求，不处理逻辑
@@ -137,7 +162,7 @@ export default function FlyingChessGame() {
       console.log('🎲 发送投骰子请求到服务端')
       socket.rollDice({
         roomId: room?.id,
-        playerId: currentPlayer?.id,
+        playerId: playerId, // 使用当前登录用户的ID，而不是 currentPlayer?.id
       })
 
       // 等待服务端响应
@@ -173,9 +198,8 @@ export default function FlyingChessGame() {
       // 更新本地骰子状态
       setCurrentDiceValue(data.diceValue)
 
-      // 动态获取当前玩家ID，避免依赖闭包
-      const currentPlayerId = currentPlayer?.id
-      if (data.playerId === currentPlayerId) {
+      // 使用统一的playerId判断，确保逻辑一致
+      if (data.playerId === playerId) {
         // 播放音效（动画已在点击时开始）
         audioManager.playSoundEffect('dice')
         // 重置滚动状态
@@ -191,12 +215,26 @@ export default function FlyingChessGame() {
       triggerPlayerIds: string[]
     }) => {
       console.log('🎯 收到任务事件:', data)
+      console.log('📋 当前玩家列表:', players)
+
+      // 防重复机制 - 检查是否是同一个任务
+      const taskId = `${data.task.id}-${data.taskType}-${data.triggerPlayerIds.join(',')}`
+      if (taskId === lastTaskIdRef.current) {
+        console.log('🚫 重复任务事件，跳过处理')
+        return
+      }
+      lastTaskIdRef.current = taskId
 
       // 查找执行者信息
       const executorPlayers = players?.filter((p) => data.executorPlayerIds.includes(p.id)) || []
+      console.log('👥 找到的执行者:', executorPlayers)
 
-      // 显示任务弹窗
-      setTaskModalData({
+      // 检查当前玩家是否是执行者
+      const isExecutor = data.executorPlayerIds.includes(playerId)
+      console.log(`🎯 当前玩家权限检查: 是否为执行者=${isExecutor}`)
+
+      // 所有玩家都能看到任务，但只有执行者能操作
+      const taskData = {
         id: data.task.id,
         type: data.taskType as 'trap' | 'star' | 'collision',
         title: data.task.title,
@@ -205,8 +243,13 @@ export default function FlyingChessGame() {
         difficulty: data.task.difficulty,
         triggerPlayerIds: data.triggerPlayerIds.map((id) => parseInt(id)),
         executors: executorPlayers,
-      })
+        isExecutor, // 添加执行者标识
+      }
+
+      console.log('🎭 设置任务弹窗数据:', taskData)
+      setTaskModalData(taskData)
       setShowTaskModal(true)
+      console.log('✅ 任务弹窗应该已显示')
     }
 
     // 监听胜利事件
@@ -237,13 +280,16 @@ export default function FlyingChessGame() {
       setIsMoving(true)
       movePlayerStepByStep(data.playerId, data.fromPosition, data.toPosition, () => {
         // 动画完成后确保玩家在最终位置
-        setAnimatedPlayers((prevPlayers) =>
-          prevPlayers.map((p) =>
+        setAnimatedPlayers((prevPlayers) => {
+          return prevPlayers.map((p) =>
             p.id === data.playerId ? { ...p, position: data.toPosition } : p,
-          ),
-        )
-        socket.runActions('move_complete', { roomId: room?.id })
+          )
+        })
         setIsMoving(false)
+
+        // 通知服务端移动已完成，触发下一个玩家
+        socket.runActions('move_complete', { roomId: room?.id })
+
         console.log(`✅ 玩家 ${data.playerId} 移动动画完成，最终位置: ${data.toPosition}`)
       })
     }
@@ -252,9 +298,12 @@ export default function FlyingChessGame() {
     const handleNextPlayer = (data: { currentUser: string; roomId: string }) => {
       console.log('🔄 收到用户切换事件:', data)
 
-      // 动态获取当前玩家信息和用户ID
-      const currentPlayerId = currentPlayer?.id
-      const isMyTurn = data.currentUser === currentPlayerId
+      // 立即更新 currentUserId state
+      console.log(`🔄 更新 currentUserId: ${currentUserId} → ${data.currentUser}`)
+      setCurrentUserId(data.currentUser)
+
+      // 使用统一的playerId进行判断，确保逻辑一致
+      const isMyTurn = data.currentUser === playerId
 
       // 查找切换到的玩家信息
       const nextPlayer = players?.find((p) => p.id === data.currentUser)
@@ -295,17 +344,7 @@ export default function FlyingChessGame() {
       socket.off('game:move', handlePlayerMove)
       socket.off('game:next', handleNextPlayer)
     }
-  }, [socket.isConnected])
-
-  // 监听房间状态变化 - 同步玩家位置
-  useEffect(() => {
-    if (!room || !players.length) return
-
-    // 只在非移动状态时同步玩家位置
-    if (!isMoving) {
-      setAnimatedPlayers(players as OnlinePlayer[])
-    }
-  }, [players, isMoving, room])
+  }, [socket.isConnected, playerId])
 
   // 逐步移动玩家的动画函数
   const movePlayerStepByStep = (
@@ -334,7 +373,7 @@ export default function FlyingChessGame() {
 
       audioManager.playSoundEffect('step')
 
-      setTimeout(moveOneStep, 1000) // 每一步的动画间隔
+      setTimeout(moveOneStep, 300) // 每一步的动画间隔
     }
 
     moveOneStep()
@@ -472,32 +511,69 @@ export default function FlyingChessGame() {
             <Text style={[styles.sectionTitle, { color: colors.homeCardTitle }]}>
               {t('flyingChess.playersStatus', '玩家状态')}
             </Text>
-            <View style={styles.playersGrid}>
-              {animatedPlayers.map((player) => (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={[
+                styles.playersScrollContainer,
+                // 根据玩家数量动态调整布局
+                playerCount <= 4
+                  ? { justifyContent: 'space-around', minWidth: '100%' } // 4人以下平分空间
+                  : { justifyContent: 'flex-start' }, // 4人以上左对齐，启用滚动
+              ]}
+              style={styles.playersScroll}
+              scrollEnabled={playerCount > 4} // 只有超过4人才允许滚动
+            >
+              {animatedPlayers.map((player, index) => (
                 <View
                   key={player.id}
                   style={[
                     styles.playerCard,
                     {
+                      width: playerCardWidth, // 使用动态计算的宽度
                       backgroundColor: player.color + '15',
                       borderColor: currentPlayer?.id === player.id ? player.color : 'transparent',
-                      borderWidth: currentPlayer?.id === player.id ? 2 : 0,
+                      borderWidth: currentPlayer?.id === player.id ? 3 : 1,
+                      borderStyle: currentPlayer?.id === player.id ? 'solid' : 'dashed',
+                      opacity: currentPlayer?.id === player.id ? 1 : 0.8,
+                      transform:
+                        currentPlayer?.id === player.id ? [{ scale: 1.02 }] : [{ scale: 1 }],
                     },
                   ]}
                 >
-                  <PlayerIcon see={player.iconType} />
+                  {/* 当前玩家指示器 */}
+                  {currentPlayer?.id === player.id && (
+                    <View style={styles.currentPlayerIndicator}>
+                      <Ionicons name="play" size={6} color={player.color} />
+                    </View>
+                  )}
+
+                  {/* 玩家头像 */}
+                  <View style={[styles.playerAvatarContainer, { borderColor: player.color }]}>
+                    <PlayerIcon see={player.iconType} />
+                  </View>
+
+                  {/* 玩家信息 */}
                   <View style={styles.playerInfo}>
                     <View style={styles.playerNameRow}>
-                      <Text style={[styles.playerName, { color: colors.homeCardTitle }]}>
+                      <Text
+                        style={[styles.playerName, { color: colors.homeCardTitle }]}
+                        numberOfLines={1}
+                      >
                         {player.name}
                       </Text>
-                      {player?.isHost && <Ionicons name="star" size={14} color="#FFD700" />}
+                      {player?.isHost && <Ionicons name="star" size={8} color="#FFD700" />}
                     </View>
+
                     <Text style={[styles.playerPosition, { color: colors.homeCardDescription }]}>
                       {t('flyingChess.position', '位置: {{position}}', {
                         position: player.position + 1,
                       })}
                     </Text>
+                  </View>
+
+                  {/* 玩家排名 */}
+                  <View style={[styles.playerRank]}>
                     <View style={styles.connectionStatus}>
                       <View
                         style={[
@@ -507,16 +583,11 @@ export default function FlyingChessGame() {
                           },
                         ]}
                       />
-                      <Text style={[styles.connectionText, { color: colors.homeCardDescription }]}>
-                        {player?.isConnected
-                          ? t('online.connected', '在线')
-                          : t('online.disconnected', '离线')}
-                      </Text>
                     </View>
                   </View>
                 </View>
               ))}
-            </View>
+            </ScrollView>
           </View>
 
           {/* 游戏棋盘 */}
@@ -535,7 +606,10 @@ export default function FlyingChessGame() {
           visible={showTaskModal}
           task={taskModalData}
           onComplete={handleTaskComplete}
-          onClose={() => setShowTaskModal(false)}
+          onClose={() => {
+            setShowTaskModal(false)
+            lastTaskIdRef.current = null // 重置ref
+          }}
         />
 
         {/* 胜利弹窗 */}
@@ -560,23 +634,23 @@ export default function FlyingChessGame() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  content: {
-    flex: 1,
-  },
+  ...CommonStyles, // 继承通用样式
+
+  // 覆盖特定的样式
   contentContainer: {
-    padding: 16,
-    paddingBottom: 80,
+    ...CommonStyles.contentContainer,
+    paddingBottom: 80, // 游戏界面需要更多底部空间
   },
+
   statusBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 12,
+    padding: Layout.padding.md,
     borderRadius: 12,
-    marginBottom: 12,
+    marginBottom: Layout.spacing.md,
+    flexWrap: 'wrap', // 允许换行，防止在小屏幕上挤压
+    gap: Layout.spacing.md, // 添加间距
   },
   statusLeft: {
     flex: 1,
@@ -592,7 +666,7 @@ const styles = StyleSheet.create({
   },
   diceContainer: {
     alignItems: 'center',
-    gap: 12,
+    gap: Layout.spacing.md,
   },
   diceWrapper: {
     position: 'relative',
@@ -636,68 +710,129 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
   },
-  playerNameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  connectionStatus: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginTop: 2,
-  },
-  connectionDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  connectionText: {
-    fontSize: 10,
-  },
   playersInfo: {
-    padding: 12,
-    borderRadius: 12,
-    marginBottom: 12,
+    ...CommonStyles.cardContainer,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '700',
-    marginBottom: 8,
+    marginBottom: Layout.spacing.sm,
   },
-  playersGrid: {
-    flexDirection: 'row',
-    gap: 8,
+  playersScroll: {
+    width: '100%',
+  },
+  playersScrollContainer: {
+    paddingHorizontal: Layout.spacing.xs,
+    gap: Layout.spacing.sm,
+    alignItems: 'center',
+    // 根据玩家数量决定滚动行为
+    flexGrow: 1,
   },
   playerCard: {
-    flex: 1,
-    flexDirection: 'row',
+    // 移除固定宽度，由动态计算提供
+    minWidth: 90, // 最小宽度90px
+    maxWidth: 160,
+    minHeight: 60, // 进一步缩小高度 (从80到60)
+    flexDirection: 'column', // 改为垂直布局
     alignItems: 'center',
-    padding: 10,
-    borderRadius: 8,
-    gap: 8,
+    justifyContent: 'center',
+    padding: Layout.spacing.xs, // 减小内边距到最小
+    borderRadius: 6, // 减小圆角
+    position: 'relative',
+    marginHorizontal: 2, // 减小外边距
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 }, // 减小阴影
+    shadowOpacity: 0.05,
+    shadowRadius: 1,
+    elevation: 1,
+  },
+  currentPlayerIndicator: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    width: 12, // 按比例缩小 (从16到12)
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 0.5 },
+    shadowOpacity: 0.15,
+    shadowRadius: 1,
+    elevation: 1,
+  },
+  playerAvatarContainer: {
+    width: 30, // 按比例缩小 (从40到30)
+    height: 30,
+    borderRadius: 15,
+    borderWidth: 1.5, // 按比例缩小边框
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    marginBottom: 3, // 减小间距
   },
   playerInfo: {
+    alignItems: 'center',
     flex: 1,
+    width: '100%',
   },
-  playerName: {
-    fontSize: 14,
-    fontWeight: '600',
+  playerNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2, // 进一步减小间距
     marginBottom: 2,
   },
+  playerName: {
+    fontSize: 11, // 进一步缩小字体 (从12到11)
+    fontWeight: '600',
+    textAlign: 'center',
+    maxWidth: 60, // 减小最大宽度 (从80到60)
+  },
   playerPosition: {
-    fontSize: 12,
+    fontSize: 9, // 进一步缩小字体 (从10到9)
+    textAlign: 'center',
+    marginBottom: 2,
+  },
+  connectionStatus: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2, // 减小间距
+  },
+  connectionDot: {
+    width: 4, // 进一步缩小 (从5到4)
+    height: 4,
+    borderRadius: 2,
+  },
+  connectionText: {
+    fontSize: 8, // 进一步缩小字体 (从9到8)
+    fontWeight: '500',
+  },
+  playerRank: {
+    position: 'absolute',
+    top: 4,
+    left: 4,
+    width: 14, // 按比例缩小 (从18到14)
+    height: 14,
+    borderRadius: 7,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  playerRankText: {
+    fontSize: 8, // 缩小字体 (从9到8)
+    fontWeight: '700',
+    color: 'white',
   },
   boardSection: {
     borderRadius: 12,
-    marginBottom: 12,
+    marginBottom: Layout.spacing.md,
     overflow: 'hidden',
   },
   restartButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: Layout.padding.md,
+    paddingVertical: Layout.padding.sm,
     borderRadius: 8,
     gap: 6,
     shadowColor: '#000',
@@ -711,8 +846,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   waitingRestart: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: Layout.padding.md,
+    paddingVertical: Layout.padding.sm,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#E0E0E0',

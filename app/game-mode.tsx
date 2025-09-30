@@ -14,7 +14,7 @@ import Animated, {
 import { LinearGradient } from 'expo-linear-gradient'
 import { Ionicons } from '@expo/vector-icons'
 import { useColorScheme } from '@/hooks/use-color-scheme'
-import { Colors } from '@/constants/theme'
+import { Colors, CommonStyles, Layout } from '@/constants/theme'
 import { useTasksStore } from '@/store/tasksStore'
 import { TaskSet } from '@/types/tasks'
 import { TaskSetDetailModal } from '@/components/TaskSetDetailModal'
@@ -591,7 +591,7 @@ export default function GameMode() {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    ...CommonStyles.container, // 使用通用容器样式
   },
   decorativeContainer: {
     position: 'absolute',
@@ -670,11 +670,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   content: {
-    flex: 1,
+    ...CommonStyles.content, // 使用通用内容样式
   },
   contentContainer: {
-    paddingHorizontal: 20,
-    paddingBottom: 100,
+    ...CommonStyles.contentContainer, // 使用通用内容容器样式
+    paddingBottom: 100, // 游戏模式页面需要更多底部空间
   },
   taskSetCard: {
     marginBottom: 16,

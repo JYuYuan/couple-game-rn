@@ -15,14 +15,22 @@ import { Ionicons } from '@expo/vector-icons'
 import { createBoardPath } from '@/utils/board'
 import { PathCell, Player } from '@/types/game'
 import { useColorScheme } from '@/hooks/use-color-scheme'
-import { Colors } from '@/constants/theme'
+import { Colors, Layout } from '@/constants/theme'
 import { PlayerIcon } from './icons'
 
 const BOARD_SIZE = 7
 const { width: screenWidth } = Dimensions.get('window')
 const BOARD_PADDING = 20
-const BOARD_WIDTH = screenWidth - BOARD_PADDING * 2
+
+// 棋盘最大宽度 - 适配Web端大屏幕
+const MAX_BOARD_WIDTH = Math.min(600, screenWidth * 0.9) // 不超过屏幕宽度的90%
+const BOARD_WIDTH = Math.min(screenWidth - BOARD_PADDING * 2, MAX_BOARD_WIDTH)
 const CELL_SIZE = (BOARD_WIDTH / BOARD_SIZE) * 0.8
+
+// 确保在小屏幕上也有合适的最小尺寸
+const MIN_CELL_SIZE = 30
+const ACTUAL_CELL_SIZE = Math.max(CELL_SIZE, MIN_CELL_SIZE)
+const ACTUAL_BOARD_WIDTH = (ACTUAL_CELL_SIZE / 0.8) * BOARD_SIZE
 
 interface GameBoardProps {
   players: Player[]
@@ -134,8 +142,8 @@ const CellComponent: React.FC<CellComponentProps> = ({
       style={[
         styles.cell,
         {
-          left: cell.x * (BOARD_WIDTH / BOARD_SIZE) + (BOARD_WIDTH / BOARD_SIZE - CELL_SIZE) / 2,
-          top: cell.y * (BOARD_WIDTH / BOARD_SIZE) + (BOARD_WIDTH / BOARD_SIZE - CELL_SIZE) / 2,
+          left: cell.x * (ACTUAL_BOARD_WIDTH / BOARD_SIZE) + (ACTUAL_BOARD_WIDTH / BOARD_SIZE - ACTUAL_CELL_SIZE) / 2,
+          top: cell.y * (ACTUAL_BOARD_WIDTH / BOARD_SIZE) + (ACTUAL_BOARD_WIDTH / BOARD_SIZE - ACTUAL_CELL_SIZE) / 2,
         },
       ]}
       onPress={handlePress}
@@ -422,16 +430,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: BOARD_PADDING,
+    width: '100%', // 确保容器占满宽度
+    maxWidth: MAX_BOARD_WIDTH + BOARD_PADDING * 2, // 添加最大宽度限制
+    alignSelf: 'center', // 在父容器中居中
   },
   board: {
-    width: BOARD_WIDTH,
-    height: BOARD_WIDTH,
+    width: ACTUAL_BOARD_WIDTH,
+    height: ACTUAL_BOARD_WIDTH,
     position: 'relative',
+    alignSelf: 'center', // 确保棋盘在容器中居中
   },
   cell: {
     position: 'absolute',
-    width: CELL_SIZE,
-    height: CELL_SIZE,
+    width: ACTUAL_CELL_SIZE,
+    height: ACTUAL_CELL_SIZE,
     padding: 2,
     ...Platform.select({
       ios: {

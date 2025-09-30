@@ -18,6 +18,7 @@ export interface TaskModalData {
   category: string
   difficulty: string
   triggerPlayerIds: number[]
+  isExecutor?: boolean // 当前玩家是否为执行者
 }
 
 // 游戏状态接口（匹配服务端结构）

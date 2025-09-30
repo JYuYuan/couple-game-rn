@@ -37,7 +37,7 @@ abstract class BaseGame {
   protected async updateRoomAndNotify(): Promise<void> {
     this.room.lastActivity = Date.now()
     await roomManager.updateRoom(this.room)
-    // this.socket.to(this.room.id).emit('room:update', this.room)
+    this.socket.to(this.room.id).emit('room:update', this.room)
   }
 
   /**

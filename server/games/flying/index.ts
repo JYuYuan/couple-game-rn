@@ -14,11 +14,25 @@ class FlyingGame extends BaseGame {
     this.gamePhase = 'playing'
     this.room.gameStatus = 'playing'
     this.room.tasks = this.room.taskSet?.tasks || []
+
+    // 调试任务集信息
+    console.log('📋 任务集检查:', {
+      taskSetExists: !!this.room.taskSet,
+      taskSetId: this.room.taskSet?.id,
+      taskSetName: this.room.taskSet?.name,
+      tasksCount: this.room.tasks.length,
+      tasks: this.room.tasks,
+    })
+
     // 初始化飞行棋棋盘路径
     if (!this.room.boardPath) {
       console.log('📋 初始化飞行棋棋盘路径')
       const boardPath = createBoardPath()
       this.room.boardPath = boardPath
+
+      // 调试棋盘特殊格子
+      const specialCells = boardPath.filter(cell => cell.type !== 'path' && cell.type !== 'start' && cell.type !== 'end')
+      console.log(`🎯 棋盘特殊格子数量: 星星=${specialCells.filter(c => c.type === 'star').length}, 陷阱=${specialCells.filter(c => c.type === 'trap').length}`)
 
       if (this.room.gameState) {
         this.room.gameState.boardSize = boardPath.length
@@ -84,11 +98,15 @@ class FlyingGame extends BaseGame {
   async _handleDiceRoll(playerId: string) {
     // 通过 room.currentUser 获取当前玩家
     const currentPlayer = this.room.players.find((p) => p.id === this.room.currentUser)
+    console.log(`🎲 投骰子请求: playerId=${playerId}, currentUser=${this.room.currentUser}, currentPlayer=${currentPlayer?.name}`)
+
     if (!currentPlayer || currentPlayer.id !== playerId) {
+      console.log(`❌ 投骰子被拒绝: 不是当前玩家的回合`)
       return
     }
 
     const diceValue = Math.floor(Math.random() * 6) + 1
+    console.log(`🎲 骰子结果: ${diceValue}, 玩家: ${currentPlayer.name} (${playerId})`)
 
     // 保存骰子结果到游戏状态
     if (this.room.gameState) {
@@ -155,13 +173,22 @@ class FlyingGame extends BaseGame {
     const hasCollision = this._checkCollision(playerId, newPos)
     const cellType = this._getCellType(newPos)
 
+    console.log(`🎯 位置检查: 玩家${playerId} 到达位置${newPos}, 格子类型: ${cellType}, 是否碰撞: ${hasCollision}`)
+    console.log(`📋 任务数据检查: taskSet存在=${!!this.room.taskSet}, 任务数量=${this.room.taskSet?.tasks?.length || 0}`)
+
     if (hasCollision) {
+      console.log(`💥 触发碰撞任务`)
       await this._triggerTask(playerId, 'collision')
     } else if (cellType === 'trap') {
+      console.log(`🕳️ 触发陷阱任务`)
       await this._triggerTask(playerId, 'trap')
     } else if (cellType === 'star') {
+      console.log(`⭐ 触发星星任务`)
       await this._triggerTask(playerId, 'star')
+    } else {
+      console.log(`🛤️ 普通路径，无任务触发`)
     }
+    // 注意：不在这里切换玩家，等待客户端动画完成后的 move_complete 事件
 
     await this._checkWinCondition()
   }
@@ -176,8 +203,13 @@ class FlyingGame extends BaseGame {
   }
 
   _getCellType(position: number): string {
-    const cell = this.room.boardPath?.find((c) => c.position === position)
-    return cell ? cell.type : 'path'
+    const cell = this.room.boardPath?.find((c) => c.id === position)
+    const cellType = cell ? cell.type : 'path'
+    console.log(`🔍 格子类型检查: 位置${position}, 找到格子=${!!cell}, 类型=${cellType}`)
+    if (cell) {
+      console.log(`📍 格子详情:`, { position: cell.position, type: cell.type, x: cell.x, y: cell.y })
+    }
+    return cellType
   }
 
   async _triggerTask(playerId: string, taskType: string = 'star') {
@@ -185,9 +217,15 @@ class FlyingGame extends BaseGame {
     const taskSet = this.room.taskSet
     let selectedTask = ''
 
+    console.log(`🎯 开始触发任务: 玩家=${playerId}, 类型=${taskType}`)
+
     if (roomTasks.length > 0) {
       const randomIndex = Math.floor(Math.random() * roomTasks.length)
       selectedTask = roomTasks[randomIndex] as string
+      console.log(`🎲 随机选择任务: ${selectedTask} (索引: ${randomIndex})`)
+    } else {
+      console.log(`❌ 没有可用的任务，跳过任务触发`)
+      return // 如果没有任务，直接返回
     }
 
     // 确定执行者
@@ -221,6 +259,13 @@ class FlyingGame extends BaseGame {
     }
 
     // 发送独立的任务事件
+    console.log(`📤 发送任务事件到房间 ${this.room.id}:`, {
+      task: selectedTask,
+      taskType,
+      executorPlayerIds: executorPlayers.map((p) => p.id),
+      triggerPlayerIds: [playerId],
+    })
+
     this.socket.to(this.room.id).emit('game:task', {
       task: {
         id: taskSet?.id || '',
@@ -304,6 +349,9 @@ class FlyingGame extends BaseGame {
       // 清除当前任务
       delete this.room.gameState.currentTask
     }
+
+    // 任务完成后切换到下一个玩家
+    await this._nextPlayer()
   }
 
   async onEnd(_io?: SocketIOServer) {
