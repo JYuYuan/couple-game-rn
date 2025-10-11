@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import { useColorScheme } from '@/hooks/use-color-scheme'
 import { Colors } from '@/constants/theme'
@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next'
 import { OnlinePlayer } from '@/types/online'
 import { useSocket } from '@/hooks/use-socket'
 import { useRoomStore } from '@/store/roomStore'
+import { showError, showSuccess } from '@/utils/toast'
 
 export default function WaitingRoomPage() {
   const router = useRouter()
@@ -17,6 +18,7 @@ export default function WaitingRoomPage() {
 
   const socket = useSocket()
   const { currentRoom, setCurrentRoom } = useRoomStore()
+  const [isStartingGame, setIsStartingGame] = useState(false)
 
   // 获取传入的参数
   const roomId = params.roomId as string
@@ -25,6 +27,7 @@ export default function WaitingRoomPage() {
   useEffect(() => {
     if (currentRoom?.gameStatus === 'playing') {
       console.log('🎮 游戏开始，跳转到游戏页面')
+      setIsStartingGame(false) // 重置开始游戏状态
       router.replace({
         pathname: '/flying-chess',
         params: {
@@ -34,6 +37,46 @@ export default function WaitingRoomPage() {
       })
     }
   }, [currentRoom?.gameStatus])
+
+  // 处理开始游戏
+  const handleStartGame = async () => {
+    if (isStartingGame) {
+      console.log('⚠️ 游戏正在开始中，请勿重复点击')
+      return
+    }
+
+    if (!socket.isConnected) {
+      showError('连接错误', '网络连接不稳定，请稍后重试')
+      return
+    }
+
+    if (!currentRoom?.id) {
+      showError('房间错误', '房间信息异常，请重新加入')
+      return
+    }
+
+    try {
+      setIsStartingGame(true)
+      console.log('🎮 开始游戏，房间ID:', currentRoom.id)
+
+      await socket.startGame({ roomId: currentRoom.id })
+
+      // 显示成功提示
+      showSuccess('游戏开始', '正在启动游戏...')
+
+      // 如果3秒后还没有跳转，重置状态
+      setTimeout(() => {
+        if (currentRoom?.gameStatus !== 'playing') {
+          setIsStartingGame(false)
+          console.warn('⚠️ 游戏开始超时，重置状态')
+        }
+      }, 3000)
+    } catch (error) {
+      console.error('❌ 开始游戏失败:', error)
+      setIsStartingGame(false)
+      showError('开始游戏失败', '请检查网络连接后重试')
+    }
+  }
 
   return (
     <>
@@ -58,14 +101,13 @@ export default function WaitingRoomPage() {
         maxPlayers={currentRoom?.maxPlayers || 2}
         roomId={currentRoom?.id || roomId || 'UNKNOWN'}
         players={currentRoom?.players as OnlinePlayer[]}
-        onStartGame={() => {
-          socket.startGame({ roomId: currentRoom?.id })
-        }}
+        onStartGame={handleStartGame}
         onLeaveRoom={() => {
           socket.leaveRoom()
-          setCurrentRoom(null)
           router.back()
         }}
+        isStartingGame={isStartingGame}
+        isConnected={socket.isConnected}
       />
     </>
   )

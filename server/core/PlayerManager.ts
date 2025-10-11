@@ -30,6 +30,8 @@ class PlayerManager {
       isConnected: true,
       joinedAt: Date.now(), // 存时间戳
       lastSeen: Date.now(),
+      position: 0, // 统一初始化位置
+      score: 0, // 统一初始化分数
       playerId, // 为了兼容性
       ...rest,
     }

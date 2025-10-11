@@ -16,6 +16,8 @@ interface RoomWaitingProps {
   isHost: boolean
   onStartGame: () => void
   onLeaveRoom: () => void
+  isStartingGame?: boolean
+  isConnected?: boolean
 }
 
 export const RoomWaiting: React.FC<RoomWaitingProps> = ({
@@ -25,6 +27,8 @@ export const RoomWaiting: React.FC<RoomWaitingProps> = ({
   isHost,
   onStartGame,
   onLeaveRoom,
+  isStartingGame = false,
+  isConnected = true,
 }) => {
   const colorScheme = useColorScheme() ?? 'light'
   const colors = Colors[colorScheme] as any
@@ -158,17 +162,25 @@ export const RoomWaiting: React.FC<RoomWaitingProps> = ({
         <View style={styles.gameControls}>
           {isHost ? (
             <TouchableOpacity
-              style={[styles.startGameButton, { opacity: canStartGame ? 1 : 0.5 }]}
+              style={[styles.startGameButton, { opacity: canStartGame && isConnected && !isStartingGame ? 1 : 0.5 }]}
               onPress={onStartGame}
-              disabled={!canStartGame}
+              disabled={!canStartGame || !isConnected || isStartingGame}
             >
               <LinearGradient
-                colors={canStartGame ? ['#4CAF50', '#66BB6A'] : ['#CCCCCC', '#AAAAAA']}
+                colors={canStartGame && isConnected && !isStartingGame ? ['#4CAF50', '#66BB6A'] : ['#CCCCCC', '#AAAAAA']}
                 style={styles.startGameGradient}
               >
-                <Ionicons name="play" size={20} color="white" />
+                <Ionicons 
+                  name={isStartingGame ? "hourglass" : "play"} 
+                  size={20} 
+                  color="white" 
+                />
                 <Text style={styles.startGameText}>
-                  {canStartGame
+                  {isStartingGame
+                    ? t('online.starting', '正在开始...')
+                    : !isConnected
+                    ? t('online.connecting', '连接中...')
+                    : canStartGame
                     ? t('online.startGame', '开始游戏')
                     : t('online.waitingPlayers', '等待玩家')}
                 </Text>

@@ -15,7 +15,13 @@ class RoomManager {
   /**
    * 创建房间
    */
-  async createRoom({ name, hostId, maxPlayers = 4, gameType,...rest }: CreateRoomParams): Promise<Room> {
+  async createRoom({
+    name,
+    hostId,
+    maxPlayers = 4,
+    gameType,
+    ...rest
+  }: CreateRoomParams): Promise<Room> {
     const roomId = uuidv4().slice(0, 6).toUpperCase()
     const room: Room = {
       id: roomId,
@@ -110,7 +116,7 @@ class RoomManager {
         turnCount: 0,
         gamePhase: 'waiting',
         startTime: Date.now(),
-        boardSize: room.boardPath?.length || 0
+        boardSize: room.boardPath?.length || 0,
       }
     }
 
@@ -128,16 +134,16 @@ class RoomManager {
    */
   async removePlayerFromRoom(roomId: string, playerId: string): Promise<Room | null> {
     const room = await this.getRoom(roomId)
-    console.log(roomId)
     if (!room) return null
     room.players = room.players.filter((p) => p.playerId !== playerId)
-    
+
     if (room.hostId === playerId && room.players.length > 0) {
       room.hostId = room.players[0]?.playerId || room.players[0]?.id || ''
       room.players.forEach((p: Player) => (p.isHost = false))
       room.players[0]!.isHost = true
     }
     if (room.players.length === 0) {
+      console.log('所有玩家离开房间，清理房间实例')
       await this.deleteRoom(roomId)
       return null
     }

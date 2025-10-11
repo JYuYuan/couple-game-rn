@@ -75,28 +75,18 @@ export default function TaskModal({ visible, task, onComplete, onClose }: TaskMo
       setErrorMessage('')
       progressValue.value = 0
 
-      // 进入动画
-      backdropOpacity.value = withTiming(1, { duration: 300 })
-      modalScale.value = withSpring(1, { damping: 15, stiffness: 150 })
-      modalTranslateY.value = withSpring(0, { damping: 15, stiffness: 150 })
-      modalOpacity.value = withTiming(1, { duration: 300 })
-
-      // 开始脉冲动画
-      pulseAnimation.value = withTiming(
-        1.05,
-        {
-          duration: 1000,
-        },
-        () => {
-          pulseAnimation.value = withTiming(1, { duration: 1000 })
-        },
-      )
+      // 直接设置最终状态值，移除动画
+      backdropOpacity.value = 1
+      modalScale.value = 1
+      modalTranslateY.value = 0
+      modalOpacity.value = 1
+      pulseAnimation.value = 1
     } else {
-      // 退出动画
-      backdropOpacity.value = withTiming(0, { duration: 200 })
-      modalScale.value = withTiming(0.8, { duration: 200 })
-      modalTranslateY.value = withTiming(50, { duration: 200 })
-      modalOpacity.value = withTiming(0, { duration: 200 })
+      // 直接设置关闭状态值，移除动画
+      backdropOpacity.value = 0
+      modalScale.value = 0.8
+      modalTranslateY.value = 50
+      modalOpacity.value = 0
     }
   }, [visible])
 

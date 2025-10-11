@@ -50,16 +50,16 @@ export interface NetworkPlayer extends Omit<GamePlayer, 'id'> {
   id: string // 网络模式使用 string ID
   isHost: boolean
   isConnected: boolean
-  joinedAt?: Date // 在线模式特有
-  lastSeen?: Date // 在线模式特有
+  joinedAt: number // 统一使用时间戳
+  lastSeen: number // 统一使用时间戳
   socketId?: string // 在线模式的 socket ID
 }
 
 // 在线玩家接口
 export interface OnlinePlayer extends NetworkPlayer {
   socketId: string // 在线模式必须有 socketId
-  joinedAt: Date
-  lastSeen: Date
+  joinedAt: number // 统一使用时间戳
+  lastSeen: number // 统一使用时间戳
 }
 
 // 房间状态

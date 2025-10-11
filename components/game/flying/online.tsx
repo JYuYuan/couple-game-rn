@@ -97,7 +97,6 @@ export default function FlyingChessGame() {
 
   // 用于动画的本地玩家状态
   const [animatedPlayers, setAnimatedPlayers] = useState<OnlinePlayer[]>(players as OnlinePlayer[])
-  console.log(animatedPlayers)
 
   // 动态计算玩家卡片宽度
   const { width: screenWidth } = Dimensions.get('window')
@@ -183,7 +182,7 @@ export default function FlyingChessGame() {
     transform: [{ rotate: `${diceRotation.value}deg` }],
   }))
 
-  // 监听游戏事件 - 独立的事件监听，不依赖room状态
+  // 监听游戏事件 - 简化的事件监听
   useDeepCompareEffect(() => {
     if (!socket.isConnected) {
       console.log('❌ Socket 未连接，跳过事件监听器注册')
@@ -191,19 +190,61 @@ export default function FlyingChessGame() {
     }
 
     console.log('✅ 注册游戏事件监听器')
+    
     // 监听骰子事件
     const handleDiceRoll = (data: { playerId: string; diceValue: number; timestamp: number }) => {
       console.log('🎲 收到骰子事件:', data)
-
-      // 更新本地骰子状态
       setCurrentDiceValue(data.diceValue)
 
-      // 使用统一的playerId判断，确保逻辑一致
+      // 重置骰子状态
       if (data.playerId === playerId) {
         // 播放音效（动画已在点击时开始）
         audioManager.playSoundEffect('dice')
         // 重置滚动状态
         setIsRolling(false)
+      }
+
+      // 开始移动动画 - 计算目标位置
+      const currentPlayer = players?.find(p => p.id === data.playerId)
+      if (currentPlayer) {
+        const currentPos = currentPlayer.position || 0
+        const boardSize = room?.gameState?.boardSize || 50
+        const finishLine = boardSize - 1
+        let targetPos = currentPos + data.diceValue
+
+        // 处理超出终点的情况（反弹）
+        if (targetPos > finishLine) {
+          const excess = targetPos - finishLine
+          targetPos = finishLine - excess
+        }
+        targetPos = Math.max(0, targetPos)
+
+        console.log(`🎯 开始移动动画: ${data.playerId} 从 ${currentPos} 移动到 ${targetPos}`)
+        
+        // 设置移动状态
+        setIsMoving(true)
+
+        // 播放移动音效
+        audioManager.playSoundEffect('step')
+
+        // 执行移动动画
+        movePlayerStepByStep(data.playerId, currentPos, targetPos, () => {
+          // 动画完成后确保玩家在最终位置
+          setAnimatedPlayers((prevPlayers) => {
+            return prevPlayers.map((p) =>
+              p.id === data.playerId ? { ...p, position: targetPos } : p,
+            )
+          })
+          setIsMoving(false)
+
+          // 通知服务端移动已完成
+          console.log(`✅ 移动动画完成，通知服务端: ${data.playerId} 到达位置 ${targetPos}`)
+          socket.runActions('move_complete', { 
+            roomId: room?.id,
+            playerId: data.playerId,
+            position: targetPos
+          })
+        })
       }
     }
 
@@ -328,12 +369,43 @@ export default function FlyingChessGame() {
       // 这个事件确保UI能够立即反映玩家切换
     }
 
+    // 监听位置更新事件（任务完成后的位置变化）
+    const handlePositionUpdate = (data: {
+      playerId: string
+      fromPosition: number
+      toPosition: number
+      reason: string
+    }) => {
+      console.log('📍 收到位置更新事件:', data)
+
+      // 播放移动音效
+      audioManager.playSoundEffect('step')
+
+      // 设置移动状态
+      setIsMoving(true)
+
+      // 执行移动动画
+      movePlayerStepByStep(data.playerId, data.fromPosition, data.toPosition, () => {
+        // 动画完成后确保玩家在最终位置
+        setAnimatedPlayers((prevPlayers) => {
+          return prevPlayers.map((p) =>
+            p.id === data.playerId ? { ...p, position: data.toPosition } : p,
+          )
+        })
+        setIsMoving(false)
+
+        console.log(`✅ 位置更新动画完成: ${data.playerId} 从 ${data.fromPosition} 移动到 ${data.toPosition}，原因: ${data.reason}`)
+      })
+    }
+
     // 注册事件监听器
+    console.log('🎮 注册游戏事件监听器, isConnected:', socket.isConnected, 'playerId:', playerId)
     socket.on('game:dice', handleDiceRoll)
     socket.on('game:task', handleTaskTrigger)
     socket.on('game:victory', handleGameVictory)
     socket.on('game:move', handlePlayerMove)
     socket.on('game:next', handleNextPlayer)
+    socket.on('game:position_update', handlePositionUpdate)
 
     // 清理函数
     return () => {
@@ -343,8 +415,9 @@ export default function FlyingChessGame() {
       socket.off('game:victory', handleGameVictory)
       socket.off('game:move', handlePlayerMove)
       socket.off('game:next', handleNextPlayer)
+      socket.off('game:position_update', handlePositionUpdate)
     }
-  }, [socket.isConnected, playerId])
+  }, [socket.isConnected, playerId, room?.id]) // 添加 room?.id 作为依赖，确保房间变化时重新注册
 
   // 逐步移动玩家的动画函数
   const movePlayerStepByStep = (

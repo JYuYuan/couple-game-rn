@@ -9,6 +9,7 @@ import '@/i18n'
 import { Platform } from 'react-native'
 import { ConfirmDialogProvider } from '@/components/ConfirmDialog'
 import { ToastProvider } from '@/components/Toast'
+import { SocketProvider } from '@/contexts/SocketContext'
 
 // 防止启动屏自动隐藏
 SplashScreen.preventAutoHideAsync()
@@ -21,12 +22,6 @@ export default function RootLayout() {
   // 自动播放背景音乐
   useEffect(() => {
     const handleAudioControl = async () => {
-      console.log('Audio control triggered:', {
-        bgmEnabled: soundSettings.bgmEnabled,
-        globalMute: soundSettings.globalMute,
-        appIsReady,
-      })
-
       // 确保应用已经准备好
       if (!appIsReady) return
 
@@ -80,12 +75,14 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }} onLayout={onLayoutRootView}>
-      <ToastProvider>
-        <ConfirmDialogProvider />
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false, title: '主页' }} />
-        </Stack>
-      </ToastProvider>
+      <SocketProvider>
+        <ToastProvider>
+          <ConfirmDialogProvider />
+          <Stack>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false, title: '主页' }} />
+          </Stack>
+        </ToastProvider>
+      </SocketProvider>
     </GestureHandlerRootView>
   )
 }

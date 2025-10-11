@@ -1,4 +1,4 @@
-import type { SocketIOServer, Room } from '../typings/socket'
+import type { SocketIOServer, Room, Player } from '../typings/socket'
 import roomManager from './RoomManager.js'
 
 abstract class BaseGame {
@@ -19,6 +19,9 @@ abstract class BaseGame {
         boardSize: 0,
       }
     }
+
+    // 确保游戏状态与玩家数据同步
+    this.syncGameState()
   }
 
   abstract onStart(io?: SocketIOServer): void
@@ -32,28 +35,72 @@ abstract class BaseGame {
   abstract _handleTaskComplete(playerId: string, action: any): void
 
   /**
+   * 同步游戏状态 - 确保 gameState 和 players 数组保持一致
+   */
+  protected syncGameState(): void {
+    if (!this.room.gameState) return
+
+    // 从 players 数组同步位置到 gameState
+    const positions: { [playerId: string]: number } = {}
+    this.room.players.forEach((player: Player) => {
+      positions[player.id] = player.position || 0
+    })
+    this.room.gameState.playerPositions = positions
+
+    console.log('🔄 游戏状态同步完成:', {
+      playersCount: this.room.players.length,
+      positions: this.room.gameState.playerPositions
+    })
+  }
+
+  /**
+   * 更新玩家位置 - 统一的位置更新方法
+   */
+  protected updatePlayerPosition(playerId: string, position: number): void {
+    // 更新 players 数组
+    const playerIndex = this.room.players.findIndex((p) => p.id === playerId)
+    if (playerIndex !== -1) {
+      this.room.players[playerIndex]!.position = position
+    }
+
+    // 更新 gameState
+    if (this.room.gameState) {
+      this.room.gameState.playerPositions[playerId] = position
+    }
+
+    console.log(`📍 玩家位置更新: ${playerId} -> ${position}`)
+  }
+
+  /**
    * 更新房间并通知所有玩家
    */
   protected async updateRoomAndNotify(): Promise<void> {
+    // 确保状态同步
+    this.syncGameState()
+    
     this.room.lastActivity = Date.now()
     await roomManager.updateRoom(this.room)
     this.socket.to(this.room.id).emit('room:update', this.room)
   }
 
   /**
-   * 获取玩家位置
+   * 获取玩家位置 - 从 players 数组获取（单一数据源）
    */
   get playerPositions(): { [playerId: string]: number } {
-    return this.room.gameState?.playerPositions || {}
+    const positions: { [playerId: string]: number } = {}
+    this.room.players.forEach((player: Player) => {
+      positions[player.id] = player.position || 0
+    })
+    return positions
   }
 
   /**
-   * 设置玩家位置
+   * 设置玩家位置 - 统一更新两个数据源
    */
   set playerPositions(positions: { [playerId: string]: number }) {
-    if (this.room.gameState) {
-      this.room.gameState.playerPositions = positions
-    }
+    Object.entries(positions).forEach(([playerId, position]) => {
+      this.updatePlayerPosition(playerId, position)
+    })
   }
 
   /**

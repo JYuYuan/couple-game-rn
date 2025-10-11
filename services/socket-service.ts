@@ -21,6 +21,8 @@ class SocketService {
   private connectionError: string | null = null
   private listeners: Map<string, Set<Function>> = new Map()
   private connecting: boolean = false // 添加连接状态标识
+  private currentPlayerId: string = '' // 保存当前玩家ID
+  private eventListenersSetup: boolean = false // 追踪是否已设置事件监听器
 
   private constructor() {}
 
@@ -48,32 +50,113 @@ class SocketService {
     return this.socket
   }
 
+  // 检查真实的连接状态
+  checkRealConnectionStatus(): boolean {
+    const socketConnected = this.socket?.connected || false
+    const serviceConnected = this.isConnected
+
+    // 如果状态不一致，更新内部状态
+    if (socketConnected !== serviceConnected) {
+      console.warn(
+        `[SocketService] Connection state mismatch: socket.connected=${socketConnected}, isConnected=${serviceConnected}`,
+      )
+      this.isConnected = socketConnected
+
+      if (socketConnected) {
+        this.emit('connect')
+      } else {
+        this.emit('disconnect', 'state_mismatch')
+      }
+    }
+
+    return socketConnected && serviceConnected
+  }
+
   // 事件管理
   on(event: string, callback: Function): void {
     if (!this.listeners.has(event)) {
       this.listeners.set(event, new Set())
     }
-    this.listeners.get(event)!.add(callback)
+    const listeners = this.listeners.get(event)!
+    listeners.add(callback)
+    console.log(`SocketService: Registered listener for event: ${event}, total: ${listeners.size}`)
   }
 
   off(event: string, callback: Function): void {
     const eventListeners = this.listeners.get(event)
     if (eventListeners) {
+      const hadListener = eventListeners.has(callback)
       eventListeners.delete(callback)
+      if (hadListener) {
+        console.log(
+          `SocketService: Removed listener for event: ${event}, remaining: ${eventListeners.size}`,
+        )
+      }
+    }
+  }
+
+  // 清除特定事件的所有监听器
+  offAll(event: string): void {
+    const eventListeners = this.listeners.get(event)
+    if (eventListeners) {
+      const count = eventListeners.size
+      eventListeners.clear()
+      console.log(`SocketService: Cleared all ${count} listeners for event: ${event}`)
     }
   }
 
   private emit(event: string, ...args: any[]): void {
     const eventListeners = this.listeners.get(event)
-    if (eventListeners) {
-      eventListeners.forEach((callback) => callback(...args))
+    if (eventListeners && eventListeners.size > 0) {
+      console.log(`SocketService: Emitting event ${event} to ${eventListeners.size} listeners`)
+      eventListeners.forEach((callback) => {
+        try {
+          callback(...args)
+        } catch (error) {
+          console.error(`SocketService: Error in listener for ${event}:`, error)
+        }
+      })
+    } else {
+      console.warn(`SocketService: No listeners registered for event: ${event}`)
     }
+  }
+
+  // 获取监听器数量，用于调试HMR问题
+  getListenerCount(event?: string): number {
+    if (event) {
+      return this.listeners.get(event)?.size || 0
+    }
+    let total = 0
+    this.listeners.forEach((listeners) => (total += listeners.size))
+    return total
+  }
+
+  // 列出所有已注册的事件，用于调试
+  listRegisteredEvents(): string[] {
+    return Array.from(this.listeners.keys())
   }
 
   // 连接管理
   connect(playerId: string): void {
+    // 如果已经有socket实例且已连接，只需要更新playerId
     if (this.socket?.connected) {
       console.log('SocketService: Already connected:', this.socket.id)
+      if (this.currentPlayerId !== playerId) {
+        console.log('SocketService: Updating player ID from', this.currentPlayerId, 'to', playerId)
+        this.currentPlayerId = playerId
+      }
+      return
+    }
+
+    // 如果有socket实例但未连接，尝试重新连接
+    if (this.socket && !this.socket.connected) {
+      console.log('SocketService: Socket exists but not connected, attempting reconnect')
+      this.currentPlayerId = playerId
+      // 确保事件监听器已设置
+      if (!this.eventListenersSetup) {
+        this.setupEventListeners()
+      }
+      this.socket.connect()
       return
     }
 
@@ -82,32 +165,17 @@ class SocketService {
       return
     }
 
-    // 如果已经有socket但是未连接，先清理
-    if (this.socket && !this.socket.connected) {
-      console.log('SocketService: Cleaning up existing disconnected socket')
-      this.socket.removeAllListeners()
-      this.socket.disconnect()
-      this.socket = null
-    }
-
-    console.log('SocketService: Creating new connection to:', SOCKET_URL, 'for player:', playerId)
-    this.connecting = true // 设置连接状态
+    this.connecting = true
+    this.currentPlayerId = playerId // 保存当前玩家ID
 
     this.socket = io(SOCKET_URL, {
-      timeout: 10000,
-      retries: 3,
-      forceNew: false, // 改为 false，避免强制创建新连接
-      transports: ['websocket', 'polling'],
+      reconnection: true, // 启用重连
+      reconnectionDelay: 1000, // 重连延迟 1 秒
+      reconnectionDelayMax: 5000, // 最大重连延迟 5 秒
+      reconnectionAttempts: 5, // 重连尝试次数
       query: {
         playerId: playerId,
       },
-    })
-
-    // 添加连接ID日志，方便调试
-    this.socket.on('connect', () => {
-      console.log(
-        `SocketService: Connected with socket ID: ${this.socket?.id} for player: ${playerId}`,
-      )
     })
 
     this.setupEventListeners()
@@ -116,21 +184,75 @@ class SocketService {
   private setupEventListeners(): void {
     if (!this.socket) return
 
-    // 清理之前的监听器，防止重复注册
-    this.socket.removeAllListeners()
+    // 使用标志位检查是否已经设置过监听器，避免重复注册
+    if (this.eventListenersSetup) {
+      console.log('SocketService: Event listeners already set up, skipping...')
+      return
+    }
+
+    console.log('SocketService: Setting up event listeners')
+    this.eventListenersSetup = true
 
     this.socket.on('connect', () => {
+      console.log(`SocketService: Connected with socket ID: ${this.socket?.id}`)
       this.isConnected = true
       this.connectionError = null
-      this.connecting = false // 重置连接状态
+      this.connecting = false
       this.emit('connect')
+    })
+
+    this.socket.on('reconnect', (attemptNumber: number) => {
+      console.log('SocketService: Reconnected after', attemptNumber, 'attempts')
+      this.isConnected = true
+      this.connecting = false
+      this.connectionError = null
+      this.emit('reconnect', attemptNumber)
+
+      // 重连成功后重新加入房间
+      if (this.currentRoom) {
+        console.log('SocketService: Rejoining room after reconnection:', this.currentRoom.id)
+        setTimeout(() => {
+          if (this.socket?.connected && this.currentRoom) {
+            this.socket.emit('room:join', {
+              roomId: this.currentRoom.id,
+              playerName:
+                this.currentRoom.players.find((p) => p.id === this.currentPlayerId)?.name ||
+                'Player',
+            })
+          }
+        }, 1000)
+      }
+    })
+
+    this.socket.on('reconnect_attempt', (attemptNumber: number) => {
+      console.log('SocketService: Reconnection attempt', attemptNumber)
+      this.emit('reconnect_attempt', attemptNumber)
+    })
+
+    this.socket.on('reconnect_error', (error: any) => {
+      console.error('SocketService: Reconnection error:', error)
+      this.emit('reconnect_error', error)
+    })
+
+    this.socket.on('reconnect_failed', () => {
+      console.error('SocketService: Reconnection failed after all attempts')
+      this.isConnected = false
+      this.connecting = false
+      this.connectionError = '重连失败，请检查网络连接'
+      showError('连接失败', '无法重新连接到服务器，请检查网络')
+      this.emit('reconnect_failed')
     })
 
     this.socket.on('disconnect', (reason) => {
       console.log('SocketService: Disconnected:', reason)
       this.isConnected = false
-      this.connecting = false // 重置连接状态
+      this.connecting = false
       this.emit('disconnect', reason)
+
+      // 只在非正常断开时显示提示
+      if (reason !== 'io client disconnect' && reason !== 'io server disconnect') {
+        console.log('SocketService: Unexpected disconnect, will attempt to reconnect')
+      }
     })
 
     this.socket.on('connect_error', (error) => {
@@ -144,12 +266,10 @@ class SocketService {
     })
 
     this.socket.on('room:update', (room: OnlineRoom) => {
-      console.log('SocketService: Room updated:', room)
       this.setCurrentRoom(room, 'room:update event')
     })
 
     this.socket.on('error', (error: SocketError) => {
-      console.error('SocketService: Socket error:', error)
       this.connectionError = error.message
       // 使用Toast显示错误信息
       showError('连接错误', error.message)
@@ -158,33 +278,37 @@ class SocketService {
 
     // 游戏相关事件转发
     this.socket.on('game:dice', (data) => {
-      console.log('SocketService: Forwarding game:dice event')
       this.emit('game:dice', data)
     })
 
     this.socket.on('game:task', (data) => {
-      console.log('SocketService: Forwarding game:task event')
       this.emit('game:task', data)
     })
 
     this.socket.on('game:victory', (data) => {
-      console.log('SocketService: Forwarding game:victory event')
       this.emit('game:victory', data)
     })
 
     this.socket.on('game:move', (data) => {
-      console.log('SocketService: Forwarding game:move event')
       this.emit('game:move', data)
     })
 
     this.socket.on('game:next', (data) => {
-      console.log('SocketService: Forwarding game:next event')
       this.emit('game:next', data)
     })
 
     // 添加通用事件监听器用于调试
     this.socket.onAny((eventName, ...args) => {
       console.log(`SocketService: Event received: ${eventName}`, args)
+    })
+
+    // 添加连接状态检查的辅助方法
+    this.socket.on('ping', () => {
+      console.log('SocketService: Ping received')
+    })
+
+    this.socket.on('pong', (latency: number) => {
+      console.log('SocketService: Pong received, latency:', latency)
     })
   }
 
@@ -194,6 +318,7 @@ class SocketService {
       this.socket = null
       this.isConnected = false
       this.connecting = false // 重置连接状态
+      this.eventListenersSetup = false // 重置监听器标志
       this.setCurrentRoom(null, 'disconnect')
     }
   }
@@ -210,44 +335,155 @@ class SocketService {
 
   // Socket 操作
   socketEmit(event: string, ...args: any[]): void {
-    if (this.socket && this.socket.connected) {
-      console.log(`[SocketService] Emitting ${event} with socket ID: ${this.socket.id}`, args)
-      this.socket.emit(event, ...args)
-      console.log(`[SocketService] Event ${event} emitted successfully`)
-    } else {
-      const reason = !this.socket ? 'socket is null' : 'socket not connected'
-      console.error(`[SocketService] Cannot emit ${event}: ${reason}`)
-      console.log(
-        `[SocketService] Connection status: connected=${this.socket?.connected}, id=${this.socket?.id}`,
+    // 直接检查socket实例的连接状态，不使用checkRealConnectionStatus避免副作用
+    if (!this.socket?.connected) {
+      console.warn(
+        `SocketService: Cannot emit ${event} - socket not connected (socket exists: ${!!this.socket})`,
       )
+      showError('连接错误', '网络连接已断开，请检查连接状态')
+      return
     }
+
+    console.log(`SocketService: Emitting ${event} to socket ${this.socket.id}`)
+    this.socket.emit(event, ...args)
+  }
+
+  // 添加重新连接方法
+  private reconnect(): void {
+    if (this.connecting || this.socket?.connected) {
+      console.log('SocketService: Reconnection skipped - already connecting or connected')
+      return
+    }
+
+    console.log('SocketService: Manual reconnect triggered')
+
+    // 让Socket.IO处理重连，我们只重置状态
+    if (this.socket && !this.socket.connected) {
+      this.socket.connect()
+    } else if (this.currentPlayerId) {
+      this.connect(this.currentPlayerId)
+    }
+  }
+
+  // 强制重新连接方法，用于路由跳转后确保连接正常
+  forceReconnect(): void {
+    console.log('SocketService: Force reconnecting...')
+
+    // 重置连接状态
+    this.isConnected = false
+    this.connecting = false
+    this.eventListenersSetup = false // 重置监听器标志
+
+    // 断开现有连接
+    if (this.socket) {
+      this.socket.disconnect()
+      this.socket = null
+    }
+
+    // 立即重新连接
+    if (this.currentPlayerId) {
+      this.connect(this.currentPlayerId)
+    }
+  }
+
+  // 等待 socket 连接就绪
+  private async waitForConnection(timeout = 5000): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (!this.socket) {
+        reject(new Error('Socket未初始化'))
+        return
+      }
+
+      // 如果已经连接，检查是否有待发送的队列
+      if (this.socket.connected) {
+        // @ts-ignore - 访问 Socket.IO 内部属性
+        const sendBuffer = this.socket.sendBuffer || []
+        // @ts-ignore
+        const receiveBuffer = this.socket.receiveBuffer || []
+
+        console.log('🔍 Socket状态检查:', {
+          connected: this.socket.connected,
+          id: this.socket.id,
+          sendBufferLength: sendBuffer.length,
+          receiveBufferLength: receiveBuffer.length,
+        })
+
+        // 如果有待发送的数据，等待一下让它们发送完
+        if (sendBuffer.length > 0) {
+          console.log('⏳ 等待发送缓冲区清空...')
+          setTimeout(() => resolve(), 200)
+          return
+        }
+
+        // 已连接且没有待发送数据，直接返回
+        resolve()
+        return
+      }
+
+      // 未连接，等待连接
+      const timeoutId = setTimeout(() => {
+        reject(new Error('连接超时'))
+      }, timeout)
+
+      const onConnect = () => {
+        clearTimeout(timeoutId)
+        this.socket?.off('connect', onConnect)
+        // 连接成功后等待一小段时间确保传输层就绪
+        setTimeout(() => resolve(), 100)
+      }
+
+      this.socket.once('connect', onConnect)
+
+      // 如果正在连接中，继续等待
+      if (this.connecting) {
+        console.log('⏳ Socket正在连接中，等待连接完成...')
+      }
+    })
   }
 
   // 房间操作
   async createRoom(data: CreateRoomData): Promise<void> {
-    if (!this.socket || !this.socket.connected) {
-      const errorMsg = 'Socket未连接'
+    if (!this.socket) {
+      const errorMsg = 'Socket未初始化'
       showError('创建房间失败', errorMsg)
       throw new Error(errorMsg)
     }
 
+    // 等待连接就绪
+    try {
+      await this.waitForConnection()
+    } catch (error) {
+      const errorMsg = 'Socket连接未就绪'
+      showError('创建房间失败', errorMsg)
+      throw new Error(errorMsg)
+    }
+
+    console.log('✅ Socket ready, creating room:', this.socket.connected, this.socket.id)
     this.socket.emit('room:create', data)
   }
 
   async joinRoom(data: JoinRoomData): Promise<void> {
     if (!this.socket) {
-      const errorMsg = 'Socket未连接'
+      const errorMsg = 'Socket未初始化'
       showError('加入房间失败', errorMsg)
       throw new Error(errorMsg)
     }
 
+    // 等待连接就绪
+    try {
+      await this.waitForConnection()
+    } catch (error) {
+      const errorMsg = 'Socket连接未就绪'
+      showError('加入房间失败', errorMsg)
+      throw new Error(errorMsg)
+    }
+
+    console.log('✅ Socket ready, joining room:', this.socket.connected, this.socket.id)
     this.socket.emit('room:join', data)
   }
 
   leaveRoom(): void {
-    console.log(this.socket && this.currentRoom)
     if (this.socket && this.currentRoom) {
-      console.log('SocketService: Leaving room:', this.currentRoom.id)
       this.socket.emit('room:leave', { roomId: this.currentRoom.id })
       this.setCurrentRoom(null, 'leaveRoom')
     }
@@ -286,6 +522,16 @@ class SocketService {
     this.on('game:state', (data: any) => {
       console.log(data)
     })
+  }
+
+  // 添加检查连接状态的方法
+  checkConnection(): boolean {
+    if (!this.socket?.connected) {
+      console.log('SocketService: Connection check failed, attempting reconnect...')
+      this.socket?.connect()
+      return false
+    }
+    return true
   }
 }
 

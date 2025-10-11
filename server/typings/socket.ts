@@ -44,8 +44,8 @@ export interface Player {
   isConnected: boolean
   joinedAt: number
   lastSeen: number
-  position?: number
-  score?: number
+  position: number // 统一为必需字段
+  score: number // 统一为必需字段
   playerId?: string // 为了兼容性添加
 }
 

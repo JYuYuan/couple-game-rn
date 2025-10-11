@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import {
   Alert,
   Modal,
@@ -27,6 +27,7 @@ import { LinearGradient } from 'expo-linear-gradient'
 import { TaskSet } from '@/types/tasks'
 import { useSettingsStore } from '@/store'
 import { generateRoomId } from '@/utils'
+import { showError } from '@/utils/toast'
 
 interface OnlineRoomModalProps {
   visible: boolean
@@ -57,6 +58,9 @@ export const OnlineRoomModal: React.FC<OnlineRoomModalProps> = ({
   const [discoveredRooms, setDiscoveredRooms] = useState<LANRoomDiscovery[]>([])
   const [isScanning, setIsScanning] = useState(false)
 
+  // 使用 ref 追踪是否已经跳转过，避免重复跳转
+  const hasNavigatedRef = useRef(false)
+
   // 检查平台是否支持局域网功能
   const isLANSupported = Platform.OS !== 'web'
 
@@ -76,10 +80,20 @@ export const OnlineRoomModal: React.FC<OnlineRoomModalProps> = ({
     }
   }, [visible, gameType, taskSet?.id])
 
-  // 监听房间更新
+  // 当 modal 打开时，重置跳转标记
+  useEffect(() => {
+    if (visible) {
+      hasNavigatedRef.current = false
+    }
+  }, [visible])
+
+  // 监听房间更新 - 只在首次加入房间时跳转一次
   useEffect(() => {
     const currentRoom = connectionMode === 'lan' ? socket.currentLANRoom : socket.currentRoom
-    if (currentRoom) {
+
+    // 只有当房间存在且还没有跳转过时才执行跳转
+    if (currentRoom && !hasNavigatedRef.current) {
+      hasNavigatedRef.current = true // 标记已经跳转过
       onRoomJoined(currentRoom.id)
       onClose()
     }
@@ -92,7 +106,7 @@ export const OnlineRoomModal: React.FC<OnlineRoomModalProps> = ({
     }
     return () => {
       if (connectionMode === 'lan' && isLANSupported) {
-        socket.stopRoomScan()
+        socket.stopRoomScan?.()
         setIsScanning(false)
       }
     }
@@ -100,13 +114,13 @@ export const OnlineRoomModal: React.FC<OnlineRoomModalProps> = ({
 
   const handleCreateRoom = async () => {
     if (!playerName.trim() || !roomName.trim()) {
-      Alert.alert(t('common.error', '错误'), t('online.error.fillRequired', '请填写所有必需信息'))
+      showError(t('common.error', '错误'), t('online.error.fillRequired', '请填写所有必需信息'))
       return
     }
 
     // 检查 Web 平台是否尝试创建局域网房间
     if (connectionMode === 'lan' && !isLANSupported) {
-      Alert.alert(
+      showError(
         t('common.error', '错误'),
         t('online.lan.webNotSupported', 'Web平台不支持局域网功能，请使用移动应用'),
       )
@@ -130,12 +144,6 @@ export const OnlineRoomModal: React.FC<OnlineRoomModalProps> = ({
       } else {
         await socket.createRoom(createData)
       }
-    } catch (error) {
-      console.error('创建房间失败:', error)
-      Alert.alert(
-        t('common.error', '错误'),
-        error instanceof Error ? error.message : t('online.error.createFailed', '创建房间失败'),
-      )
     } finally {
       setIsLoading(false)
     }
@@ -145,7 +153,7 @@ export const OnlineRoomModal: React.FC<OnlineRoomModalProps> = ({
     if (connectionMode === 'lan' && lanRoomData) {
       // 加入局域网房间
       if (!playerName.trim()) {
-        Alert.alert(t('common.error', '错误'), t('online.error.fillRequired', '请填写玩家名称'))
+        showError(t('common.error', '错误'), t('online.error.fillRequired', '请填写玩家名称'))
         return
       }
 
@@ -162,7 +170,7 @@ export const OnlineRoomModal: React.FC<OnlineRoomModalProps> = ({
         await socket.joinLANRoom(joinData)
       } catch (error) {
         console.error('加入局域网房间失败:', error)
-        Alert.alert(
+        showError(
           t('common.error', '错误'),
           error instanceof Error ? error.message : t('online.error.joinFailed', '加入房间失败'),
         )
@@ -172,9 +180,8 @@ export const OnlineRoomModal: React.FC<OnlineRoomModalProps> = ({
     } else {
       // 在线房间加入逻辑
       const targetRoomId = roomId || roomCode.trim()
-
       if (!playerName.trim() || !targetRoomId) {
-        Alert.alert(t('common.error', '错误'), t('online.error.fillRequired', '请填写所有必需信息'))
+        showError(t('common.error', '错误'), t('online.error.fillRequired', '请填写所有必需信息'))
         return
       }
 
@@ -184,14 +191,7 @@ export const OnlineRoomModal: React.FC<OnlineRoomModalProps> = ({
           roomId: targetRoomId,
           playerName: playerName.trim(),
         }
-
         await socket.joinRoom(joinData)
-      } catch (error) {
-        console.error('加入房间失败:', error)
-        Alert.alert(
-          t('common.error', '错误'),
-          error instanceof Error ? error.message : t('online.error.joinFailed', '加入房间失败'),
-        )
       } finally {
         setIsLoading(false)
       }
@@ -217,11 +217,13 @@ export const OnlineRoomModal: React.FC<OnlineRoomModalProps> = ({
 
     setIsScanning(true)
     try {
-      await socket.startRoomScan()
+      await socket.startRoomScan?.()
       // 定期更新发现的房间列表
       const updateInterval = setInterval(() => {
-        const rooms = socket.getDiscoveredRooms()
-        setDiscoveredRooms(rooms)
+        const rooms: any = socket.getDiscoveredRooms?.()
+        if (rooms) {
+          setDiscoveredRooms(rooms)
+        }
       }, 1000)
 
       // 10秒后停止扫描
@@ -231,13 +233,13 @@ export const OnlineRoomModal: React.FC<OnlineRoomModalProps> = ({
       }, 10000)
     } catch (error) {
       console.error('启动扫描失败:', error)
-      Alert.alert(t('common.error', '错误'), '启动局域网扫描失败')
+      showError(t('common.error', '错误'), '启动局域网扫描失败')
       setIsScanning(false)
     }
   }
 
   const handleStopScan = () => {
-    socket.stopRoomScan()
+    socket.stopRoomScan?.()
     setIsScanning(false)
   }
 
@@ -395,7 +397,7 @@ export const OnlineRoomModal: React.FC<OnlineRoomModalProps> = ({
                 if (isLANSupported) {
                   setConnectionMode('lan')
                 } else {
-                  Alert.alert(
+                  showError(
                     t('online.lan.notSupported', '不支持'),
                     t('online.lan.webNotSupported', 'Web平台不支持局域网功能，请使用移动应用'),
                   )

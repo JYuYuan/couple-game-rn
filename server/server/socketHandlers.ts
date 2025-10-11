@@ -27,19 +27,40 @@ export default function registerSocketHandlers(io: SocketIOServer) {
       player.isConnected = true
       await playerManager.updatePlayer(player)
 
+      console.log(`🔄 玩家 ${playerId} 重新连接，恢复状态`)
+
       // 如果玩家在房间
       if (player.roomId) {
         const room = await roomManager.getRoom(player.roomId)
         if (room) {
           socket.join(room.id)
+          
+          // 更新房间中的玩家信息
+          const playerIndex = room.players.findIndex(p => p.id === playerId)
+          if (playerIndex !== -1) {
+            room.players[playerIndex] = player
+            await roomManager.updateRoom(room)
+          }
+          
           socket.emit('room:update', room)
+          
+          // 通知房间内其他玩家该玩家已重连
+          socket.to(room.id).emit('player:reconnected', {
+            playerId: playerId,
+            playerName: player.name
+          })
 
           // 如果房间有游戏在进行，继续游戏
           const game = await gameInstanceManager.getGameInstance(player.roomId, io)
           if (game && room.gameStatus === 'playing') {
-            console.log(`🔄 玩家 ${playerId} 重新连接，继续游戏`)
+            console.log(`🎮 玩家 ${playerId} 重新连接，继续游戏`)
             await game.onResume()
           }
+        } else {
+          // 房间不存在，清理玩家的房间信息
+          console.log(`⚠️ 玩家 ${playerId} 的房间 ${player.roomId} 不存在，清理状态`)
+          player.roomId = null
+          await playerManager.updatePlayer(player)
         }
       }
     }
@@ -207,11 +228,12 @@ export default function registerSocketHandlers(io: SocketIOServer) {
         if (room) {
           socket.leave(data.roomId)
           console.log(`玩家 ${playerId} 离开房间 ${data.roomId}`)
-          io.to(data.roomId).emit('room:update', null)
+          io.to(data.roomId).emit('room:update', room)
         }
 
         // 清理游戏实例
         if (room && room.players.length === 0) {
+           console.log(`所有玩家离开房间，清理游戏实例`)
           await gameInstanceManager.removeGameInstance(data.roomId)
         }
       } catch (error) {
