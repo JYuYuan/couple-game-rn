@@ -5,6 +5,7 @@ import {
   ConnectionType,
   CreateLANRoomData,
   CreateRoomData,
+  DiceRollResult,
   JoinLANRoomData,
   JoinRoomData,
   LANRoom,
@@ -51,7 +52,7 @@ interface SocketContextValue {
 
   // 游戏事件
   startGame: (data: any) => void
-  rollDice: (data: any) => void
+  rollDice: (data: any, callback?: (result: DiceRollResult) => void) => void
   completeTask: (data: any) => void
 
   // 事件管理
@@ -279,11 +280,11 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   )
 
   const rollDice = useCallback(
-    (data: any) => {
+    (data: any, callback: any) => {
       if (connectionType === 'lan') {
-        webrtcService?.rollDice(data)
+        webrtcService?.rollDice(data, callback)
       } else {
-        socketService.rollDice(data)
+        socketService.rollDice(data, callback)
       }
     },
     [connectionType],
@@ -334,11 +335,11 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   )
 
   const runActions = useCallback(
-    (event: string, data: any) => {
+    (event: string, data: any, callback?: (res: any) => void) => {
       if (connectionType === 'lan') {
         console.warn('Custom runActions not supported in LAN mode:', event)
       } else {
-        socketService.runActions(event, data)
+        socketService.runActions(event, data, callback)
       }
     },
     [connectionType],

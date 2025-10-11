@@ -2,6 +2,7 @@ import { io, Socket } from 'socket.io-client'
 import {
   CreateRoomData,
   DiceRollData,
+  DiceRollResult,
   GameStartData,
   JoinRoomData,
   OnlineRoom,
@@ -500,17 +501,17 @@ class SocketService {
     this.socketEmit('game:start', data)
   }
 
-  rollDice(data: DiceRollData): void {
-    this.runActions('roll_dice', data)
+  rollDice(data: DiceRollData, callback?: (result: DiceRollResult) => void): void {
+    this.runActions('roll_dice', data, callback)
   }
 
   completeTask(data: TaskCompleteData): void {
-    this.socketEmit('complete_task', data)
+    this.runActions('complete_task', data)
   }
 
-  runActions(type: string, data: any): void {
+  runActions(type: string, data: any, callback?: (res: any) => void): void {
     console.log('游戏事件：', type, data)
-    this.socketEmit('game:action', { type, ...data })
+    this.socketEmit('game:action', { type, ...data }, callback)
   }
 
   // 便利属性
@@ -522,16 +523,6 @@ class SocketService {
     this.on('game:state', (data: any) => {
       console.log(data)
     })
-  }
-
-  // 添加检查连接状态的方法
-  checkConnection(): boolean {
-    if (!this.socket?.connected) {
-      console.log('SocketService: Connection check failed, attempting reconnect...')
-      this.socket?.connect()
-      return false
-    }
-    return true
   }
 }
 

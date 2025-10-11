@@ -12,7 +12,7 @@ import VictoryModal from '@/components/VictoryModal'
 import { GamePlayer } from '@/hooks/use-game-players'
 import { useAudioManager } from '@/hooks/use-audio-manager'
 import { useTranslation } from 'react-i18next'
-import { OnlinePlayer, TaskModalData } from '@/types/online'
+import { OnlinePlayer, TaskModalData, DiceRollResult } from '@/types/online'
 import { PlayerIcon } from '@/components/icons'
 import { useSocket } from '@/hooks/use-socket'
 import { useRoomStore, useSettingsStore } from '@/store'
@@ -98,6 +98,13 @@ export default function FlyingChessGame() {
   // 用于动画的本地玩家状态
   const [animatedPlayers, setAnimatedPlayers] = useState<OnlinePlayer[]>(players as OnlinePlayer[])
 
+  // 同步服务端玩家位置到本地动画状态
+  useEffect(() => {
+    if (players && players.length > 0) {
+      setAnimatedPlayers(players as OnlinePlayer[])
+    }
+  }, [players])
+
   // 动态计算玩家卡片宽度
   const { width: screenWidth } = Dimensions.get('window')
   const maxContainerWidth = Math.min(screenWidth - 32, Layout.maxWidth) // 减去外边距
@@ -143,7 +150,62 @@ export default function FlyingChessGame() {
     lastTaskIdRef.current = null // 重置ref
   }
 
-  // 投骰子 - 只发送请求，不处理逻辑
+  const handleDiceRoll = (data: { playerId: string; diceValue: number }) => {
+    console.log('🎲 收到骰子事件:', data)
+    setCurrentDiceValue(data.diceValue)
+
+    // 重置骰子状态
+    if (data.playerId === playerId) {
+      // 播放音效（动画已在点击时开始）
+      audioManager.playSoundEffect('dice')
+      // 重置滚动状态
+      setIsRolling(false)
+    }
+
+    // 开始移动动画 - 计算目标位置
+    const currentPlayer = players?.find((p) => p.id === data.playerId)
+    if (currentPlayer) {
+      const currentPos = currentPlayer.position || 0
+      const boardSize = room?.gameState?.boardSize || 50
+      const finishLine = boardSize - 1
+      let targetPos = currentPos + data.diceValue
+
+      // 处理超出终点的情况（反弹）
+      if (targetPos > finishLine) {
+        const excess = targetPos - finishLine
+        targetPos = finishLine - excess
+      }
+      targetPos = Math.max(0, targetPos)
+
+      console.log(`🎯 开始移动动画: ${data.playerId} 从 ${currentPos} 移动到 ${targetPos}`)
+
+      // 设置移动状态
+      setIsMoving(true)
+
+      // 播放移动音效
+      audioManager.playSoundEffect('step')
+
+      // 执行移动动画
+      movePlayerStepByStep(data.playerId, currentPos, targetPos, () => {
+        // 动画完成后确保玩家在最终位置
+        setAnimatedPlayers((prevPlayers) => {
+          return prevPlayers.map((p) =>
+            p.id === data.playerId ? { ...p, position: targetPos } : p,
+          )
+        })
+        setIsMoving(false)
+
+        // 通知服务端移动已完成
+        console.log(`✅ 移动动画完成，通知服务端: ${data.playerId} 到达位置 ${targetPos}`)
+        socket.runActions('move_complete', {
+          roomId: room?.id,
+          playerId: data.playerId,
+        })
+      })
+    }
+  }
+
+  // 投骰子 - 发送请求并通过回调接收结果
   const rollDice = async () => {
     if (isRolling || isMoving || !isOwnTurn) {
       console.warn('不能投掷骰子: 状态不允许')
@@ -157,24 +219,43 @@ export default function FlyingChessGame() {
     diceRotation.value = withTiming(360 * 4, { duration: 1200 })
 
     try {
-      // 只发送投骰子请求给服务端，由服务端生成结果
+      // 发送投骰子请求给服务端，使用回调接收结果
       console.log('🎲 发送投骰子请求到服务端')
-      socket.rollDice({
-        roomId: room?.id,
-        playerId: playerId, // 使用当前登录用户的ID，而不是 currentPlayer?.id
-      })
 
-      // 等待服务端响应
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      socket.rollDice(
+        {
+          roomId: room?.id,
+          playerId: playerId,
+        },
+        (result: DiceRollResult) => {
+          console.log('🎲 收到服务端回调结果:', result)
+
+          if (result.success && result.diceValue) {
+            // 成功收到骰子结果
+            audioManager.playSoundEffect('dice')
+            // 停止骰子动画并显示结果
+            setTimeout(() => {
+              diceRotation.value = withTiming(0, { duration: 300 })
+              handleDiceRoll({ playerId: result.playerId, diceValue: result.diceValue || 0 })
+            }, 1000)
+
+            // 播放音效
+          } else {
+            // 请求失败
+            console.error('投骰子失败:', result.error)
+            audioManager.playSoundEffect('step')
+            // 重置骰子动画
+            diceRotation.value = withTiming(0, { duration: 200 })
+            setIsRolling(false)
+          }
+        },
+      )
     } catch (error) {
       console.error('投掷骰子请求失败:', error)
       audioManager.playSoundEffect('step')
       // 如果请求失败，重置骰子动画
       diceRotation.value = withTiming(0, { duration: 200 })
-      setIsRolling(false) // 在错误情况下重置状态
-    } finally {
-      // 注意：isRolling 的重置现在由 game:dice 事件处理
-      // setIsRolling(false) 将在接收到服务端响应时执行
+      setIsRolling(false)
     }
   }
 
@@ -190,63 +271,8 @@ export default function FlyingChessGame() {
     }
 
     console.log('✅ 注册游戏事件监听器')
-    
+
     // 监听骰子事件
-    const handleDiceRoll = (data: { playerId: string; diceValue: number; timestamp: number }) => {
-      console.log('🎲 收到骰子事件:', data)
-      setCurrentDiceValue(data.diceValue)
-
-      // 重置骰子状态
-      if (data.playerId === playerId) {
-        // 播放音效（动画已在点击时开始）
-        audioManager.playSoundEffect('dice')
-        // 重置滚动状态
-        setIsRolling(false)
-      }
-
-      // 开始移动动画 - 计算目标位置
-      const currentPlayer = players?.find(p => p.id === data.playerId)
-      if (currentPlayer) {
-        const currentPos = currentPlayer.position || 0
-        const boardSize = room?.gameState?.boardSize || 50
-        const finishLine = boardSize - 1
-        let targetPos = currentPos + data.diceValue
-
-        // 处理超出终点的情况（反弹）
-        if (targetPos > finishLine) {
-          const excess = targetPos - finishLine
-          targetPos = finishLine - excess
-        }
-        targetPos = Math.max(0, targetPos)
-
-        console.log(`🎯 开始移动动画: ${data.playerId} 从 ${currentPos} 移动到 ${targetPos}`)
-        
-        // 设置移动状态
-        setIsMoving(true)
-
-        // 播放移动音效
-        audioManager.playSoundEffect('step')
-
-        // 执行移动动画
-        movePlayerStepByStep(data.playerId, currentPos, targetPos, () => {
-          // 动画完成后确保玩家在最终位置
-          setAnimatedPlayers((prevPlayers) => {
-            return prevPlayers.map((p) =>
-              p.id === data.playerId ? { ...p, position: targetPos } : p,
-            )
-          })
-          setIsMoving(false)
-
-          // 通知服务端移动已完成
-          console.log(`✅ 移动动画完成，通知服务端: ${data.playerId} 到达位置 ${targetPos}`)
-          socket.runActions('move_complete', { 
-            roomId: room?.id,
-            playerId: data.playerId,
-            position: targetPos
-          })
-        })
-      }
-    }
 
     // 监听任务事件
     const handleTaskTrigger = (data: {
@@ -310,34 +336,17 @@ export default function FlyingChessGame() {
       }
     }
 
-    // 监听玩家移动事件
-    const handlePlayerMove = (data: {
-      playerId: string
-      fromPosition: number
-      toPosition: number
-    }) => {
-      console.log('🚶 收到移动事件:', data)
-
-      setIsMoving(true)
-      movePlayerStepByStep(data.playerId, data.fromPosition, data.toPosition, () => {
-        // 动画完成后确保玩家在最终位置
-        setAnimatedPlayers((prevPlayers) => {
-          return prevPlayers.map((p) =>
-            p.id === data.playerId ? { ...p, position: data.toPosition } : p,
-          )
-        })
-        setIsMoving(false)
-
-        // 通知服务端移动已完成，触发下一个玩家
-        socket.runActions('move_complete', { roomId: room?.id })
-
-        console.log(`✅ 玩家 ${data.playerId} 移动动画完成，最终位置: ${data.toPosition}`)
-      })
-    }
-
     // 监听用户切换事件
     const handleNextPlayer = (data: { currentUser: string; roomId: string }) => {
       console.log('🔄 收到用户切换事件:', data)
+
+      // 关闭任务弹窗（任务已完成，切换到下一个玩家）
+      if (showTaskModal) {
+        console.log('🚪 关闭任务弹窗（玩家切换）')
+        setShowTaskModal(false)
+        setTaskModalData(null)
+        lastTaskIdRef.current = null
+      }
 
       // 立即更新 currentUserId state
       console.log(`🔄 更新 currentUserId: ${currentUserId} → ${data.currentUser}`)
@@ -394,26 +403,26 @@ export default function FlyingChessGame() {
         })
         setIsMoving(false)
 
-        console.log(`✅ 位置更新动画完成: ${data.playerId} 从 ${data.fromPosition} 移动到 ${data.toPosition}，原因: ${data.reason}`)
+        console.log(
+          `✅ 位置更新动画完成: ${data.playerId} 从 ${data.fromPosition} 移动到 ${data.toPosition}，原因: ${data.reason}`,
+        )
       })
     }
 
     // 注册事件监听器
     console.log('🎮 注册游戏事件监听器, isConnected:', socket.isConnected, 'playerId:', playerId)
-    socket.on('game:dice', handleDiceRoll)
+    // socket.on('game:dice', handleDiceRoll)
     socket.on('game:task', handleTaskTrigger)
     socket.on('game:victory', handleGameVictory)
-    socket.on('game:move', handlePlayerMove)
     socket.on('game:next', handleNextPlayer)
     socket.on('game:position_update', handlePositionUpdate)
 
     // 清理函数
     return () => {
       console.log('🧹 清理游戏事件监听器')
-      socket.off('game:dice', handleDiceRoll)
+      // socket.off('game:dice', handleDiceRoll)
       socket.off('game:task', handleTaskTrigger)
       socket.off('game:victory', handleGameVictory)
-      socket.off('game:move', handlePlayerMove)
       socket.off('game:next', handleNextPlayer)
       socket.off('game:position_update', handlePositionUpdate)
     }

@@ -34,20 +34,20 @@ export default function registerSocketHandlers(io: SocketIOServer) {
         const room = await roomManager.getRoom(player.roomId)
         if (room) {
           socket.join(room.id)
-          
+
           // 更新房间中的玩家信息
-          const playerIndex = room.players.findIndex(p => p.id === playerId)
+          const playerIndex = room.players.findIndex((p) => p.id === playerId)
           if (playerIndex !== -1) {
             room.players[playerIndex] = player
             await roomManager.updateRoom(room)
           }
-          
+
           socket.emit('room:update', room)
-          
+
           // 通知房间内其他玩家该玩家已重连
           socket.to(room.id).emit('player:reconnected', {
             playerId: playerId,
-            playerName: player.name
+            playerName: player.name,
           })
 
           // 如果房间有游戏在进行，继续游戏
@@ -205,19 +205,25 @@ export default function registerSocketHandlers(io: SocketIOServer) {
     })
 
     // 游戏动作（投骰子、移动等）
-    socket.on('game:action', async (data: GameData) => {
+    socket.on('game:action', async (data: GameData, callback?: Function) => {
       try {
         const game = await gameInstanceManager.getGameInstance(data.roomId, io)
         if (!game) {
-          return socket.emit('error', { message: '游戏不存在' })
+          const error = { message: '游戏不存在' }
+          socket.emit('error', error)
+          callback?.({ success: false, error: error.message })
+          return
         }
 
-        game.onPlayerAction(io, playerId, data)
+        // 传递回调函数给游戏实例
+        await game.onPlayerAction(io, playerId, data, callback)
 
         // 更新游戏状态到 Redis
         await gameInstanceManager.updateGameInstance(data.roomId, game)
       } catch (error) {
-        socket.emit('error', { message: (error as Error).message })
+        const errorMessage = (error as Error).message
+        socket.emit('error', { message: errorMessage })
+        callback?.({ success: false, error: errorMessage })
       }
     })
 
@@ -233,7 +239,7 @@ export default function registerSocketHandlers(io: SocketIOServer) {
 
         // 清理游戏实例
         if (room && room.players.length === 0) {
-           console.log(`所有玩家离开房间，清理游戏实例`)
+          console.log(`所有玩家离开房间，清理游戏实例`)
           await gameInstanceManager.removeGameInstance(data.roomId)
         }
       } catch (error) {

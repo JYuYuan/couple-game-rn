@@ -147,7 +147,15 @@ export interface GameStartData {
 export interface DiceRollData {
   roomId: string
   playerId: string
-  diceValue: number
+  diceValue?: number // 客户端发送请求时不需要diceValue，服务端返回时才有
+}
+
+// 投掷骰子回调结果类型
+export interface DiceRollResult {
+  success: boolean
+  diceValue?: number
+  playerId: string
+  error?: string
 }
 
 // 玩家移动数据
