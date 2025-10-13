@@ -211,6 +211,7 @@ export default function registerSocketHandlers(io: SocketIOServer) {
         if (!game) {
           const error = { message: '游戏不存在' }
           socket.emit('error', error)
+          await roomManager.deleteRoom(data.roomId)
           callback?.({ success: false, error: error.message })
           return
         }
