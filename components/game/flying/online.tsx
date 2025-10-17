@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useRef } from 'react'
+import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react'
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View, Dimensions } from 'react-native'
 import { Stack, useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
@@ -17,6 +17,7 @@ import { PlayerIcon } from '@/components/icons'
 import { useSocket } from '@/hooks/use-socket'
 import { useRoomStore, useSettingsStore } from '@/store'
 import { useDeepCompareEffect } from 'ahooks'
+import toast from '@/utils/toast'
 
 export default function FlyingChessGame() {
   const router = useRouter()
@@ -32,7 +33,6 @@ export default function FlyingChessGame() {
   const players = room?.players || []
   const boardPath = room?.boardPath || []
   const taskSet = room?.taskSet
-
   // 使用 state 管理 currentUserId，避免依赖 room 状态同步
   const [currentUserId, setCurrentUserId] = useState<string | null>(room?.currentUser || null)
 
@@ -95,15 +95,34 @@ export default function FlyingChessGame() {
     setShowVictoryModal(true)
   }
 
+  // 检查当前玩家是否是胜利者
+  const isCurrentPlayerWinner = useMemo(() => {
+    return winner?.id === parseInt(playerId)
+  }, [winner, playerId])
+
   // 用于动画的本地玩家状态
   const [animatedPlayers, setAnimatedPlayers] = useState<OnlinePlayer[]>(players as OnlinePlayer[])
+  // 使用 ref 保存最新的 animatedPlayers,避免 handleDiceRoll 闭包问题
+  const animatedPlayersRef = useRef<OnlinePlayer[]>(animatedPlayers)
 
-  // 同步服务端玩家位置到本地动画状态
+  // 同步 ref
   useEffect(() => {
-    if (players && players.length > 0) {
-      setAnimatedPlayers(players as OnlinePlayer[])
+    animatedPlayersRef.current = animatedPlayers
+  }, [animatedPlayers])
+
+  // 同步服务端玩家位置到本地动画状态 - 只在非移动状态时同步
+  // 使用延时避免动画完成瞬间的闪烁
+  useDeepCompareEffect(() => {
+    if (players && players.length > 0 && !isMoving) {
+      // 延时 100ms 确保动画完成后的状态更新已经应用
+      const timer = setTimeout(() => {
+        console.log('同步服务端玩家位置到本地动画状态', players)
+        setAnimatedPlayers(players as OnlinePlayer[])
+      }, 100)
+
+      return () => clearTimeout(timer)
     }
-  }, [players])
+  }, [players, isMoving])
 
   // 动态计算玩家卡片宽度
   const { width: screenWidth } = Dimensions.get('window')
@@ -125,6 +144,18 @@ export default function FlyingChessGame() {
     console.log('🔄 请求重新开始游戏')
     // 发送重新开始请求给服务端
     socket.startGame({ roomId: room?.id })
+  }
+
+  // 离开房间
+  const handleLeaveRoom = () => {
+    console.log('🚪 请求离开房间')
+    if (!room?.id) return
+
+    // 发送离开房间请求给服务端
+    socket.leaveRoom()
+
+    // 返回首页
+    router.replace('/')
   }
 
   // 任务完成反馈 - 只发送结果给服务端
@@ -150,60 +181,80 @@ export default function FlyingChessGame() {
     lastTaskIdRef.current = null // 重置ref
   }
 
-  const handleDiceRoll = (data: { playerId: string; diceValue: number }) => {
-    console.log('🎲 收到骰子事件:', data)
-    setCurrentDiceValue(data.diceValue)
+  const handleDiceRoll = useCallback(
+    (data: { playerId: string; diceValue: number }) => {
+      console.log('🎲 收到骰子事件:', data)
 
-    // 重置骰子状态
-    if (data.playerId === playerId) {
-      // 播放音效（动画已在点击时开始）
-      audioManager.playSoundEffect('dice')
-      // 重置滚动状态
-      setIsRolling(false)
-    }
+      // 计算延迟时间：如果是当前玩家且正在滚动，等待动画完成；否则立即执行
+      const isCurrentPlayer = data.playerId === playerId
+      const diceAnimationDuration = 1500 // 与 rollDice 中的动画时长一致
+      const delay = isCurrentPlayer && isRolling ? diceAnimationDuration : 0
 
-    // 开始移动动画 - 计算目标位置
-    const currentPlayer = players?.find((p) => p.id === data.playerId)
-    if (currentPlayer) {
-      const currentPos = currentPlayer.position || 0
-      const boardSize = room?.gameState?.boardSize || 50
-      const finishLine = boardSize - 1
-      let targetPos = currentPos + data.diceValue
+      setTimeout(() => {
+        // 重置骰子动画并显示结果
+        diceRotation.value = withTiming(0, { duration: 300 })
+        setCurrentDiceValue(data.diceValue)
 
-      // 处理超出终点的情况（反弹）
-      if (targetPos > finishLine) {
-        const excess = targetPos - finishLine
-        targetPos = finishLine - excess
-      }
-      targetPos = Math.max(0, targetPos)
+        // 重置骰子状态
+        if (isCurrentPlayer) {
+          // 播放音效
+          audioManager.playSoundEffect('dice')
+          // 重置滚动状态
+          setIsRolling(false)
+        }
 
-      console.log(`🎯 开始移动动画: ${data.playerId} 从 ${currentPos} 移动到 ${targetPos}`)
+        // 短暂延迟后开始移动，让玩家看清骰子结果
+        setTimeout(() => {
+          // 开始移动动画 - 使用 ref 获取最新的玩家位置，避免闭包问题
+          const currentPlayer = animatedPlayersRef.current?.find((p) => p.id === data.playerId)
+          if (currentPlayer) {
+            const currentPos = currentPlayer.position || 0
+            const boardSize = room?.gameState?.boardSize || 50
+            const finishLine = boardSize - 1
+            let targetPos = currentPos + data.diceValue
 
-      // 设置移动状态
-      setIsMoving(true)
+            // 处理超出终点的情况（反弹）
+            if (targetPos > finishLine) {
+              const excess = targetPos - finishLine
+              targetPos = finishLine - excess
+            }
+            targetPos = Math.max(0, targetPos)
 
-      // 播放移动音效
-      audioManager.playSoundEffect('step')
+            console.log(`🎯 开始移动动画: ${data.playerId} 从 ${currentPos} 移动到 ${targetPos}`)
 
-      // 执行移动动画
-      movePlayerStepByStep(data.playerId, currentPos, targetPos, () => {
-        // 动画完成后确保玩家在最终位置
-        setAnimatedPlayers((prevPlayers) => {
-          return prevPlayers.map((p) =>
-            p.id === data.playerId ? { ...p, position: targetPos } : p,
-          )
-        })
-        setIsMoving(false)
+            // 设置移动状态
+            setIsMoving(true)
 
-        // 通知服务端移动已完成
-        console.log(`✅ 移动动画完成，通知服务端: ${data.playerId} 到达位置 ${targetPos}`)
-        socket.runActions('move_complete', {
-          roomId: room?.id,
-          playerId: data.playerId,
-        })
-      })
-    }
-  }
+            // 播放移动音效
+            audioManager.playSoundEffect('step')
+
+            // 执行移动动画
+            movePlayerStepByStep(data.playerId, currentPos, targetPos, () => {
+              // 动画完成后确保玩家在最终位置
+              setAnimatedPlayers((prevPlayers) => {
+                return prevPlayers.map((p) =>
+                  p.id === data.playerId ? { ...p, position: targetPos } : p,
+                )
+              })
+
+              // 通知服务端移动已完成
+              console.log(`✅ 移动动画完成，通知服务端: ${data.playerId} 到达位置 ${targetPos}`)
+              socket.runActions('move_complete', {
+                roomId: room?.id,
+                playerId: data.playerId,
+              })
+
+              // 延迟重置移动状态，给服务端足够时间推送更新
+              setTimeout(() => {
+                setIsMoving(false)
+              }, 200)
+            })
+          }
+        }, 500) // 显示骰子结果 500ms 后开始移动
+      }, delay)
+    },
+    [playerId, isRolling, diceRotation, audioManager, room?.gameState?.boardSize, socket, room?.id],
+  )
 
   // 投骰子 - 发送请求并通过回调接收结果
   const rollDice = async () => {
@@ -214,9 +265,9 @@ export default function FlyingChessGame() {
 
     console.log('🎲 请求投掷骰子')
     setIsRolling(true)
-
+    audioManager.playSoundEffect('dice')
     // 立即开始骰子旋转动画，提供即时反馈
-    diceRotation.value = withTiming(360 * 4, { duration: 1200 })
+    diceRotation.value = withTiming(360 * 4, { duration: 1500 })
 
     try {
       // 发送投骰子请求给服务端，使用回调接收结果
@@ -230,17 +281,7 @@ export default function FlyingChessGame() {
         (result: DiceRollResult) => {
           console.log('🎲 收到服务端回调结果:', result)
 
-          if (result.success && result.diceValue) {
-            // 成功收到骰子结果
-            audioManager.playSoundEffect('dice')
-            // 停止骰子动画并显示结果
-            setTimeout(() => {
-              diceRotation.value = withTiming(0, { duration: 300 })
-              handleDiceRoll({ playerId: result.playerId, diceValue: result.diceValue || 0 })
-            }, 1000)
-
-            // 播放音效
-          } else {
+          if (!result.success || !result.diceValue) {
             // 请求失败
             console.error('投骰子失败:', result.error)
             audioManager.playSoundEffect('step')
@@ -401,30 +442,79 @@ export default function FlyingChessGame() {
             p.id === data.playerId ? { ...p, position: data.toPosition } : p,
           )
         })
-        setIsMoving(false)
 
         console.log(
           `✅ 位置更新动画完成: ${data.playerId} 从 ${data.fromPosition} 移动到 ${data.toPosition}，原因: ${data.reason}`,
         )
+
+        // 延迟重置移动状态，给服务端足够时间推送更新
+        setTimeout(() => {
+          setIsMoving(false)
+        }, 200)
       })
+    }
+
+    // 监听任务完成事件
+    const handleTaskCompleted = (data: {
+      playerId: string
+      playerName: string
+      taskType: string
+      completed: boolean
+      taskTitle: string
+    }) => {
+      console.log('✅ 收到任务完成事件:', data)
+
+      // 关闭任务弹窗
+      setShowTaskModal(false)
+      setTaskModalData(null)
+      lastTaskIdRef.current = null
+
+      // 显示Toast通知
+      const taskTypeText =
+        data.taskType === 'star' ? '⭐ 星星' : data.taskType === 'trap' ? '🕳️ 陷阱' : '💥 碰撞'
+      const statusText = data.completed ? t('task.completed', '完成了') : t('task.failed', '失败了')
+      const message = `${data.taskTitle}`
+
+      if (data.completed) {
+        toast.success(`${data.playerName} ${statusText} ${taskTypeText} 任务`, message, 3000)
+      } else {
+        toast.error(`${data.playerName} ${statusText} ${taskTypeText} 任务`, message, 3000)
+      }
+    }
+
+    // 监听房间销毁事件（房主离开）
+    const handleRoomDestroyed = (data: { reason: string; message: string }) => {
+      console.log('🚪 房间被销毁:', data)
+
+      // 显示提示
+      toast.error(t('online.roomDestroyed', '房间已关闭'), data.message, 3000)
+
+      // 返回首页
+      setTimeout(() => {
+        router.replace('/')
+      }, 1000)
     }
 
     // 注册事件监听器
     console.log('🎮 注册游戏事件监听器, isConnected:', socket.isConnected, 'playerId:', playerId)
-    // socket.on('game:dice', handleDiceRoll)
+    socket.on('game:dice', handleDiceRoll)
     socket.on('game:task', handleTaskTrigger)
     socket.on('game:victory', handleGameVictory)
     socket.on('game:next', handleNextPlayer)
     socket.on('game:position_update', handlePositionUpdate)
+    socket.on('game:task_completed', handleTaskCompleted)
+    socket.on('room:destroyed', handleRoomDestroyed)
 
     // 清理函数
     return () => {
       console.log('🧹 清理游戏事件监听器')
-      // socket.off('game:dice', handleDiceRoll)
+      socket.off('game:dice', handleDiceRoll)
       socket.off('game:task', handleTaskTrigger)
       socket.off('game:victory', handleGameVictory)
       socket.off('game:next', handleNextPlayer)
       socket.off('game:position_update', handlePositionUpdate)
+      socket.off('game:task_completed', handleTaskCompleted)
+      socket.off('room:destroyed', handleRoomDestroyed)
     }
   }, [socket.isConnected, playerId, room?.id]) // 添加 room?.id 作为依赖，确保房间变化时重新注册
 
@@ -476,6 +566,7 @@ export default function FlyingChessGame() {
             fontSize: 18,
           },
           headerBackTitle: t('flyingChess.headerBackTitle', '返回'),
+          headerBackVisible: true,
         }}
       />
 
@@ -590,9 +681,21 @@ export default function FlyingChessGame() {
 
           {/* 玩家信息 */}
           <View style={[styles.playersInfo, { backgroundColor: colors.homeCardBackground }]}>
-            <Text style={[styles.sectionTitle, { color: colors.homeCardTitle }]}>
-              {t('flyingChess.playersStatus', '玩家状态')}
-            </Text>
+            <View style={styles.playersInfoHeader}>
+              <Text style={[styles.sectionTitle, { color: colors.homeCardTitle }]}>
+                {t('flyingChess.playersStatus', '玩家状态')}
+              </Text>
+              <TouchableOpacity
+                style={[styles.leaveRoomButton, { borderColor: colors.homeCardBorder }]}
+                onPress={handleLeaveRoom}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="exit-outline" size={18} color="#FF6B6B" />
+                <Text style={[styles.leaveRoomButtonText, { color: '#FF6B6B' }]}>
+                  {t('online.leaveRoom', '离开房间')}
+                </Text>
+              </TouchableOpacity>
+            </View>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -698,12 +801,8 @@ export default function FlyingChessGame() {
         <VictoryModal
           visible={showVictoryModal}
           winner={winner}
-          availableTasks={[]}
-          onTasksSelected={() => {}}
-          onRestart={() => {
-            // TODO: 实现重新开始逻辑，例如通知服务器
-            setShowVictoryModal(false)
-          }}
+          isWinner={isCurrentPlayerWinner}
+          onRestart={isHost ? handleRestartGame : undefined}
           onExit={() => {
             setShowVictoryModal(false)
             router.back()
@@ -795,10 +894,28 @@ const styles = StyleSheet.create({
   playersInfo: {
     ...CommonStyles.cardContainer,
   },
+  playersInfoHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Layout.spacing.sm,
+  },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '700',
-    marginBottom: Layout.spacing.sm,
+  },
+  leaveRoomButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: 4,
+  },
+  leaveRoomButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
   },
   playersScroll: {
     width: '100%',

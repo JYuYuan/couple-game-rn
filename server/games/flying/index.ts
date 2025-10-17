@@ -144,6 +144,14 @@ class FlyingGame extends BaseGame {
       timestamp: Date.now(),
       playerName: currentPlayer.name,
     })
+
+    this.socket.to(this.room.id).emit('game:dice', {
+      playerId,
+      diceValue,
+      success: true,
+      timestamp: Date.now(),
+      playerName: currentPlayer.name,
+    })
   }
 
   _checkCollision(playerId: string, position: number): boolean {
@@ -246,7 +254,6 @@ class FlyingGame extends BaseGame {
 
     // 获取最后一次骰子结果
     const lastDiceRoll = this.room.gameState?.lastDiceRoll
-    console.log(lastDiceRoll)
     if (!lastDiceRoll || lastDiceRoll.playerId !== playerId) {
       console.log(`❌ 无效的移动完成事件: 没有对应的骰子记录`)
       return
@@ -376,18 +383,30 @@ class FlyingGame extends BaseGame {
 
     console.log(`🎯 任务类型: ${taskType}, 完成状态: ${completed}`)
 
-    // 根据任务类型和完成状态决定位置变化
-    let positionChange = 0
+    // 获取执行者信息用于通知
+    const executor = this.room.players.find((p: Player) => p.id === playerId)
+    const executorName = executor?.name || '玩家'
 
-    if (taskType === 'star' && completed) {
-      positionChange = Math.floor(Math.random() * 6) + 1 // 星星任务成功随机前进1-6格
+    // 广播任务完成事件，通知所有玩家关闭弹窗并显示完成情况
+    this.socket.to(this.room.id).emit('game:task_completed', {
+      playerId,
+      playerName: executorName,
+      taskType,
+      completed,
+      taskTitle: currentTask.title,
+    })
+
+    // 根据任务类型和完成状态决定位置变化
+    const step = Math.floor(Math.random() * 6) + 1
+    let positionChange = completed ? step : -step
+
+    if (taskType === 'star') {
       console.log(`⭐ 星星任务成功，前进${positionChange}格`)
-    } else if (taskType === 'trap' && !completed) {
-      positionChange = -(Math.floor(Math.random() * 6) + 1) // 陷阱任务失败随机后退1-6格
+    } else if (taskType === 'trap') {
       console.log(`🕳️ 陷阱任务失败，后退${Math.abs(positionChange)}格`)
     } else if (taskType === 'collision') {
       // 碰撞任务不改变位置，只是完成任务
-      console.log(`💥 碰撞任务完成，位置不变`)
+      console.log(`💥 碰撞任务完成，位置归 0`)
     }
 
     // 应用位置变化
@@ -403,6 +422,7 @@ class FlyingGame extends BaseGame {
       }
       newPos = Math.max(0, newPos)
 
+      if (taskType === 'collision' && !completed) newPos = 0
       // 使用统一的位置更新方法
       this.updatePlayerPosition(playerId, newPos)
 
@@ -429,7 +449,7 @@ class FlyingGame extends BaseGame {
       delete this.room.gameState.currentTask
       this.room.gameState.hasPendingTask = false // 清除待处理任务标志
     }
-
+    console.log(this.room)
     // 更新房间状态
     await this.updateRoomAndNotify()
 

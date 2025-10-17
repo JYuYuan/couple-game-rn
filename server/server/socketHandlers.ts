@@ -28,7 +28,6 @@ export default function registerSocketHandlers(io: SocketIOServer) {
       await playerManager.updatePlayer(player)
 
       console.log(`🔄 玩家 ${playerId} 重新连接，恢复状态`)
-
       // 如果玩家在房间
       if (player.roomId) {
         const room = await roomManager.getRoom(player.roomId)
@@ -42,8 +41,6 @@ export default function registerSocketHandlers(io: SocketIOServer) {
             await roomManager.updateRoom(room)
           }
 
-          socket.emit('room:update', room)
-
           // 通知房间内其他玩家该玩家已重连
           socket.to(room.id).emit('player:reconnected', {
             playerId: playerId,
@@ -54,7 +51,11 @@ export default function registerSocketHandlers(io: SocketIOServer) {
           const game = await gameInstanceManager.getGameInstance(player.roomId, io)
           if (game && room.gameStatus === 'playing') {
             console.log(`🎮 玩家 ${playerId} 重新连接，继续游戏`)
+            socket.emit('room:update', room)
             await game.onResume()
+          } else {
+            await roomManager.deleteRoom(player.roomId)
+            socket.emit('room:update', null)
           }
         } else {
           // 房间不存在，清理玩家的房间信息
@@ -62,6 +63,8 @@ export default function registerSocketHandlers(io: SocketIOServer) {
           player.roomId = null
           await playerManager.updatePlayer(player)
         }
+      } else {
+        socket.emit('room:update', null)
       }
     }
 
@@ -231,19 +234,89 @@ export default function registerSocketHandlers(io: SocketIOServer) {
     // 离开房间
     socket.on('room:leave', async (data: any) => {
       try {
-        const room = await roomManager.removePlayerFromRoom(data.roomId, playerId)
-        if (room) {
-          socket.leave(data.roomId)
-          console.log(`玩家 ${playerId} 离开房间 ${data.roomId}`)
-          io.to(data.roomId).emit('room:update', room)
+        const player = await playerManager.getPlayer(playerId)
+        if (!player || !player.roomId) {
+          return socket.emit('error', { message: '玩家不在任何房间中' })
         }
 
-        // 清理游戏实例
-        if (room && room.players.length === 0) {
-          console.log(`所有玩家离开房间，清理游戏实例`)
-          await gameInstanceManager.removeGameInstance(data.roomId)
+        const room = await roomManager.getRoom(player.roomId)
+        if (!room) {
+          return socket.emit('error', { message: '房间不存在' })
+        }
+
+        const isHost = room.hostId === playerId
+        const roomId = room.id
+
+        console.log(
+          `玩家 ${playerId} 离开房间 ${roomId}, 是否为房主: ${isHost}, 当前房间人数: ${room.players.length}`,
+        )
+
+        // 如果是房主离开
+        if (isHost) {
+          console.log(`房主离开房间，销毁房间 ${roomId}`)
+
+          // 通知所有玩家房间被销毁
+          io.to(roomId).emit('room:destroyed', {
+            reason: 'host_left',
+            message: '房主已离开，房间已关闭',
+          })
+
+          // 让所有玩家离开socket房间
+          const sockets = await io.in(roomId).fetchSockets()
+          for (const s of sockets) {
+            s.leave(roomId)
+          }
+
+          // 清理所有玩家的房间信息
+          for (const p of room.players) {
+            const playerData = await playerManager.getPlayer(p.id)
+            if (playerData) {
+              playerData.roomId = null
+              await playerManager.updatePlayer(playerData)
+            }
+          }
+
+          // 清理游戏实例
+          await gameInstanceManager.removeGameInstance(roomId)
+
+          // 删除房间
+          await roomManager.deleteRoom(roomId)
+
+          console.log(`房间 ${roomId} 已销毁`)
+        } else {
+          // 普通玩家离开
+          const updatedRoom = await roomManager.removePlayerFromRoom(roomId, playerId)
+
+          // 清理玩家的房间信息
+          player.roomId = null
+          await playerManager.updatePlayer(player)
+
+          socket.leave(roomId)
+          console.log(`玩家 ${playerId} 离开房间 ${roomId}`)
+
+          if (updatedRoom) {
+            // 如果房间还有玩家，更新房间状态
+            io.to(roomId).emit('room:update', updatedRoom)
+
+            // 如果只剩一个玩家，游戏退回到等待状态
+            if (updatedRoom.players.length === 1 && updatedRoom.gameStatus === 'playing') {
+              console.log(`房间 ${roomId} 只剩一个玩家，游戏退回到等待状态`)
+              updatedRoom.gameStatus = 'waiting'
+              await roomManager.updateRoom(updatedRoom)
+
+              // 清理游戏实例
+              await gameInstanceManager.removeGameInstance(roomId)
+
+              io.to(roomId).emit('room:update', updatedRoom)
+            }
+          } else {
+            // 房间已空，游戏实例已被清理
+            console.log(`所有玩家离开房间，房间 ${roomId} 已删除`)
+            await gameInstanceManager.removeGameInstance(roomId)
+          }
         }
       } catch (error) {
+        console.error('离开房间失败:', error)
         socket.emit('error', { message: (error as Error).message })
       }
     })
