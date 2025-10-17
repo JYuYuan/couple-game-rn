@@ -5,7 +5,6 @@
  */
 
 import { socketService } from './socket-service'
-import type { RTCIceCandidate, RTCSessionDescription } from 'react-native-webrtc'
 
 /**
  * 信令消息类型
@@ -78,7 +77,7 @@ class WebRTCSignalingService {
   /**
    * 发送 offer
    */
-  sendOffer(targetPlayerId: string, offer: RTCSessionDescription): void {
+  sendOffer(targetPlayerId: string, offer: any): void {
     const message: SignalingMessage = {
       type: 'offer',
       from: this.playerId,
@@ -93,7 +92,7 @@ class WebRTCSignalingService {
   /**
    * 发送 answer
    */
-  sendAnswer(targetPlayerId: string, answer: RTCSessionDescription): void {
+  sendAnswer(targetPlayerId: string, answer: any): void {
     const message: SignalingMessage = {
       type: 'answer',
       from: this.playerId,
@@ -108,7 +107,7 @@ class WebRTCSignalingService {
   /**
    * 发送 ICE candidate
    */
-  sendIceCandidate(targetPlayerId: string, candidate: RTCIceCandidate): void {
+  sendIceCandidate(targetPlayerId: string, candidate: any): void {
     const message: SignalingMessage = {
       type: 'ice-candidate',
       from: this.playerId,

@@ -3,7 +3,7 @@
  * 连接到 P2P Server (房主设备)
  */
 
-import { RTCIceCandidate, RTCPeerConnection, RTCSessionDescription } from 'react-native-webrtc'
+import { isWebRTCAvailable, RTCPeerConnection } from './webrtc-wrapper'
 import type {
   CreateRoomData,
   DiceRollData,
@@ -61,6 +61,16 @@ class P2PClient {
       throw new Error('Already connected')
     }
 
+    // 检查 WebRTC 是否可用
+    if (!isWebRTCAvailable()) {
+      console.warn(
+        '⚠️ WebRTC is not available. P2P mode requires expo-dev-client or a production build.',
+      )
+      throw new Error(
+        'WebRTC 不可用。P2P 模式需要使用 expo-dev-client 或生产构建，无法在 Expo Go 中运行。',
+      )
+    }
+
     this.playerId = playerId
     console.log(`P2P Client connecting as ${playerId}`)
 
@@ -105,19 +115,19 @@ class P2PClient {
     })
 
     // 设置远程描述 (offer)
-    await this.peerConnection.setRemoteDescription(offer)
+    await this.peerConnection!.setRemoteDescription(offer)
 
     // 应用pending的candidates
     for (const candidate of this.pendingCandidates) {
-      await this.peerConnection.addIceCandidate(candidate)
+      await this.peerConnection!.addIceCandidate(candidate)
     }
     this.pendingCandidates = []
 
     // 创建 answer
-    const answer = await this.peerConnection.createAnswer()
-    await this.peerConnection.setLocalDescription(answer)
+    const answer = await this.peerConnection!.createAnswer()
+    await this.peerConnection!.setLocalDescription(answer)
 
-    return answer
+    return answer as any
   }
 
   /**

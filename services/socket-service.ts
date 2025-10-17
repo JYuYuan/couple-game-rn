@@ -13,7 +13,7 @@ import { showError } from '@/utils/toast'
 import { p2pServer } from './p2p-server'
 import { p2pClient } from './p2p-client'
 import { webrtcSignaling } from './webrtc-signaling'
-import { RTCIceCandidate, RTCSessionDescription } from 'react-native-webrtc'
+import { RTCIceCandidate, RTCSessionDescription } from './webrtc-wrapper'
 
 const DEFAULT_SOCKET_URL = __DEV__ ? 'http://localhost:3001' : 'https://your-production-server.com'
 

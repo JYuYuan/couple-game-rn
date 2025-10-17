@@ -4,7 +4,12 @@
  * 复刻服务端逻辑,但运行在客户端(房主设备)上
  */
 
-import { RTCIceCandidate, RTCPeerConnection, RTCSessionDescription } from 'react-native-webrtc'
+import {
+  isWebRTCAvailable,
+  RTCIceCandidate,
+  RTCPeerConnection,
+  RTCSessionDescription,
+} from './webrtc-wrapper'
 import type {
   BaseRoom,
   CreateRoomData,
@@ -66,6 +71,16 @@ class P2PServer {
     if (this.isRunning) {
       console.log('P2P Server already running')
       return
+    }
+
+    // 检查 WebRTC 是否可用
+    if (!isWebRTCAvailable()) {
+      console.warn(
+        '⚠️ WebRTC is not available. P2P mode requires expo-dev-client or a production build.',
+      )
+      throw new Error(
+        'WebRTC 不可用。P2P 模式需要使用 expo-dev-client 或生产构建，无法在 Expo Go 中运行。',
+      )
     }
 
     this.hostPlayerId = hostPlayerId
