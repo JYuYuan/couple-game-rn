@@ -28,6 +28,9 @@ import { TaskSet } from '@/types/tasks'
 import { useSettingsStore } from '@/store'
 import { generateRoomId } from '@/utils'
 import { showError } from '@/utils/toast'
+import { AvatarGender } from '@/types/settings'
+import { AvatarOption, getRandomAvatarByGender } from '@/constants/avatars'
+import { AvatarPicker } from '@/components/AvatarPicker'
 
 interface OnlineRoomModalProps {
   visible: boolean
@@ -58,6 +61,10 @@ export const OnlineRoomModal: React.FC<OnlineRoomModalProps> = ({
   const [discoveredRooms, setDiscoveredRooms] = useState<LANRoomDiscovery[]>([])
   const [isScanning, setIsScanning] = useState(false)
 
+  // 头像和性别状态
+  const [selectedGender, setSelectedGender] = useState<AvatarGender>('man')
+  const [selectedAvatar, setSelectedAvatar] = useState<AvatarOption | null>(null)
+
   // 使用 ref 追踪是否已经跳转过，避免重复跳转
   const hasNavigatedRef = useRef(false)
 
@@ -79,6 +86,11 @@ export const OnlineRoomModal: React.FC<OnlineRoomModalProps> = ({
   useEffect(() => {
     if (visible) {
       hasNavigatedRef.current = false
+      // 初始化默认头像
+      if (!selectedAvatar) {
+        const defaultAvatar = getRandomAvatarByGender(selectedGender)
+        setSelectedAvatar(defaultAvatar)
+      }
     }
   }, [visible])
 
@@ -113,6 +125,11 @@ export const OnlineRoomModal: React.FC<OnlineRoomModalProps> = ({
       return
     }
 
+    if (!selectedAvatar) {
+      showError(t('common.error', '错误'), t('online.error.selectAvatar', '请选择头像'))
+      return
+    }
+
     // 检查 Web 平台是否尝试创建局域网房间
     if (connectionMode === 'lan' && !canCreateLANRoom) {
       showError(
@@ -130,6 +147,8 @@ export const OnlineRoomModal: React.FC<OnlineRoomModalProps> = ({
         maxPlayers,
         gameType,
         taskSet: taskSet,
+        avatar: selectedAvatar.id,
+        gender: selectedGender,
       }
 
       if (connectionMode === 'lan' && canCreateLANRoom) {
@@ -145,13 +164,18 @@ export const OnlineRoomModal: React.FC<OnlineRoomModalProps> = ({
   }
 
   const handleJoinRoom = async (roomId?: string, lanRoomData?: LANRoomDiscovery) => {
+    if (!playerName.trim()) {
+      showError(t('common.error', '错误'), t('online.error.fillRequired', '请填写玩家名称'))
+      return
+    }
+
+    if (!selectedAvatar) {
+      showError(t('common.error', '错误'), t('online.error.selectAvatar', '请选择头像'))
+      return
+    }
+
     if (connectionMode === 'lan' && lanRoomData) {
       // 加入局域网房间
-      if (!playerName.trim()) {
-        showError(t('common.error', '错误'), t('online.error.fillRequired', '请填写玩家名称'))
-        return
-      }
-
       setIsLoading(true)
       try {
         await socket.switchToLANMode()
@@ -160,6 +184,8 @@ export const OnlineRoomModal: React.FC<OnlineRoomModalProps> = ({
           hostIP: lanRoomData.hostIP,
           roomId: lanRoomData.roomId,
           playerName: playerName.trim(),
+          avatar: selectedAvatar.id,
+          gender: selectedGender,
         }
 
         await socket.joinLANRoom(joinData)
@@ -175,8 +201,8 @@ export const OnlineRoomModal: React.FC<OnlineRoomModalProps> = ({
     } else {
       // 在线房间加入逻辑
       const targetRoomId = roomId || roomCode.trim()
-      if (!playerName.trim() || !targetRoomId) {
-        showError(t('common.error', '错误'), t('online.error.fillRequired', '请填写所有必需信息'))
+      if (!targetRoomId) {
+        showError(t('common.error', '错误'), t('online.error.fillRequired', '请填写房间代码'))
         return
       }
 
@@ -185,6 +211,8 @@ export const OnlineRoomModal: React.FC<OnlineRoomModalProps> = ({
         const joinData: JoinRoomData = {
           roomId: targetRoomId,
           playerName: playerName.trim(),
+          avatar: selectedAvatar.id,
+          gender: selectedGender,
         }
         await socket.joinRoom(joinData)
       } finally {
@@ -463,6 +491,14 @@ export const OnlineRoomModal: React.FC<OnlineRoomModalProps> = ({
                     : t('online.join.title', '加入房间')}
                 </Text>
 
+                {/* 头像选择器 */}
+                <AvatarPicker
+                  selectedGender={selectedGender}
+                  selectedAvatar={selectedAvatar}
+                  onGenderChange={setSelectedGender}
+                  onAvatarChange={setSelectedAvatar}
+                />
+
                 <View style={styles.inputGroup}>
                   <Text style={[styles.label, { color: colors.homeCardDescription }]}>
                     {t('online.playerName', '玩家名称')}
@@ -623,6 +659,14 @@ export const OnlineRoomModal: React.FC<OnlineRoomModalProps> = ({
                   </View>
                 )}
 
+                {/* 头像选择器 */}
+                <AvatarPicker
+                  selectedGender={selectedGender}
+                  selectedAvatar={selectedAvatar}
+                  onGenderChange={setSelectedGender}
+                  onAvatarChange={setSelectedAvatar}
+                />
+
                 {/* 游戏信息显示 */}
                 <View
                   style={[
@@ -749,7 +793,8 @@ export const OnlineRoomModal: React.FC<OnlineRoomModalProps> = ({
                   style={[
                     styles.actionButton,
                     {
-                      opacity: isLoading || (connectionMode === 'lan' && !canCreateLANRoom) ? 0.6 : 1,
+                      opacity:
+                        isLoading || (connectionMode === 'lan' && !canCreateLANRoom) ? 0.6 : 1,
                     },
                   ]}
                   onPress={handleCreateRoom}

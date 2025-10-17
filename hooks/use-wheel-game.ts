@@ -1,6 +1,8 @@
 import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { PlayerIconType } from '@/components/icons'
+import { getRandomAvatarByGender } from '@/constants/avatars'
+import { AvatarGender } from '@/types/settings'
 
 export interface WheelPlayer {
   id: number
@@ -8,6 +10,8 @@ export interface WheelPlayer {
   color: string
   score: number
   iconType: PlayerIconType // 改为SVG图标类型
+  avatarId?: string // 头像ID
+  gender?: AvatarGender // 性别
   completedTasks: string[]
   achievements: string[]
 }
@@ -88,15 +92,23 @@ export const useWheelGame = () => {
   // 玩家状态
   const [players, setPlayers] = useState<WheelPlayer[]>(() => {
     const playerNames = getPlayerNames()
-    return Array.from({ length: 2 }, (_, index) => ({
-      id: index + 1,
-      name: playerNames[index],
-      color: PLAYER_COLORS[index],
-      score: 0,
-      iconType: PLAYER_ICON_TYPES[index],
-      completedTasks: [],
-      achievements: [],
-    }))
+    return Array.from({ length: 2 }, (_, index) => {
+      // 随机分配性别：第一个玩家随机，第二个玩家随机
+      const gender: AvatarGender = Math.random() > 0.5 ? 'man' : 'woman'
+      const randomAvatar = getRandomAvatarByGender(gender)
+
+      return {
+        id: index + 1,
+        name: playerNames[index],
+        color: PLAYER_COLORS[index],
+        score: 0,
+        iconType: PLAYER_ICON_TYPES[index],
+        avatarId: randomAvatar.id,
+        gender: gender,
+        completedTasks: [],
+        achievements: [],
+      }
+    })
   })
 
   const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0)
@@ -231,6 +243,8 @@ export const useWheelGame = () => {
         score: 0,
         completedTasks: [],
         achievements: [],
+        // 保留头像和性别，但可以选择重新随机
+        // avatarId 和 gender 保持不变
       })),
     )
     setCurrentPlayerIndex(0)

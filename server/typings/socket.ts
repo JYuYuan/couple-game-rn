@@ -40,7 +40,7 @@ export interface Player {
   roomId: string | null
   color: string
   isHost: boolean
-  iconType: number
+  avatar: string
   isConnected: boolean
   joinedAt: number
   lastSeen: number

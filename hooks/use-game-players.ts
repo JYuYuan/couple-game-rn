@@ -1,6 +1,8 @@
 import { useCallback, useState } from 'react'
 import { Alert } from 'react-native'
 import { useTranslation } from 'react-i18next'
+import { AvatarGender } from '@/types/settings'
+import { getRandomAvatarByGender } from '@/constants/avatars'
 
 export interface GamePlayer {
   id: number
@@ -11,6 +13,8 @@ export interface GamePlayer {
   iconType: number // 改为SVG图标类型
   completedTasks: string[]
   achievements: string[]
+  avatarId?: string
+  gender?: AvatarGender
 }
 
 const PLAYER_COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4']
@@ -31,16 +35,24 @@ export const useGamePlayers = (initialPlayerCount: number = 2, boardSize: number
 
   const [players, setPlayers] = useState<GamePlayer[]>(() => {
     const playerNames = getPlayerNames()
-    return Array.from({ length: initialPlayerCount }, (_, index) => ({
-      id: index + 1,
-      name: playerNames[index],
-      color: PLAYER_COLORS[index],
-      position: 0,
-      score: 0,
-      iconType: index,
-      completedTasks: [],
-      achievements: [],
-    }))
+    return Array.from({ length: initialPlayerCount }, (_, index) => {
+      // 随机分配性别
+      const gender: AvatarGender = Math.random() > 0.5 ? 'man' : 'woman'
+      const randomAvatar = getRandomAvatarByGender(gender)
+
+      return {
+        id: index + 1,
+        name: playerNames[index],
+        color: PLAYER_COLORS[index],
+        position: 0,
+        score: 0,
+        iconType: index,
+        completedTasks: [],
+        achievements: [],
+        avatarId: randomAvatar.id,
+        gender: gender,
+      }
+    })
   })
 
   const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0)

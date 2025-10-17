@@ -96,6 +96,7 @@ export default function registerSocketHandlers(io: SocketIOServer) {
             name: roomInfo.playerName,
             roomId: null,
             isHost: true,
+            ...roomInfo,
           })
         } else {
           // 更新玩家信息
@@ -146,15 +147,13 @@ export default function registerSocketHandlers(io: SocketIOServer) {
           player = await playerManager.addPlayer(playerId, {
             playerId,
             name: joinData.playerName || `Player_${playerId.substring(0, 6)}`,
-            roomId: joinData.roomId,
             isHost: false,
-            iconType: room?.players.length,
+            ...joinData,
           })
         } else {
           // 更新玩家信息
           player.name = joinData.playerName || player.name
           player.isHost = false
-          player.iconType = room?.players.length
           await playerManager.updatePlayer(player)
         }
 

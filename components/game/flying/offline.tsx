@@ -558,7 +558,7 @@ export default function OfflineGame() {
                     },
                   ]}
                 >
-                  <PlayerAvatar see={player.iconType} color={player.color} size={32} />
+                  <PlayerAvatar avatarId={player.avatarId || ''} color={player.color} size={32} />
                   <View style={styles.playerInfo}>
                     <Text style={[styles.playerName, { color: colors.homeCardTitle }]}>
                       {player.name}

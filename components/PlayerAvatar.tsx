@@ -3,14 +3,14 @@ import { StyleSheet, View } from 'react-native'
 import { PlayerIcon } from './icons'
 
 interface PlayerAvatarProps {
-  see: number
+  avatarId: string
   color: string
   size?: number
   backgroundColor?: string
 }
 
 export const PlayerAvatar: React.FC<PlayerAvatarProps> = ({
-  see,
+  avatarId,
   color,
   size = 40,
   backgroundColor,
@@ -29,7 +29,7 @@ export const PlayerAvatar: React.FC<PlayerAvatarProps> = ({
         },
       ]}
     >
-      <PlayerIcon see={see} />
+      <PlayerIcon avatarId={avatarId} />
     </View>
   )
 }

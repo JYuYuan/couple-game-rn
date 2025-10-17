@@ -10,9 +10,11 @@ import MineTaskModal, { MineTaskData } from '@/components/MineTaskModal'
 import VictoryModal from '@/components/VictoryModal'
 import { PlayerAvatar } from '@/components/PlayerAvatar'
 import { PlayerIconType } from '@/components/icons'
+import { AvatarGender } from '@/types/settings'
+import { getRandomAvatarByGender } from '@/constants/avatars'
 
 const { width: screenWidth } = Dimensions.get('window')
-
+const PLAYER_COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4']
 // 扫雷游戏难度配置
 const DIFFICULTY_CONFIGS = {
   easy: { rows: 9, cols: 9, mines: 10, name: '简单' },
@@ -37,6 +39,8 @@ interface Player {
   iconType: PlayerIconType
   cellsRevealed: number // 获得的格子数
   minesHit: number
+  avatarId: string
+  gender: AvatarGender
 }
 
 type Difficulty = keyof typeof DIFFICULTY_CONFIGS
@@ -61,24 +65,24 @@ export default function MinesweeperBattle() {
   const [timer, setTimer] = useState(0)
 
   // 玩家设置
-  const [players] = useState<Player[]>([
-    {
-      id: 1,
-      name: t('minesweeper.players.player1', '玩家1'),
-      color: '#5E5CE6',
-      iconType: 'airplane',
-      cellsRevealed: 0,
-      minesHit: 0,
-    },
-    {
-      id: 2,
-      name: t('minesweeper.players.player2', '玩家2'),
-      color: '#FF6482',
-      iconType: 'helicopter',
-      cellsRevealed: 0,
-      minesHit: 0,
-    },
-  ])
+  const [players] = useState<Player[]>(() => {
+    return Array.from({ length: 2 }, (_, index) => {
+      // 随机分配性别：第一个玩家随机，第二个玩家随机
+      const gender: AvatarGender = !index ? 'man' : 'woman'
+      const randomAvatar = getRandomAvatarByGender(gender)
+
+      return {
+        id: index + 1,
+        name: t(`minesweeper.players.player${index + 1}`, `玩家${index + 1}`),
+        color: PLAYER_COLORS[index],
+        iconType: 'airplane',
+        cellsRevealed: 0,
+        minesHit: 0,
+        avatarId: randomAvatar.id,
+        gender: gender,
+      }
+    })
+  })
 
   // 任务弹窗状态
   const [showTaskModal, setShowTaskModal] = useState(false)
@@ -504,7 +508,7 @@ export default function MinesweeperBattle() {
                     },
                   ]}
                 >
-                  <PlayerAvatar iconType={player.iconType} color={player.color} size={32} />
+                  <PlayerAvatar avatarId={player.avatarId} color={player.color} size={32} />
                   <View style={styles.playerInfo}>
                     <Text style={[styles.playerName, { color: colors.homeCardTitle }]}>
                       {player.name}

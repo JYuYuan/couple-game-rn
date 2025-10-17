@@ -2,6 +2,8 @@ export type ThemeMode = 'system' | 'light' | 'dark'
 
 export type LanguageMode = 'zh' | 'en' | 'ja'
 
+export type AvatarGender = 'man' | 'woman'
+
 export interface SoundSettings {
   globalMute: boolean
   volume: number

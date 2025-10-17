@@ -735,7 +735,7 @@ export default function FlyingChessGame() {
 
                   {/* 玩家头像 */}
                   <View style={[styles.playerAvatarContainer, { borderColor: player.color }]}>
-                    <PlayerIcon see={player.iconType} />
+                    <PlayerIcon avatarId={player.avatar} />
                   </View>
 
                   {/* 玩家信息 */}

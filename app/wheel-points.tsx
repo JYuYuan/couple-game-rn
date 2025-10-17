@@ -307,7 +307,7 @@ export default function WheelPointsGame() {
                       },
                     ]}
                   >
-                    <PlayerAvatar iconType={player.iconType} color={player.color} size={40} />
+                    <PlayerAvatar avatarId={player.avatarId || ''} color={player.color} size={40} />
                     <View style={styles.playerInfo}>
                       <Text style={[styles.playerName, { color: colors.homeCardTitle }]}>
                         {player.name}

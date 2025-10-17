@@ -56,6 +56,8 @@ export interface NetworkPlayer extends Omit<GamePlayer, 'id'> {
   lastSeen: number // 统一使用时间戳
   lastActivity?: number // 最后活跃时间
   socketId?: string // 在线模式的 socket ID
+  avatar?: string // 头像ID
+  gender?: 'man' | 'woman' // 性别
 }
 
 // 在线玩家接口
@@ -127,12 +129,16 @@ export interface CreateRoomData {
   maxPlayers: number
   gameType: 'fly' | 'wheel' | 'minesweeper'
   taskSet?: TaskSet | null
+  avatar?: string // 头像ID
+  gender?: 'man' | 'woman' // 性别
 }
 
 // 加入房间数据
 export interface JoinRoomData {
   roomId: string
   playerName: string
+  avatar?: string // 头像ID
+  gender?: 'man' | 'woman' // 性别
 }
 
 // 离开房间数据
@@ -228,6 +234,8 @@ export interface JoinLANRoomData extends Omit<JoinRoomData, 'roomId'> {
   hostIP: string
   roomId: string
   networkPassword?: string
+  avatar?: string // 头像ID
+  gender?: 'man' | 'woman' // 性别
 }
 
 // 房间发现数据
