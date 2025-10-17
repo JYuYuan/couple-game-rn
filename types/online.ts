@@ -48,10 +48,13 @@ export interface GameState {
 // 网络游戏玩家接口（扩展基础 GamePlayer，使用 string 类型的 ID）
 export interface NetworkPlayer extends Omit<GamePlayer, 'id'> {
   id: string // 网络模式使用 string ID
+  roomId: string | null // 所在房间ID
+  playerId: string // 玩家唯一标识符
   isHost: boolean
   isConnected: boolean
   joinedAt: number // 统一使用时间戳
   lastSeen: number // 统一使用时间戳
+  lastActivity?: number // 最后活跃时间
   socketId?: string // 在线模式的 socket ID
 }
 

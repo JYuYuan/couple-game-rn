@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { socketService } from '@/services/socket-service'
-import { webrtcService } from '@/services/webrtc-service'
+import { lanServerManager } from '@/services/lan-server-manager'
 import {
   ConnectionType,
   CreateLANRoomData,
@@ -74,12 +74,9 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [connectionError, setConnectionError] = useState(socketService.getConnectionError())
   const { currentRoom, setCurrentRoom } = useRoomStore()
 
-  // 局域网相关状态
+  // 连接类型状态
   const [connectionType, setConnectionType] = useState<ConnectionType>('online')
-  const [currentLANRoom, setCurrentLANRoom] = useState(webrtcService?.getCurrentRoom())
-  const [webrtcConnections, setWebrtcConnections] = useState<Map<string, WebRTCConnectionState>>(
-    new Map(),
-  )
+  const [webrtcConnections] = useState<Map<string, WebRTCConnectionState>>(new Map())
 
   // 监听 SocketService 的状态变化 - 只注册一次
   useEffect(() => {
@@ -99,7 +96,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setConnectionError(socketService.getConnectionError())
     }
 
-    const handleCurrentRoomChanged = (room: OnlineRoom | null) => {
+    const handleCurrentRoomChanged = (room: OnlineRoom | LANRoom | null) => {
       console.log('SocketProvider: Room changed', room)
       if (!room) return setCurrentRoom(null)
       room.isHost = room.hostId === playerId
@@ -142,64 +139,6 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   }, [playerId, setCurrentRoom])
 
-  // 监听 WebRTC 服务的状态变化
-  useEffect(() => {
-    const handleRoomCreated = (room: LANRoom) => {
-      console.log('SocketProvider: WebRTC room created:', room.id)
-      setCurrentLANRoom(room)
-      setConnectionType('lan')
-    }
-
-    const handleRoomUpdated = (room: LANRoom) => {
-      console.log('SocketProvider: WebRTC room updated:', room.id)
-      setCurrentLANRoom(room)
-    }
-
-    const handleRoomJoined = (room: LANRoom) => {
-      console.log('SocketProvider: Joined WebRTC room:', room.id)
-      setCurrentLANRoom(room)
-      setConnectionType('lan')
-    }
-
-    const handleRoomLeft = () => {
-      console.log('SocketProvider: Left WebRTC room')
-      setCurrentLANRoom(null)
-      setConnectionType('online')
-      setWebrtcConnections(new Map())
-    }
-
-    const handleConnectionStateChanged = (peerId: string, state: WebRTCConnectionState) => {
-      console.log('SocketProvider: WebRTC connection state changed:', peerId, state)
-      setWebrtcConnections((prev) => {
-        const newMap = new Map(prev)
-        newMap.set(peerId, state)
-        return newMap
-      })
-    }
-
-    const handlePlayerJoined = (player: any) => {
-      console.log('SocketProvider: Player joined WebRTC room:', player.name)
-    }
-
-    // 注册 WebRTC 事件监听器
-    webrtcService?.on('roomCreated', handleRoomCreated)
-    webrtcService?.on('roomUpdated', handleRoomUpdated)
-    webrtcService?.on('roomJoined', handleRoomJoined)
-    webrtcService?.on('roomLeft', handleRoomLeft)
-    webrtcService?.on('connectionStateChanged', handleConnectionStateChanged)
-    webrtcService?.on('playerJoined', handlePlayerJoined)
-
-    return () => {
-      // 清理 WebRTC 事件监听器
-      webrtcService?.off('roomCreated', handleRoomCreated)
-      webrtcService?.off('roomUpdated', handleRoomUpdated)
-      webrtcService?.off('roomJoined', handleRoomJoined)
-      webrtcService?.off('roomLeft', handleRoomLeft)
-      webrtcService?.off('connectionStateChanged', handleConnectionStateChanged)
-      webrtcService?.off('playerJoined', handlePlayerJoined)
-    }
-  }, [])
-
   // 包装的方法
   const connect = useCallback(() => {
     if (!socketService.getIsConnected()) socketService.connect(playerId)
@@ -226,124 +165,204 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [])
 
   const leaveRoom = useCallback(() => {
-    if (connectionType === 'lan') {
-      webrtcService?.leaveRoom()
-    } else {
-      socketService.leaveRoom()
-    }
-  }, [connectionType])
+    socketService.leaveRoom()
+  }, [])
 
   const resetRoomState = useCallback(() => {
-    if (connectionType === 'lan') {
-      webrtcService?.leaveRoom()
-    } else {
-      socketService.resetRoomState()
-    }
-  }, [connectionType])
+    socketService.resetRoomState()
+  }, [])
 
   // 局域网房间操作
-  const createLANRoom = useCallback((data: CreateLANRoomData): Promise<LANRoom> => {
-    return webrtcService?.createLANRoom(data)
-  }, [])
+  const createLANRoom = useCallback(
+    async (data: CreateLANRoomData): Promise<LANRoom> => {
+      try {
+        // 获取本地IP
+        const localIP = await lanServerManager.getLocalIP()
+        console.log('创建局域网房间，本地IP:', localIP)
 
-  const joinLANRoom = useCallback((data: JoinLANRoomData): Promise<LANRoom> => {
-    return webrtcService?.joinLANRoom(data)
-  }, [])
+        // 连接到本地服务器
+        socketService.connect(playerId, `http://${localIP}:3001`)
+
+        // 等待连接成功
+        await new Promise<void>((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            reject(new Error('连接服务器超时'))
+          }, 10000)
+
+          const handleConnect = () => {
+            clearTimeout(timeout)
+            socketService.off('connect', handleConnect)
+            socketService.off('connect_error', handleError)
+            resolve()
+          }
+
+          const handleError = (error: any) => {
+            clearTimeout(timeout)
+            socketService.off('connect', handleConnect)
+            socketService.off('connect_error', handleError)
+            reject(error)
+          }
+
+          // 如果已经连接,直接resolve
+          if (socketService.getIsConnected()) {
+            clearTimeout(timeout)
+            resolve()
+            return
+          }
+
+          socketService.on('connect', handleConnect)
+          socketService.on('connect_error', handleError)
+        })
+
+        // 标记为局域网模式
+        setConnectionType('lan')
+
+        // 创建房间(使用统一的API)
+        await socketService.createRoom(data)
+
+        // 等待房间创建成功
+        return new Promise<LANRoom>((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            reject(new Error('创建房间超时'))
+          }, 10000)
+
+          const handleRoomUpdate = (room: OnlineRoom | LANRoom | null) => {
+            if (room) {
+              clearTimeout(timeout)
+              socketService.off('currentRoomChanged', handleRoomUpdate)
+              resolve(room as LANRoom)
+            }
+          }
+
+          socketService.on('currentRoomChanged', handleRoomUpdate)
+        })
+      } catch (error: any) {
+        console.error('创建局域网房间失败:', error)
+        setConnectionType('online')
+        throw error
+      }
+    },
+    [playerId],
+  )
+
+  const joinLANRoom = useCallback(
+    async (data: JoinLANRoomData): Promise<LANRoom> => {
+      try {
+        console.log('加入局域网房间:', data.hostIP, data.roomId)
+
+        // 连接到指定的服务器
+        socketService.connect(playerId, `http://${data.hostIP}:3001`)
+
+        // 等待连接成功
+        await new Promise<void>((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            reject(new Error('连接服务器超时'))
+          }, 10000)
+
+          const handleConnect = () => {
+            clearTimeout(timeout)
+            socketService.off('connect', handleConnect)
+            socketService.off('connect_error', handleError)
+            resolve()
+          }
+
+          const handleError = (error: any) => {
+            clearTimeout(timeout)
+            socketService.off('connect', handleConnect)
+            socketService.off('connect_error', handleError)
+            reject(error)
+          }
+
+          // 如果已经连接,直接resolve
+          if (socketService.getIsConnected()) {
+            clearTimeout(timeout)
+            resolve()
+            return
+          }
+
+          socketService.on('connect', handleConnect)
+          socketService.on('connect_error', handleError)
+        })
+
+        // 标记为局域网模式
+        setConnectionType('lan')
+
+        // 加入房间(使用统一的API)
+        await socketService.joinRoom(data)
+
+        // 等待加入成功
+        return new Promise<LANRoom>((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            reject(new Error('加入房间超时'))
+          }, 10000)
+
+          const handleRoomUpdate = (room: OnlineRoom | LANRoom | null) => {
+            if (room) {
+              clearTimeout(timeout)
+              socketService.off('currentRoomChanged', handleRoomUpdate)
+              resolve(room as LANRoom)
+            }
+          }
+
+          socketService.on('currentRoomChanged', handleRoomUpdate)
+        })
+      } catch (error: any) {
+        console.error('加入局域网房间失败:', error)
+        setConnectionType('online')
+        throw error
+      }
+    },
+    [playerId],
+  )
 
   const switchToOnlineMode = useCallback(() => {
-    if (connectionType === 'lan') {
-      webrtcService?.leaveRoom()
+    console.log('切换到在线模式')
+    // 断开当前连接
+    if (socketService.getIsConnected()) {
+      socketService.disconnect()
     }
     setConnectionType('online')
-  }, [connectionType])
+    // 重新连接到默认在线服务器
+    socketService.connect(playerId)
+  }, [playerId])
 
   const switchToLANMode = useCallback(() => {
-    if (connectionType === 'online' && currentRoom) {
+    console.log('切换到局域网模式')
+    if (currentRoom) {
       socketService.leaveRoom()
     }
     setConnectionType('lan')
-  }, [connectionType, currentRoom])
+  }, [currentRoom])
 
-  // 游戏事件
-  const startGame = useCallback(
-    (data: any) => {
-      console.log('🎮 startGame called with data:', data)
+  // 游戏事件 - 统一使用socketService
+  const startGame = useCallback((data: any) => {
+    console.log('🎮 startGame called with data:', data)
+    socketService.startGame(data)
+  }, [])
 
-      if (connectionType === 'lan') {
-        webrtcService?.startGame(data)
-        return
-      }
+  const rollDice = useCallback((data: any, callback: any) => {
+    socketService.rollDice(data, callback)
+  }, [])
 
-      socketService.startGame(data)
-    },
-    [connectionType],
-  )
+  const completeTask = useCallback((data: any) => {
+    socketService.completeTask(data)
+  }, [])
 
-  const rollDice = useCallback(
-    (data: any, callback: any) => {
-      if (connectionType === 'lan') {
-        webrtcService?.rollDice(data, callback)
-      } else {
-        socketService.rollDice(data, callback)
-      }
-    },
-    [connectionType],
-  )
+  const emit = useCallback((event: string, data?: any) => {
+    socketService.socketEmit(event, data)
+  }, [])
 
-  const completeTask = useCallback(
-    (data: any) => {
-      if (connectionType === 'lan') {
-        webrtcService?.completeTask(data)
-      } else {
-        socketService.completeTask(data)
-      }
-    },
-    [connectionType],
-  )
+  const on = useCallback((event: string, callback: Function) => {
+    socketService.on(event, callback)
+  }, [])
 
-  const emit = useCallback(
-    (event: string, data?: any) => {
-      if (connectionType === 'lan') {
-        console.warn('Custom emit not supported in LAN mode:', event)
-      } else {
-        socketService.socketEmit(event, data)
-      }
-    },
-    [connectionType],
-  )
+  const off = useCallback((event: string, callback: Function) => {
+    socketService.off(event, callback)
+  }, [])
 
-  const on = useCallback(
-    (event: string, callback: Function) => {
-      if (connectionType === 'lan') {
-        console.warn('Custom on not supported in LAN mode:', event)
-      } else {
-        socketService.on(event, callback)
-      }
-    },
-    [connectionType],
-  )
-
-  const off = useCallback(
-    (event: string, callback: Function) => {
-      if (connectionType === 'lan') {
-        console.warn('Custom off not supported in LAN mode:', event)
-      } else {
-        socketService.off(event, callback)
-      }
-    },
-    [connectionType],
-  )
-
-  const runActions = useCallback(
-    (event: string, data: any, callback?: (res: any) => void) => {
-      if (connectionType === 'lan') {
-        console.warn('Custom runActions not supported in LAN mode:', event)
-      } else {
-        socketService.runActions(event, data, callback)
-      }
-    },
-    [connectionType],
-  )
+  const runActions = useCallback((event: string, data: any, callback?: (res: any) => void) => {
+    socketService.runActions(event, data, callback)
+  }, [])
 
   // 初始连接逻辑 - 只在首次加载时连接一次
   useEffect(() => {
@@ -366,13 +385,13 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const value: SocketContextValue = {
     // 连接状态
-    isConnected: connectionType === 'lan' ? currentLANRoom !== null : isConnected,
+    isConnected,
     connectionError,
-    currentRoom: connectionType === 'lan' ? currentLANRoom : currentRoom,
+    currentRoom,
 
     // 连接类型和状态
     connectionType,
-    currentLANRoom,
+    currentLANRoom: connectionType === 'lan' ? (currentRoom as LANRoom) : null,
     webrtcConnections,
 
     // 连接管理
@@ -390,10 +409,10 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     switchToOnlineMode,
     switchToLANMode,
 
-    // 房间发现
-    getDiscoveredRooms: webrtcService?.getDiscoveredRooms,
-    startRoomScan: webrtcService?.startRoomScan,
-    stopRoomScan: webrtcService?.stopRoomScan,
+    // 房间发现 - 暂未实现
+    getDiscoveredRooms: undefined,
+    startRoomScan: undefined,
+    stopRoomScan: undefined,
 
     // 通用房间操作
     leaveRoom,
@@ -411,11 +430,8 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     off,
 
     // 实用函数
-    isHost: connectionType === 'lan' ? webrtcService?.isHost() : socketService.isHost(playerId),
-    currentPlayer:
-      connectionType === 'lan'
-        ? currentLANRoom?.players.find((p: any) => p.id === webrtcService?.getMyPeerId())
-        : currentUser,
+    isHost: socketService.isHost(playerId),
+    currentPlayer: currentUser,
   }
 
   return <SocketContext.Provider value={value}>{children}</SocketContext.Provider>

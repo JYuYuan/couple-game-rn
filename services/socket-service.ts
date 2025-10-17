@@ -10,8 +10,15 @@ import {
   TaskCompleteData,
 } from '@/types/online'
 import { showError } from '@/utils/toast'
+import { p2pServer } from './p2p-server'
+import { p2pClient } from './p2p-client'
+import { webrtcSignaling } from './webrtc-signaling'
+import { RTCIceCandidate, RTCSessionDescription } from 'react-native-webrtc'
 
-const SOCKET_URL = __DEV__ ? 'http://localhost:3001' : 'https://your-production-server.com'
+const DEFAULT_SOCKET_URL = __DEV__ ? 'http://localhost:3001' : 'https://your-production-server.com'
+
+// 连接模式
+type ConnectionMode = 'socket' | 'p2p-server' | 'p2p-client'
 
 // 单例 Socket 服务
 class SocketService {
@@ -24,6 +31,8 @@ class SocketService {
   private connecting: boolean = false // 添加连接状态标识
   private currentPlayerId: string = '' // 保存当前玩家ID
   private eventListenersSetup: boolean = false // 追踪是否已设置事件监听器
+  private serverURL: string = DEFAULT_SOCKET_URL // 当前服务器URL
+  private connectionMode: ConnectionMode = 'socket' // 连接模式
 
   private constructor() {}
 
@@ -49,6 +58,239 @@ class SocketService {
 
   getSocket(): Socket | null {
     return this.socket
+  }
+
+  // 获取当前服务器URL
+  getServerURL(): string {
+    return this.serverURL
+  }
+
+  // 设置服务器URL
+  setServerURL(url: string): void {
+    this.serverURL = url
+    console.log('SocketService: Server URL updated to:', url)
+  }
+
+  // 获取连接模式
+  getConnectionMode(): ConnectionMode {
+    return this.connectionMode
+  }
+
+  /**
+   * 启动 P2P 服务器模式 (作为房主)
+   */
+  async startP2PServer(playerId: string): Promise<void> {
+    console.log('SocketService: Starting P2P Server mode')
+    this.connectionMode = 'p2p-server'
+    this.currentPlayerId = playerId
+
+    // 启动 P2P 服务器
+    await p2pServer.start(playerId)
+
+    // 设置事件转发
+    this.setupP2PServerListeners()
+
+    // 初始化 WebRTC 信令
+    webrtcSignaling.initialize(playerId)
+    this.setupWebRTCSignalingListeners()
+
+    this.isConnected = true
+    this.emit('connect')
+
+    console.log('✅ P2P Server mode started')
+  }
+
+  /**
+   * 连接到 P2P 服务器 (作为客人)
+   */
+  async connectToP2PServer(playerId: string, hostPlayerId: string): Promise<void> {
+    console.log(`SocketService: Connecting to P2P Server (host: ${hostPlayerId})`)
+    this.connectionMode = 'p2p-client'
+    this.currentPlayerId = playerId
+
+    // 初始化 WebRTC 信令
+    webrtcSignaling.initialize(playerId)
+
+    // 等待 offer 从房主
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error('等待 WebRTC offer 超时'))
+      }, 30000)
+
+      webrtcSignaling.on('offer', async (data: any) => {
+        try {
+          clearTimeout(timeout)
+
+          const offer = new RTCSessionDescription(data.data)
+          const answer = await p2pClient.connect(playerId, offer)
+
+          // 发送 answer 给房主
+          webrtcSignaling.sendAnswer(hostPlayerId, answer)
+
+          // 设置事件转发
+          this.setupP2PClientListeners()
+
+          this.isConnected = true
+          this.emit('connect')
+
+          console.log('✅ Connected to P2P Server')
+          resolve()
+        } catch (error) {
+          console.error('Error connecting to P2P Server:', error)
+          reject(error)
+        }
+      })
+
+      // 设置 ICE candidate 监听
+      webrtcSignaling.on('ice-candidate', async (data: any) => {
+        const candidate = new RTCIceCandidate(data.data)
+        await p2pClient.addIceCandidate(candidate)
+      })
+    })
+  }
+
+  /**
+   * 设置 P2P 服务器事件监听
+   */
+  private setupP2PServerListeners(): void {
+    // 转发 P2P 服务器的事件到本地监听器
+    p2pServer.on('room:update', (room: OnlineRoom) => {
+      this.setCurrentRoom(room, 'p2p-server')
+    })
+
+    p2pServer.on('room:destroyed', (data: any) => {
+      this.setCurrentRoom(null, 'p2p-server destroyed')
+      this.emit('room:destroyed', data)
+    })
+
+    p2pServer.on('game:dice', (data: any) => {
+      this.emit('game:dice', data)
+    })
+
+    p2pServer.on('game:task', (data: any) => {
+      this.emit('game:task', data)
+    })
+
+    p2pServer.on('game:victory', (data: any) => {
+      this.emit('game:victory', data)
+    })
+
+    p2pServer.on('game:move', (data: any) => {
+      this.emit('game:move', data)
+    })
+
+    p2pServer.on('game:next', (data: any) => {
+      this.emit('game:next', data)
+    })
+  }
+
+  /**
+   * 设置 P2P 客户端事件监听
+   */
+  private setupP2PClientListeners(): void {
+    // 转发 P2P 客户端的事件到本地监听器
+    p2pClient.on('room:update', (room: OnlineRoom) => {
+      this.setCurrentRoom(room, 'p2p-client')
+    })
+
+    p2pClient.on('room:destroyed', (data: any) => {
+      this.setCurrentRoom(null, 'p2p-client destroyed')
+      this.emit('room:destroyed', data)
+    })
+
+    p2pClient.on('game:dice', (data: any) => {
+      this.emit('game:dice', data)
+    })
+
+    p2pClient.on('game:task', (data: any) => {
+      this.emit('game:task', data)
+    })
+
+    p2pClient.on('game:victory', (data: any) => {
+      this.emit('game:victory', data)
+    })
+
+    p2pClient.on('game:move', (data: any) => {
+      this.emit('game:move', data)
+    })
+
+    p2pClient.on('game:next', (data: any) => {
+      this.emit('game:next', data)
+    })
+
+    p2pClient.on('connect', () => {
+      this.isConnected = true
+      this.emit('connect')
+    })
+
+    p2pClient.on('disconnect', () => {
+      this.isConnected = false
+      this.emit('disconnect')
+    })
+
+    p2pClient.on('error', (error: any) => {
+      this.connectionError = error.message
+      this.emit('error', error)
+    })
+  }
+
+  /**
+   * 设置 WebRTC 信令监听 (房主端)
+   */
+  private setupWebRTCSignalingListeners(): void {
+    // 房主接收客人的 answer
+    webrtcSignaling.on('answer', async (data: any) => {
+      console.log(`Received answer from ${data.from}`)
+      const answer = new RTCSessionDescription(data.data)
+      await p2pServer.handleAnswer(data.from, answer)
+    })
+
+    // 房主接收 ICE candidates
+    webrtcSignaling.on('ice-candidate', async (data: any) => {
+      console.log(`Received ICE candidate from ${data.from}`)
+      const candidate = new RTCIceCandidate(data.data)
+      await p2pServer.addIceCandidate(data.from, candidate)
+    })
+
+    // 转发 P2P 服务器的 ICE candidates
+    p2pServer.on('ice-candidate', (data: any) => {
+      webrtcSignaling.sendIceCandidate(data.targetPlayerId, data.candidate)
+    })
+  }
+
+  /**
+   * 邀请玩家加入 P2P 房间 (房主调用)
+   */
+  async invitePlayerToP2P(targetPlayerId: string): Promise<void> {
+    if (this.connectionMode !== 'p2p-server') {
+      throw new Error('Only P2P server can invite players')
+    }
+
+    console.log(`Inviting ${targetPlayerId} to P2P room`)
+
+    // 创建 offer 并发送给目标玩家
+    const offer = await p2pServer.createPeerConnection(targetPlayerId)
+    webrtcSignaling.sendOffer(targetPlayerId, offer)
+  }
+
+  /**
+   * 停止 P2P 模式
+   */
+  async stopP2P(): Promise<void> {
+    console.log('SocketService: Stopping P2P mode')
+
+    if (this.connectionMode === 'p2p-server') {
+      await p2pServer.stop()
+    } else if (this.connectionMode === 'p2p-client') {
+      p2pClient.disconnect()
+    }
+
+    webrtcSignaling.cleanup()
+    this.connectionMode = 'socket'
+    this.isConnected = false
+    this.currentRoom = null
+
+    console.log('✅ P2P mode stopped')
   }
 
   // 检查真实的连接状态
@@ -138,7 +380,17 @@ class SocketService {
   }
 
   // 连接管理
-  connect(playerId: string): void {
+  connect(playerId: string, serverURL?: string): void {
+    // 如果提供了新的serverURL，更新它
+    if (serverURL) {
+      // 如果URL变化了，需要断开现有连接
+      if (this.serverURL !== serverURL && this.socket) {
+        console.log('SocketService: Server URL changed, disconnecting existing connection')
+        this.disconnect()
+      }
+      this.serverURL = serverURL
+    }
+
     // 如果已经有socket实例且已连接，只需要更新playerId
     if (this.socket?.connected) {
       console.log('SocketService: Already connected:', this.socket.id)
@@ -169,11 +421,14 @@ class SocketService {
     this.connecting = true
     this.currentPlayerId = playerId // 保存当前玩家ID
 
-    this.socket = io(SOCKET_URL, {
+    console.log(`SocketService: Connecting to ${this.serverURL}`)
+
+    this.socket = io(this.serverURL, {
       reconnection: true, // 启用重连
       reconnectionDelay: 1000, // 重连延迟 1 秒
       reconnectionDelayMax: 5000, // 最大重连延迟 5 秒
       reconnectionAttempts: 5, // 重连尝试次数
+      transports: ['websocket', 'polling'], // 支持多种传输方式
       query: {
         playerId: playerId,
       },
@@ -444,6 +699,13 @@ class SocketService {
 
   // 房间操作
   async createRoom(data: CreateRoomData): Promise<void> {
+    // P2P 模式:使用 P2P 服务器
+    if (this.connectionMode === 'p2p-server') {
+      await p2pServer.handleCreateRoom(this.currentPlayerId, data as any)
+      return
+    }
+
+    // Socket 模式:使用 Socket.IO
     if (!this.socket) {
       const errorMsg = 'Socket未初始化'
       showError('创建房间失败', errorMsg)
@@ -464,6 +726,13 @@ class SocketService {
   }
 
   async joinRoom(data: JoinRoomData): Promise<void> {
+    // P2P 模式:使用 P2P 客户端
+    if (this.connectionMode === 'p2p-client') {
+      await p2pClient.joinRoom(data)
+      return
+    }
+
+    // Socket 模式:使用 Socket.IO
     if (!this.socket) {
       const errorMsg = 'Socket未初始化'
       showError('加入房间失败', errorMsg)
@@ -484,6 +753,17 @@ class SocketService {
   }
 
   leaveRoom(): void {
+    // P2P 模式
+    if (this.connectionMode === 'p2p-client') {
+      p2pClient.leaveRoom()
+      return
+    } else if (this.connectionMode === 'p2p-server') {
+      // 房主离开会停止整个 P2P 服务器
+      this.stopP2P()
+      return
+    }
+
+    // Socket 模式
     if (this.socket && this.currentRoom) {
       this.socket.emit('room:leave', { roomId: this.currentRoom.id })
       this.setCurrentRoom(null, 'leaveRoom')
@@ -498,6 +778,16 @@ class SocketService {
 
   // 游戏事件
   startGame(data: GameStartData): void {
+    // P2P 模式
+    if (this.connectionMode === 'p2p-server') {
+      p2pServer.handleStartGame(this.currentPlayerId, data as any)
+      return
+    } else if (this.connectionMode === 'p2p-client') {
+      p2pClient.startGame(data)
+      return
+    }
+
+    // Socket 模式
     this.socketEmit('game:start', data)
   }
 
@@ -511,6 +801,19 @@ class SocketService {
 
   runActions(type: string, data: any, callback?: (res: any) => void): void {
     console.log('游戏事件：', type, data)
+
+    // P2P 模式
+    if (this.connectionMode === 'p2p-client') {
+      p2pClient.gameAction({ type, ...data } as any, callback)
+      return
+    } else if (this.connectionMode === 'p2p-server') {
+      p2pServer.handleGameAction(this.currentPlayerId, { type, ...data } as any).then((result) => {
+        if (callback) callback(result)
+      })
+      return
+    }
+
+    // Socket 模式
     this.socketEmit('game:action', { type, ...data }, callback)
   }
 
