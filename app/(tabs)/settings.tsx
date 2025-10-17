@@ -9,6 +9,7 @@ import {
   StyleSheet,
   Switch,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native'
@@ -30,14 +31,18 @@ const Settings: React.FC = () => {
     themeMode,
     languageMode,
     soundSettings,
+    networkSettings,
     setThemeMode,
     setLanguageMode,
     setSoundSettings,
+    setNetworkSettings,
   } = useSettingsStore()
   const { t, i18n } = useTranslation()
   const [showLanguageModal, setShowLanguageModal] = useState(false)
   const [showThemeModal, setShowThemeModal] = useState(false)
+  const [showSocketUrlModal, setShowSocketUrlModal] = useState(false)
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false)
+  const [socketUrlInput, setSocketUrlInput] = useState(networkSettings.socketUrl)
 
   // 获取应用信息
   const appInfo = getAppInfo()
@@ -107,7 +112,7 @@ const Settings: React.FC = () => {
                 ]
               : [{ text: t('common.ok', '确定') }],
           )
-        } catch (error) {
+        } catch {
           Alert.alert(
             t('settings.updateCheck.alertTitle', '检查更新'),
             t('settings.updateCheck.error', '检查更新失败，请稍后再试'),
@@ -156,6 +161,64 @@ const Settings: React.FC = () => {
       ],
     },
     {
+      title: t('settings.sections.network', '网络设置'),
+      items: [
+        {
+          icon: 'cloud',
+          label: t('settings.network.enabled', '网络模式'),
+          value: '',
+          type: 'switch',
+          switchValue: networkSettings.enabled,
+          onPress: () => {
+            setNetworkSettings({ enabled: !networkSettings.enabled })
+          },
+        },
+        ...(networkSettings.enabled
+          ? [
+              {
+                icon: 'server',
+                label: t('settings.network.socketUrl', 'Socket 地址'),
+                value: networkSettings.socketUrl,
+                onPress: () => {
+                  setSocketUrlInput(networkSettings.socketUrl)
+                  setShowSocketUrlModal(true)
+                },
+              },
+            ]
+          : []),
+        {
+          icon: 'wifi',
+          label: t('settings.network.lanMode', '局域网模式'),
+          value: '',
+          type: 'switch',
+          switchValue: networkSettings.lanMode,
+          onPress: () => {
+            setNetworkSettings({ lanMode: !networkSettings.lanMode })
+          },
+        },
+        ...(networkSettings.lanMode
+          ? [
+              {
+                icon: 'information-circle',
+                label: t('settings.lan.label', '本机IP地址'),
+                disabled: fetchIp.loading,
+                value: fetchIp.loading
+                  ? t('settings.lan.loading', '获取中...')
+                  : fetchIp.data,
+                onPress: () => {
+                  if (!fetchIp.data) return
+                  Clipboard.setStringAsync(fetchIp.data)
+                  Alert.alert(
+                    t('common.success', '成功'),
+                    t('settings.lan.copied', 'IP地址已复制到剪贴板'),
+                  )
+                },
+              },
+            ]
+          : []),
+      ],
+    },
+    {
       title: t('settings.sections.gameSettings', '游戏设置'),
       items: [
         {
@@ -180,25 +243,6 @@ const Settings: React.FC = () => {
         },
       ],
     },
-    ...(Platform.OS !== 'web'
-      ? [
-          {
-            title: t('settings.lan.setting', '局网设置'),
-            items: [
-              {
-                icon: 'information-circle',
-                label: t('settings.lan.label', 'IP地址'),
-                disabled: fetchIp.loading,
-                value: fetchIp.loading ? t('settings.lan.loading', '获取中...') : fetchIp.data,
-                onPress: () => {
-                  if (!fetchIp.data) return
-                  Clipboard.setStringAsync(fetchIp.data)
-                },
-              },
-            ],
-          },
-        ]
-      : []),
     {
       title: t('settings.sections.about', '关于'),
       items: [
@@ -406,6 +450,80 @@ const Settings: React.FC = () => {
           </View>
         </TouchableOpacity>
       </Modal>
+
+      {/* Socket URL 设置模态框 */}
+      <Modal
+        visible={showSocketUrlModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowSocketUrlModal(false)}
+      >
+        <TouchableOpacity
+          style={[styles.modalOverlay, { backgroundColor: modalOverlay }]}
+          activeOpacity={1}
+          onPress={() => setShowSocketUrlModal(false)}
+        >
+          <View
+            style={[styles.modalContent, { backgroundColor: modalBg }]}
+            onStartShouldSetResponder={() => true}
+          >
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: textColor }]}>
+                {t('settings.network.socketUrl', 'Socket 地址')}
+              </Text>
+              <TouchableOpacity
+                onPress={() => setShowSocketUrlModal(false)}
+                style={styles.modalCloseButton}
+              >
+                <Ionicons name="close" size={24} color={secondaryText} />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.modalBody}>
+              <Text style={[styles.modalDescription, { color: secondaryText }]}>
+                {t(
+                  'settings.network.socketUrlDescription',
+                  '请输入 Socket 服务器地址（例如: http://192.168.1.100:3001）',
+                )}
+              </Text>
+              <TextInput
+                style={[styles.input, { color: textColor, borderColor: cardBorder }]}
+                value={socketUrlInput}
+                onChangeText={setSocketUrlInput}
+                placeholder="http://localhost:3001"
+                placeholderTextColor={secondaryText}
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="url"
+              />
+            </View>
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonCancel, { borderColor: cardBorder }]}
+                onPress={() => setShowSocketUrlModal(false)}
+              >
+                <Text style={[styles.modalButtonText, { color: secondaryText }]}>
+                  {t('common.cancel', '取消')}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonConfirm, { backgroundColor: accentColor }]}
+                onPress={() => {
+                  setNetworkSettings({ socketUrl: socketUrlInput })
+                  setShowSocketUrlModal(false)
+                  Alert.alert(
+                    t('common.success', '成功'),
+                    t('settings.network.socketUrlSaved', 'Socket 地址已保存'),
+                  )
+                }}
+              >
+                <Text style={[styles.modalButtonText, { color: '#fff' }]}>
+                  {t('common.confirm', '确认')}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   )
 }
@@ -535,5 +653,47 @@ const styles = StyleSheet.create({
   },
   modalOptionText: {
     fontSize: 16,
+  },
+  modalBody: {
+    padding: 20,
+  },
+  modalDescription: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  input: {
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 15,
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalButtonCancel: {
+    borderWidth: 1,
+  },
+  modalButtonConfirm: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  modalButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
   },
 })

@@ -62,14 +62,9 @@ export const OnlineRoomModal: React.FC<OnlineRoomModalProps> = ({
   const hasNavigatedRef = useRef(false)
 
   // 检查平台是否支持局域网功能
-  const isLANSupported = Platform.OS !== 'web'
-
-  // 确保 Web 平台不会停留在局域网模式
-  useEffect(() => {
-    if (!isLANSupported && connectionMode === 'lan') {
-      setConnectionMode('online')
-    }
-  }, [isLANSupported, connectionMode])
+  // Web 平台可以使用局域网模式，但不能创建房间
+  const isLANSupported = true
+  const canCreateLANRoom = Platform.OS !== 'web'
 
   // 根据游戏类型和任务集设置默认房间名
   useEffect(() => {
@@ -119,10 +114,10 @@ export const OnlineRoomModal: React.FC<OnlineRoomModalProps> = ({
     }
 
     // 检查 Web 平台是否尝试创建局域网房间
-    if (connectionMode === 'lan' && !isLANSupported) {
+    if (connectionMode === 'lan' && !canCreateLANRoom) {
       showError(
         t('common.error', '错误'),
-        t('online.lan.webNotSupported', 'Web平台不支持局域网功能，请使用移动应用'),
+        t('online.lan.webNotSupported', 'Web平台不支持创建局域网房间，请使用移动应用'),
       )
       return
     }
@@ -137,7 +132,7 @@ export const OnlineRoomModal: React.FC<OnlineRoomModalProps> = ({
         taskSet: taskSet,
       }
 
-      if (connectionMode === 'lan' && isLANSupported) {
+      if (connectionMode === 'lan' && canCreateLANRoom) {
         // 切换到局域网模式并创建房间
         await socket.switchToLANMode()
         await socket.createLANRoom(createData)
@@ -391,19 +386,8 @@ export const OnlineRoomModal: React.FC<OnlineRoomModalProps> = ({
               style={[
                 styles.modeTab,
                 connectionMode === 'lan' && { backgroundColor: colors.settingsAccent + '20' },
-                !isLANSupported && { opacity: 0.5 },
               ]}
-              onPress={() => {
-                if (isLANSupported) {
-                  setConnectionMode('lan')
-                } else {
-                  showError(
-                    t('online.lan.notSupported', '不支持'),
-                    t('online.lan.webNotSupported', 'Web平台不支持局域网功能，请使用移动应用'),
-                  )
-                }
-              }}
-              disabled={!isLANSupported}
+              onPress={() => setConnectionMode('lan')}
             >
               <Ionicons
                 name="wifi"
@@ -422,20 +406,6 @@ export const OnlineRoomModal: React.FC<OnlineRoomModalProps> = ({
                 ]}
               >
                 {t('online.mode.lan', '局域网')}
-                {!isLANSupported && (
-                  <Text
-                    style={[
-                      styles.modeText,
-                      {
-                        color: colors.homeCardDescription,
-                        fontSize: 10,
-                      },
-                    ]}
-                  >
-                    {' '}
-                    ({t('online.lan.notSupported', '不支持')})
-                  </Text>
-                )}
               </Text>
             </TouchableOpacity>
           </View>
@@ -627,8 +597,8 @@ export const OnlineRoomModal: React.FC<OnlineRoomModalProps> = ({
                     : t('online.create.title', '创建房间')}
                 </Text>
 
-                {/* Web 平台局域网不支持提示 */}
-                {connectionMode === 'lan' && !isLANSupported && (
+                {/* Web 平台局域网不支持创建房间提示 */}
+                {connectionMode === 'lan' && !canCreateLANRoom && (
                   <View
                     style={[
                       styles.webNotSupportedCard,
@@ -779,14 +749,14 @@ export const OnlineRoomModal: React.FC<OnlineRoomModalProps> = ({
                   style={[
                     styles.actionButton,
                     {
-                      opacity: isLoading || (connectionMode === 'lan' && !isLANSupported) ? 0.6 : 1,
+                      opacity: isLoading || (connectionMode === 'lan' && !canCreateLANRoom) ? 0.6 : 1,
                     },
                   ]}
                   onPress={handleCreateRoom}
                   disabled={
                     isLoading ||
                     (connectionMode === 'online' && !socket.isConnected) ||
-                    (connectionMode === 'lan' && !isLANSupported)
+                    (connectionMode === 'lan' && !canCreateLANRoom)
                   }
                 >
                   <LinearGradient
@@ -800,9 +770,9 @@ export const OnlineRoomModal: React.FC<OnlineRoomModalProps> = ({
                       {isLoading
                         ? t('online.creating', '创建中...')
                         : connectionMode === 'lan'
-                          ? isLANSupported
+                          ? canCreateLANRoom
                             ? t('online.lan.create.button', '创建局域网房间')
-                            : t('online.lan.webNotSupported', 'Web平台不支持')
+                            : t('online.lan.webNotSupported', 'Web平台不支持创建')
                           : t('online.create.button', '创建房间')}
                     </Text>
                   </LinearGradient>

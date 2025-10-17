@@ -425,7 +425,39 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 export const useSocket = () => {
   const context = useContext(SocketContext)
   if (!context) {
-    throw new Error('useSocket must be used within a SocketProvider')
+    // 当 SocketProvider 不可用时，返回一个空的默认实现而不是抛出错误
+    console.warn('useSocket: SocketProvider is not available. Returning mock implementation.')
+    return {
+      isConnected: false,
+      connectionError: null,
+      currentRoom: null,
+      connectionType: 'online' as ConnectionType,
+      currentLANRoom: null,
+      webrtcConnections: new Map(),
+      connect: () => {},
+      disconnect: () => {},
+      forceReconnect: () => {},
+      createRoom: () => {},
+      joinRoom: () => {},
+      createLANRoom: async () => ({} as LANRoom),
+      joinLANRoom: async () => ({} as LANRoom),
+      switchToOnlineMode: () => {},
+      switchToLANMode: () => {},
+      getDiscoveredRooms: undefined,
+      startRoomScan: undefined,
+      stopRoomScan: undefined,
+      leaveRoom: () => {},
+      resetRoomState: () => {},
+      startGame: () => {},
+      rollDice: () => {},
+      completeTask: () => {},
+      runActions: () => {},
+      emit: () => {},
+      on: () => {},
+      off: () => {},
+      isHost: false,
+      currentPlayer: null,
+    }
   }
   return context
 }

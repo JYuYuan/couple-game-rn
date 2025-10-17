@@ -20,6 +20,8 @@ import { TaskSet } from '@/types/tasks'
 import { TaskSetDetailModal } from '@/components/TaskSetDetailModal'
 import { OnlineRoomModal } from '@/components/OnlineRoomModal'
 import { useSocket } from '@/hooks/use-socket'
+import { useSettingsStore } from '@/store'
+import { Platform } from 'react-native'
 
 const routeConfig: Record<string, string> = {
   fly: '/flying-chess',
@@ -33,6 +35,7 @@ export default function GameMode() {
   const { t } = useTranslation()
   const colorScheme = useColorScheme() ?? 'light'
   const colors = Colors[colorScheme] as any
+  const { networkSettings } = useSettingsStore()
   const socket = useSocket()
 
   // 获取传入的游戏类型参数
@@ -49,8 +52,10 @@ export default function GameMode() {
   }
 
   // 检查当前游戏类型是否支持在线模式
-  const supportsOnlineMode =
-    gameTypeConfig[gameType as keyof typeof gameTypeConfig]?.hasOnline || false
+  // 需要同时满足：游戏本身支持在线 && (网络模式开启 || 局域网模式开启)
+  const isNetworkEnabled = networkSettings.enabled || networkSettings.lanMode
+  const gameSupportsOnline = gameTypeConfig[gameType as keyof typeof gameTypeConfig]?.hasOnline || false
+  const supportsOnlineMode = gameSupportsOnline && isNetworkEnabled
 
   // 状态管理
   const [selectedCategory, setSelectedCategory] = useState<string>('all')

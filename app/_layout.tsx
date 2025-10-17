@@ -16,7 +16,7 @@ SplashScreen.preventAutoHideAsync()
 
 export default function RootLayout() {
   const audioManager = useAudioManager()
-  const { soundSettings } = useSettingsStore()
+  const { soundSettings, networkSettings } = useSettingsStore()
   const [appIsReady, setAppIsReady] = useState(false)
 
   // 自动播放背景音乐
@@ -73,16 +73,22 @@ export default function RootLayout() {
     return null
   }
 
+  // 检查是否启用了网络模式或局域网模式
+  const isNetworkEnabled = networkSettings.enabled || networkSettings.lanMode
+
+  // 根据网络设置条件包裹内容
+  const content = (
+    <ToastProvider>
+      <ConfirmDialogProvider />
+      <Stack>
+        <Stack.Screen name="(tabs)" options={{ headerShown: false, title: '主页' }} />
+      </Stack>
+    </ToastProvider>
+  )
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }} onLayout={onLayoutRootView}>
-      <SocketProvider>
-        <ToastProvider>
-          <ConfirmDialogProvider />
-          <Stack>
-            <Stack.Screen name="(tabs)" options={{ headerShown: false, title: '主页' }} />
-          </Stack>
-        </ToastProvider>
-      </SocketProvider>
+      {isNetworkEnabled ? <SocketProvider>{content}</SocketProvider> : content}
     </GestureHandlerRootView>
   )
 }
