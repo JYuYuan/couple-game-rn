@@ -4,8 +4,6 @@
  * 这个服务需要一个简单的信令服务器或使用其他通信方式(如Socket.IO, Firebase等)
  */
 
-import { socketService } from './socket-service'
-
 /**
  * 信令消息类型
  */
@@ -24,9 +22,18 @@ class WebRTCSignalingService {
   private static instance: WebRTCSignalingService
   private playerId: string = ''
   private messageHandlers: Map<string, Function> = new Map()
+  private _socketService: any = null
 
   private constructor() {
-    this.setupSignalingListeners()
+    // 延迟设置监听器，在初始化时通过 getter 获取 socketService
+  }
+
+  private get socketService() {
+    if (!this._socketService) {
+      // 延迟导入避免循环依赖
+      this._socketService = require('./socket-service').socketService
+    }
+    return this._socketService
   }
 
   static getInstance(): WebRTCSignalingService {
@@ -42,6 +49,8 @@ class WebRTCSignalingService {
   initialize(playerId: string): void {
     this.playerId = playerId
     console.log(`WebRTC Signaling initialized for ${playerId}`)
+    // 在初始化时设置监听器
+    this.setupSignalingListeners()
   }
 
   /**
@@ -49,15 +58,15 @@ class WebRTCSignalingService {
    */
   private setupSignalingListeners(): void {
     // 监听来自服务器的信令消息
-    socketService.on('webrtc:offer', (data: SignalingMessage) => {
+    this.socketService.on('webrtc:offer', (data: SignalingMessage) => {
       this.handleSignalingMessage('offer', data)
     })
 
-    socketService.on('webrtc:answer', (data: SignalingMessage) => {
+    this.socketService.on('webrtc:answer', (data: SignalingMessage) => {
       this.handleSignalingMessage('answer', data)
     })
 
-    socketService.on('webrtc:ice-candidate', (data: SignalingMessage) => {
+    this.socketService.on('webrtc:ice-candidate', (data: SignalingMessage) => {
       this.handleSignalingMessage('ice-candidate', data)
     })
   }
@@ -85,7 +94,7 @@ class WebRTCSignalingService {
       data: offer,
     }
 
-    socketService.socketEmit('webrtc:offer', message)
+    this.socketService.socketEmit('webrtc:offer', message)
     console.log(`Sent offer to ${targetPlayerId}`)
   }
 
@@ -100,7 +109,7 @@ class WebRTCSignalingService {
       data: answer,
     }
 
-    socketService.socketEmit('webrtc:answer', message)
+    this.socketService.socketEmit('webrtc:answer', message)
     console.log(`Sent answer to ${targetPlayerId}`)
   }
 
@@ -115,7 +124,7 @@ class WebRTCSignalingService {
       data: candidate,
     }
 
-    socketService.socketEmit('webrtc:ice-candidate', message)
+    this.socketService.socketEmit('webrtc:ice-candidate', message)
     console.log(`Sent ICE candidate to ${targetPlayerId}`)
   }
 

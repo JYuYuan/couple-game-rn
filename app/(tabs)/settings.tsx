@@ -201,12 +201,25 @@ const Settings: React.FC = () => {
               {
                 icon: 'information-circle',
                 label: t('settings.lan.label', '本机IP地址'),
-                disabled: fetchIp.loading,
+                disabled: fetchIp.loading || !fetchIp.data,
                 value: fetchIp.loading
                   ? t('settings.lan.loading', '获取中...')
-                  : fetchIp.data,
+                  : fetchIp.error
+                    ? t('settings.lan.error', '获取失败')
+                    : fetchIp.data || t('settings.lan.unavailable', '不可用'),
                 onPress: () => {
-                  if (!fetchIp.data) return
+                  if (!fetchIp.data) {
+                    Alert.alert(
+                      t('settings.lan.error', '获取失败'),
+                      t(
+                        'settings.lan.errorMessage',
+                        Platform.OS === 'web'
+                          ? '浏览器可能不支持或限制了 IP 获取功能，请手动输入 IP 地址'
+                          : '无法获取本机 IP 地址，请检查网络连接',
+                      ),
+                    )
+                    return
+                  }
                   Clipboard.setStringAsync(fetchIp.data)
                   Alert.alert(
                     t('common.success', '成功'),

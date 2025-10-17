@@ -360,7 +360,10 @@ export default function GameMode() {
           {/* 游戏模式按钮 */}
           <View style={styles.gameButtons}>
             {/* 单机模式 */}
-            <TouchableOpacity style={styles.gameModeButton} onPress={handleStartGame}>
+            <TouchableOpacity
+              style={[styles.gameModeButton, !isNetworkEnabled && styles.fullWidthButton]}
+              onPress={handleStartGame}
+            >
               <LinearGradient
                 colors={['#5E5CE6', '#BF5AF2']}
                 style={styles.gameModeButtonGradient}
@@ -374,32 +377,34 @@ export default function GameMode() {
               </LinearGradient>
             </TouchableOpacity>
 
-            {/* 在线模式 */}
-            <TouchableOpacity
-              style={[styles.gameModeButton, !supportsOnlineMode && styles.disabledButton]}
-              onPress={handleOnlineGame}
-              disabled={!supportsOnlineMode}
-            >
-              <LinearGradient
-                colors={supportsOnlineMode ? ['#4CAF50', '#66BB6A'] : ['#9E9E9E', '#BDBDBD']}
-                style={styles.gameModeButtonGradient}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
+            {/* 在线模式 - 仅在网络模式或局域网模式启用时显示 */}
+            {isNetworkEnabled && (
+              <TouchableOpacity
+                style={[styles.gameModeButton, !supportsOnlineMode && styles.disabledButton]}
+                onPress={handleOnlineGame}
+                disabled={!supportsOnlineMode}
               >
-                <Ionicons
-                  name="people"
-                  size={16}
-                  color={supportsOnlineMode ? 'white' : '#E0E0E0'}
-                />
-                <Text
-                  style={[styles.gameModeButtonText, !supportsOnlineMode && { color: '#E0E0E0' }]}
+                <LinearGradient
+                  colors={supportsOnlineMode ? ['#4CAF50', '#66BB6A'] : ['#9E9E9E', '#BDBDBD']}
+                  style={styles.gameModeButtonGradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
                 >
-                  {supportsOnlineMode
-                    ? t('gameMode.onlineMode', '在线模式')
-                    : t('gameMode.onlineComingSoon', '在线模式 (敬请期待)')}
-                </Text>
-              </LinearGradient>
-            </TouchableOpacity>
+                  <Ionicons
+                    name="people"
+                    size={16}
+                    color={supportsOnlineMode ? 'white' : '#E0E0E0'}
+                  />
+                  <Text
+                    style={[styles.gameModeButtonText, !supportsOnlineMode && { color: '#E0E0E0' }]}
+                  >
+                    {supportsOnlineMode
+                      ? t('gameMode.onlineMode', '在线模式')
+                      : t('gameMode.onlineComingSoon', '在线模式 (敬请期待)')}
+                  </Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            )}
           </View>
         </TouchableOpacity>
       </Animated.View>
@@ -761,6 +766,10 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: 10,
     overflow: 'hidden',
+  },
+  fullWidthButton: {
+    flex: undefined,
+    width: '100%',
   },
   disabledButton: {
     opacity: 0.6,
