@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { socketService } from '@/services/socket-service'
-import { lanServerManager } from '@/services/lan-server-manager'
 import {
   ConnectionType,
   CreateLANRoomData,
@@ -14,6 +13,7 @@ import {
 } from '@/types/online'
 import { useSettingsStore } from '@/store'
 import { useRoomStore } from '@/store/roomStore'
+import { getLocalIP } from '@/utils'
 
 interface SocketContextValue {
   // 连接状态
@@ -177,7 +177,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     async (data: CreateLANRoomData): Promise<LANRoom> => {
       try {
         // 获取本地IP
-        const localIP = await lanServerManager.getLocalIP()
+        const localIP = await getLocalIP()
         console.log('创建局域网房间，本地IP:', localIP)
 
         // 连接到本地服务器
@@ -455,8 +455,8 @@ export const useSocket = () => {
       forceReconnect: () => {},
       createRoom: () => {},
       joinRoom: () => {},
-      createLANRoom: async () => ({} as LANRoom),
-      joinLANRoom: async () => ({} as LANRoom),
+      createLANRoom: async () => ({}) as LANRoom,
+      joinLANRoom: async () => ({}) as LANRoom,
       switchToOnlineMode: () => {},
       switchToLANMode: () => {},
       getDiscoveredRooms: undefined,
