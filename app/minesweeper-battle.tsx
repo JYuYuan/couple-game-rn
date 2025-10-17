@@ -650,11 +650,11 @@ export default function MinesweeperBattle() {
             ? ({
                 ...winner,
                 position: 0, // 扫雷游戏不需要位置，设为默认值
+                iconType: 1, // 设置默认 iconType
               } as any)
             : null
         }
-        availableTasks={gameTasks.currentTasks}
-        onTasksSelected={() => {}}
+        isWinner={true}
         onRestart={() => {
           setShowVictoryModal(false)
           restartGame()

@@ -594,8 +594,7 @@ export default function OfflineGame() {
       <VictoryModal
         visible={showVictoryModal}
         winner={winner}
-        availableTasks={gameTasks.currentTasks}
-        onTasksSelected={() => {}}
+        isWinner={true}
         onRestart={() => {
           handleResetGame()
           setShowVictoryModal(false)
