@@ -99,6 +99,46 @@ class P2PServer {
     })
 
     this.setupEventHandlers()
+    this.setupWebRTCSignaling()
+  }
+
+  /**
+   * 设置 WebRTC 信令监听
+   */
+  private setupWebRTCSignaling(): void {
+    const webrtcSignaling = require('./webrtc-signaling').webrtcSignaling
+
+    // 监听来自客户端的 offer
+    webrtcSignaling.on('offer', async (data: any) => {
+      console.log(`📨 Received offer from ${data.from}`)
+      try {
+        const offer = data.data
+        const answer = await this.createPeerConnection(data.from, offer)
+        webrtcSignaling.sendAnswer(data.from, answer)
+      } catch (error) {
+        console.error('Error handling offer:', error)
+      }
+    })
+
+    // 监听来自客户端的 answer
+    webrtcSignaling.on('answer', async (data: any) => {
+      console.log(`📨 Received answer from ${data.from}`)
+      try {
+        await this.handleAnswer(data.from, data.data)
+      } catch (error) {
+        console.error('Error handling answer:', error)
+      }
+    })
+
+    // 监听来自客户端的 ICE candidate
+    webrtcSignaling.on('ice-candidate', async (data: any) => {
+      console.log(`📨 Received ICE candidate from ${data.from}`)
+      try {
+        await this.addIceCandidate(data.from, data.data)
+      } catch (error) {
+        console.error('Error adding ICE candidate:', error)
+      }
+    })
   }
 
   /**
@@ -106,6 +146,12 @@ class P2PServer {
    */
   async stop(): Promise<void> {
     console.log('🛑 Stopping P2P Server...')
+
+    // 清理 WebRTC 信令监听器
+    const webrtcSignaling = require('./webrtc-signaling').webrtcSignaling
+    webrtcSignaling.off('offer')
+    webrtcSignaling.off('answer')
+    webrtcSignaling.off('ice-candidate')
 
     // 关闭所有连接
     for (const [playerId, peer] of this.peers.entries()) {
@@ -149,11 +195,9 @@ class P2PServer {
     peerConnection.addEventListener('icecandidate', (event: any) => {
       if (event.candidate) {
         console.log(`ICE candidate for ${playerId}:`, event.candidate)
-        // 通过信令通道发送 ICE candidate
-        this.emit('ice-candidate', {
-          targetPlayerId: playerId,
-          candidate: event.candidate,
-        })
+        // 通过信令服务发送 ICE candidate 到客户端
+        const webrtcSignaling = require('./webrtc-signaling').webrtcSignaling
+        webrtcSignaling.sendIceCandidate(playerId, event.candidate)
       }
     })
 
@@ -244,7 +288,15 @@ class P2PServer {
       if (!this.pendingCandidates.has(playerId)) {
         this.pendingCandidates.set(playerId, [])
       }
-      this.pendingCandidates.get(playerId)!.push(candidate)
+      const pending = this.pendingCandidates.get(playerId)!
+      // 限制 pending candidates 数量，避免内存泄漏
+      if (pending.length < 50) {
+        pending.push(candidate)
+      } else {
+        console.warn(`Too many pending candidates for ${playerId}, dropping oldest`)
+        pending.shift() // 移除最旧的
+        pending.push(candidate)
+      }
       return
     }
 
@@ -255,7 +307,14 @@ class P2PServer {
       if (!this.pendingCandidates.has(playerId)) {
         this.pendingCandidates.set(playerId, [])
       }
-      this.pendingCandidates.get(playerId)!.push(candidate)
+      const pending = this.pendingCandidates.get(playerId)!
+      if (pending.length < 50) {
+        pending.push(candidate)
+      } else {
+        console.warn(`Too many pending candidates for ${playerId}, dropping oldest`)
+        pending.shift()
+        pending.push(candidate)
+      }
     }
   }
 

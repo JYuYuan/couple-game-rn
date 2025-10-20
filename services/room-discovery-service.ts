@@ -55,7 +55,7 @@ export class RoomDiscoveryService {
       // 清理之前的发现结果
       this.discoveredRooms.clear()
 
-      // 开始周期性发现
+      // 开始周期性发现 - 通过 Socket.IO 查询服务器上的房间
       this.discoveryInterval = setInterval(() => {
         this.discoverRooms()
       }, 3000)
@@ -92,7 +92,7 @@ export class RoomDiscoveryService {
     // 停止之前的广播
     this.stopBroadcast()
 
-    // 开始周期性广播
+    // 开始周期性广播 - 通过 Socket.IO 向服务器注册房间
     this.broadcastInterval = setInterval(() => {
       this.broadcastRoom()
     }, 2000)
@@ -110,6 +110,11 @@ export class RoomDiscoveryService {
       this.broadcastInterval = null
     }
 
+    // 从服务器移除房间
+    if (this.currentRoom) {
+      this.unregisterRoom(this.currentRoom.id)
+    }
+
     this.currentRoom = null
   }
 
@@ -118,17 +123,17 @@ export class RoomDiscoveryService {
     return Array.from(this.discoveredRooms.values())
   }
 
-  // 发现房间
+  // 发现房间 - 通过 Socket.IO 从服务器获取
   private async discoverRooms(): Promise<void> {
     try {
-      // 这里应该实现实际的UDP广播监听
-      // 简化实现：模拟发现过程
       console.log('正在扫描局域网房间...')
 
-      // 实际实现应该：
-      // 1. 监听UDP广播端口
-      // 2. 解析收到的房间信息
-      // 3. 更新发现的房间列表
+      // 通过 Socket.IO 获取局域网房间列表
+      const socketService = this.getSocketService()
+      if (socketService && socketService.getIsConnected()) {
+        // 发送房间列表请求
+        socketService.socketEmit('lan:discover')
+      }
 
       // 清理过期的房间（超过10秒没有更新的房间）
       const now = Date.now()
@@ -151,7 +156,7 @@ export class RoomDiscoveryService {
     }
   }
 
-  // 广播房间信息
+  // 广播房间信息 - 通过 Socket.IO 注册到服务器
   private async broadcastRoom(): Promise<void> {
     if (!this.currentRoom) return
 
@@ -160,27 +165,62 @@ export class RoomDiscoveryService {
       const broadcastData: LANRoomDiscovery = {
         roomId: this.currentRoom.id,
         roomName: this.currentRoom.name,
-        hostPeerId: this.currentRoom.hostId, // 使用统一的 hostId
+        hostPeerId: this.currentRoom.hostId,
         hostIP: this.currentRoom.networkInfo.hostIP,
         hostName: 'Host', // 实际应该获取设备名称
         maxPlayers: this.currentRoom.maxPlayers,
         currentPlayers: this.currentRoom.players.length,
         gameType: this.currentRoom.gameType,
-        requiresPassword: false, // 根据实际需求设置
+        requiresPassword: false,
         timestamp: Date.now(),
       }
 
-      // 这里应该实现实际的UDP广播发送
-      // 简化实现：仅记录日志
       console.log('广播房间信息:', broadcastData)
 
-      // 实际实现应该：
-      // 1. 将房间信息序列化为JSON
-      // 2. 通过UDP广播发送到网络
-      // 3. 使用特定的端口和协议标识
+      // 通过 Socket.IO 注册房间到服务器
+      const socketService = this.getSocketService()
+      if (socketService && socketService.getIsConnected()) {
+        socketService.socketEmit('lan:register', broadcastData)
+      }
     } catch (error) {
       console.error('广播房间信息失败:', error)
     }
+  }
+
+  // 从服务器移除房间
+  private async unregisterRoom(roomId: string): Promise<void> {
+    try {
+      const socketService = this.getSocketService()
+      if (socketService && socketService.getIsConnected()) {
+        socketService.socketEmit('lan:unregister', { roomId })
+      }
+    } catch (error) {
+      console.error('移除房间失败:', error)
+    }
+  }
+
+  // 获取 SocketService 实例
+  private getSocketService(): any {
+    try {
+      return require('./socket-service').socketService
+    } catch (error) {
+      console.error('获取 SocketService 失败:', error)
+      return null
+    }
+  }
+
+  // 处理服务器返回的房间列表
+  handleRoomList(rooms: LANRoomDiscovery[]): void {
+    console.log('收到房间列表:', rooms.length, '个房间')
+
+    // 更新房间列表
+    this.discoveredRooms.clear()
+    rooms.forEach((room) => {
+      this.discoveredRooms.set(room.roomId, room)
+      this.emit('roomDiscovered', room)
+    })
+
+    this.emit('roomsUpdated', this.getDiscoveredRooms())
   }
 
   // 模拟收到房间广播（用于测试）

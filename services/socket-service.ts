@@ -84,6 +84,11 @@ class SocketService {
     this.connectionMode = 'p2p-server'
     this.currentPlayerId = playerId
 
+    // 确保先连接到服务器（用于信令）
+    if (!this.isConnected) {
+      await this.connect(playerId)
+    }
+
     // 启动 P2P 服务器
     await p2pServer.start(playerId)
 
@@ -108,19 +113,38 @@ class SocketService {
     this.connectionMode = 'p2p-client'
     this.currentPlayerId = playerId
 
+    // 确保先连接到服务器（用于信令）
+    if (!this.isConnected) {
+      await this.connect(playerId)
+    }
+
     // 初始化 WebRTC 信令
     webrtcSignaling.initialize(playerId)
 
-    // 等待 offer 从房主
+    // 设置 WebRTC 信令监听（客户端）
+    this.setupP2PClientSignalingListeners(hostPlayerId)
+
+    // 通过服务器请求房主发送 offer
+    console.log('Requesting WebRTC offer from host...')
+    this.socketEmit('p2p:request-offer', {
+      targetPlayerId: hostPlayerId,
+      fromPlayerId: playerId,
+    })
+
+    // 等待 offer 并建立连接
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
         reject(new Error('等待 WebRTC offer 超时'))
       }, 30000)
 
-      webrtcSignaling.on('offer', async (data: any) => {
+      const offerHandler = async (data: any) => {
         try {
-          clearTimeout(timeout)
+          if (data.from !== hostPlayerId) return
 
+          clearTimeout(timeout)
+          webrtcSignaling.off('offer', offerHandler)
+
+          console.log('Received offer from host, creating answer...')
           const offer = new RTCSessionDescription(data.data)
           const answer = await p2pClient.connect(playerId, offer)
 
@@ -139,13 +163,23 @@ class SocketService {
           console.error('Error connecting to P2P Server:', error)
           reject(error)
         }
-      })
+      }
 
-      // 设置 ICE candidate 监听
-      webrtcSignaling.on('ice-candidate', async (data: any) => {
+      webrtcSignaling.on('offer', offerHandler)
+    })
+  }
+
+  /**
+   * 设置 P2P 客户端的信令监听
+   */
+  private setupP2PClientSignalingListeners(hostPlayerId: string): void {
+    // 监听来自房主的 ICE candidates
+    webrtcSignaling.on('ice-candidate', async (data: any) => {
+      if (data.from === hostPlayerId) {
+        console.log(`Received ICE candidate from host`)
         const candidate = new RTCIceCandidate(data.data)
         await p2pClient.addIceCandidate(candidate)
-      })
+      }
     })
   }
 
@@ -565,6 +599,26 @@ class SocketService {
 
     this.socket.on('pong', (latency: number) => {
       console.log('SocketService: Pong received, latency:', latency)
+    })
+
+    // 局域网房间发现事件
+    this.socket.on('lan:rooms', (rooms: any[]) => {
+      console.log('SocketService: Received LAN rooms:', rooms.length)
+      const roomDiscovery = require('./room-discovery-service').roomDiscoveryService
+      roomDiscovery.handleRoomList(rooms)
+    })
+
+    // P2P 连接请求（房主接收）
+    this.socket.on('p2p:request-offer', async (data: { fromPlayerId: string }) => {
+      console.log(`SocketService: Received P2P offer request from ${data.fromPlayerId}`)
+      if (this.connectionMode === 'p2p-server') {
+        try {
+          // 自动发送 offer 给请求者
+          await this.invitePlayerToP2P(data.fromPlayerId)
+        } catch (error) {
+          console.error('Error sending offer:', error)
+        }
+      }
     })
   }
 

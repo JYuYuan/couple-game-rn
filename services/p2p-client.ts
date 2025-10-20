@@ -82,8 +82,9 @@ class P2PClient {
     this.peerConnection.addEventListener('icecandidate', (event: any) => {
       if (event.candidate) {
         console.log('ICE candidate generated:', event.candidate)
-        // 通过信令通道发送给服务器
-        this.emit('ice-candidate', { candidate: event.candidate })
+        // 通过信令服务发送给服务器
+        const webrtcSignaling = require('./webrtc-signaling').webrtcSignaling
+        webrtcSignaling.sendIceCandidate('host', event.candidate)
       }
     })
 
@@ -138,7 +139,14 @@ class P2PClient {
       await this.peerConnection.addIceCandidate(candidate)
     } else {
       console.warn('Storing ICE candidate for later')
-      this.pendingCandidates.push(candidate)
+      // 限制 pending candidates 数量，避免内存泄漏
+      if (this.pendingCandidates.length < 50) {
+        this.pendingCandidates.push(candidate)
+      } else {
+        console.warn('Too many pending candidates, dropping oldest')
+        this.pendingCandidates.shift() // 移除最旧的
+        this.pendingCandidates.push(candidate)
+      }
     }
   }
 
@@ -219,13 +227,31 @@ class P2PClient {
 
       this.pendingRequests.set(requestId, resolve)
 
-      // 设置超时
-      setTimeout(() => {
-        if (this.pendingRequests.has(requestId)) {
-          this.pendingRequests.delete(requestId)
-          reject(new Error('Request timeout'))
-        }
-      }, 10000)
+      // 设置超时和重试
+      let retries = 0
+      const maxRetries = 3
+
+      const attemptSend = () => {
+        setTimeout(
+          () => {
+            if (this.pendingRequests.has(requestId)) {
+              this.pendingRequests.delete(requestId)
+
+              if (retries < maxRetries) {
+                retries++
+                console.log(`Request timeout, retrying (${retries}/${maxRetries})...`)
+                this.pendingRequests.set(requestId, resolve)
+                attemptSend()
+              } else {
+                reject(new Error('Request timeout after ' + maxRetries + ' retries'))
+              }
+            }
+          },
+          retries === 0 ? 10000 : 5000,
+        ) // 首次10秒，重试5秒
+      }
+
+      attemptSend()
 
       try {
         this.dataChannel.send(JSON.stringify(message))
