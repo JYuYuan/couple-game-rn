@@ -13,6 +13,7 @@ import { PlayerAvatar } from '@/components/PlayerAvatar'
 import { useGameTasks } from '@/hooks/use-game-tasks'
 import { useWheelGame, WheelPlayer, WheelResult } from '@/hooks/use-wheel-game'
 import { useTranslation } from 'react-i18next'
+import { showConfirmDialog } from '@/components/ConfirmDialog'
 
 export default function WheelPointsGame() {
   const { t } = useTranslation()
@@ -57,14 +58,6 @@ export default function WheelPointsGame() {
   const [showVictoryModal, setShowVictoryModal] = useState(false)
   const [winner, setWinner] = useState<WheelPlayer | null>(null)
 
-  // 自定义弹窗状态
-  const [showAlert, setShowAlert] = useState(false)
-  const [alertData, setAlertData] = useState<{
-    title: string
-    message: string
-    buttons: { text: string; onPress: () => void; style?: 'default' | 'cancel' | 'destructive' }[]
-  }>({ title: '', message: '', buttons: [] })
-
   // 进入页面时自动开始游戏
   useEffect(() => {
     if (gameStatus === 'waiting' && gameTasks.selectedTaskSet) {
@@ -97,22 +90,19 @@ export default function WheelPointsGame() {
   }
 
   // 转盘结果处理
-  const handleSpinComplete = (result: WheelResult) => {
+  const handleSpinComplete = async (result: WheelResult) => {
     console.log('转盘结果:', result)
     setIsSpinning(false)
 
     // 显示结果提示
-    setAlertData({
+    const comfirmed = await showConfirmDialog({
       title: t('wheelPoints.wheelResult', '转盘结果'),
       message: t('wheelPoints.resultMessage', '{{playerName}} 转到了: {{result}}', {
         playerName: currentPlayer.name,
         result: result.label,
       }),
-      buttons: [
-        { text: t('customAlert.confirm', '确定'), onPress: () => processWheelResult(result) },
-      ],
     })
-    setShowAlert(true)
+    if (comfirmed) processWheelResult(result)
   }
 
   // 处理转盘结果 - 所有区域都触发任务
@@ -389,15 +379,6 @@ export default function WheelPointsGame() {
           router.back()
         }}
         onClose={() => setShowVictoryModal(false)}
-      />
-
-      {/* 自定义弹窗 */}
-      <CustomAlert
-        visible={showAlert}
-        title={alertData.title}
-        message={alertData.message}
-        buttons={alertData.buttons}
-        onClose={() => setShowAlert(false)}
       />
     </>
   )
