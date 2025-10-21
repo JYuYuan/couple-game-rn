@@ -71,16 +71,6 @@ const TaskSettings: React.FC = () => {
     buttons: [],
   })
 
-  // 通用对话框状态
-  const [showConfirmAlert, setShowConfirmAlert] = useState(false)
-  const [confirmAlertData, setConfirmAlertData] = useState<{
-    title: string
-    message?: string
-    buttons: AlertButton[]
-  }>({
-    title: '',
-    buttons: [],
-  })
 
   // 浮动按钮拖拽状态
   const screenWidth = Dimensions.get('window').width
@@ -160,30 +150,30 @@ const TaskSettings: React.FC = () => {
     initializeData()
   }, [t, i18n.language]) // 语言变化时重新执行，但store已经能智能保留自定义任务
 
-  const handleDeleteTaskSet = (taskSet: TaskSet) => {
-    setConfirmAlertData({
+  const handleDeleteTaskSet = async (taskSet: TaskSet) => {
+    const confirmed = await showConfirmDialog({
       title: t('tasks.delete.taskSet.title', '删除确认'),
       message: t(
         'tasks.delete.taskSet.message',
         '确定要删除任务集 "{{name}}" 吗？此操作无法撤销。',
         { name: taskSet.name },
       ),
-      buttons: [
-        { text: t('common.cancel', '取消'), style: 'cancel' },
-        {
-          text: t('tasks.delete.confirm', '删除'),
-          style: 'destructive',
-          onPress: () => deleteTaskSet(taskSet.id),
-        },
-      ],
+      confirmText: t('tasks.delete.confirm', '删除'),
+      cancelText: t('common.cancel', '取消'),
+      destructive: true,
+      icon: 'trash-outline',
+      iconColor: '#FF6B6B',
     })
-    setShowConfirmAlert(true)
+
+    if (confirmed) {
+      deleteTaskSet(taskSet.id)
+    }
   }
 
-  const handleDeleteCategory = (category: TaskCategory) => {
+  const handleDeleteCategory = async (category: TaskCategory) => {
     const taskCount = taskSets.filter((set) => set.categoryId === category.id).length
 
-    setConfirmAlertData({
+    const confirmed = await showConfirmDialog({
       title: t('tasks.delete.taskSet.title', '删除确认'),
       message: t(
         'tasks.delete.category.message',
@@ -198,16 +188,16 @@ const TaskSettings: React.FC = () => {
               : '',
         },
       ),
-      buttons: [
-        { text: t('common.cancel', '取消'), style: 'cancel' },
-        {
-          text: t('tasks.delete.confirm', '删除'),
-          style: 'destructive',
-          onPress: () => deleteCategory(category.id),
-        },
-      ],
+      confirmText: t('tasks.delete.confirm', '删除'),
+      cancelText: t('common.cancel', '取消'),
+      destructive: true,
+      icon: 'trash-outline',
+      iconColor: '#FF6B6B',
     })
-    setShowConfirmAlert(true)
+
+    if (confirmed) {
+      deleteCategory(category.id)
+    }
   }
 
   const handleImportTaskSet = async () => {
@@ -763,14 +753,6 @@ const TaskSettings: React.FC = () => {
         onClose={() => setShowExportAlert(false)}
       />
 
-      {/* 确认对话框 */}
-      <CustomAlert
-        visible={showConfirmAlert}
-        title={confirmAlertData.title}
-        message={confirmAlertData.message}
-        buttons={confirmAlertData.buttons}
-        onClose={() => setShowConfirmAlert(false)}
-      />
     </View>
   )
 }
