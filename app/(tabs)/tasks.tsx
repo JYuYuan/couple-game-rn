@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react'
 import {
-  Alert,
   Animated,
   Dimensions,
   PanResponder,
@@ -26,7 +25,6 @@ import { Language } from '@/utils/systemTasks'
 import i18n from '@/i18n'
 import * as FileSystem from 'expo-file-system/legacy'
 import * as Sharing from 'expo-sharing'
-import { AlertButton, CustomAlert } from '@/components/CustomAlert'
 import { showConfirmDialog } from '@/components/ConfirmDialog'
 
 const TaskSettings: React.FC = () => {
@@ -59,18 +57,6 @@ const TaskSettings: React.FC = () => {
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [selectedTaskSet, setSelectedTaskSet] = useState<TaskSet | null>(null)
   const [selectedCategory, setSelectedCategory] = useState<TaskCategory | null>(null)
-
-  // 自定义对话框状态
-  const [showExportAlert, setShowExportAlert] = useState(false)
-  const [exportAlertData, setExportAlertData] = useState<{
-    title: string
-    message?: string
-    buttons: AlertButton[]
-  }>({
-    title: '',
-    buttons: [],
-  })
-
 
   // 浮动按钮拖拽状态
   const screenWidth = Dimensions.get('window').width
@@ -282,21 +268,14 @@ const TaskSettings: React.FC = () => {
 
         const jsonString = JSON.stringify(exportJson, null, 2)
 
-        // 设置自定义对话框数据
-        setExportAlertData({
+        const confirmed = await showConfirmDialog({
           title: t('tasks.export.title', '导出任务集'),
           message: t('tasks.export.message', '请选择导出方式'),
-          buttons: [
-            { text: t('common.cancel', '取消'), style: 'cancel' },
-            {
-              text: t('tasks.export.saveToFile', '保存到文件'),
-              onPress: async () => {
-                await saveToFile(exportData.name, jsonString)
-              },
-            },
-          ],
+          confirmText: t('common.cancel', '取消'),
+          cancelText: t('tasks.export.saveToFile', '保存到文件'),
         })
-        setShowExportAlert(true)
+
+        if (confirmed) await saveToFile(exportData.name, jsonString)
       }
     } catch {
       showAlert(t('common.error', '错误'), t('tasks.export.error', '导出失败'))
@@ -743,16 +722,6 @@ const TaskSettings: React.FC = () => {
           }
         }}
       />
-
-      {/* 自定义导出对话框 */}
-      <CustomAlert
-        visible={showExportAlert}
-        title={exportAlertData.title}
-        message={exportAlertData.message}
-        buttons={exportAlertData.buttons}
-        onClose={() => setShowExportAlert(false)}
-      />
-
     </View>
   )
 }
