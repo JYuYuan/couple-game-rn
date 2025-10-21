@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react'
 import {
-  Alert,
   Modal,
   ScrollView,
   StyleSheet,
@@ -14,6 +13,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme'
 import { Colors } from '@/constants/theme'
 import { TaskCategory } from '@/types/tasks'
 import { useTasksStore } from '@/store/tasksStore'
+import { showConfirmDialog } from '@/components/ConfirmDialog'
 
 interface CategoryModalProps {
   visible: boolean
@@ -104,7 +104,14 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
 
   const handleSave = async () => {
     if (!formData.name.trim()) {
-      Alert.alert('提示', '请输入分类名称')
+      await showConfirmDialog({
+        title: '提示',
+        message: '请输入分类名称',
+        confirmText: '确定',
+        cancelText: '',
+        icon: 'alert-circle-outline',
+        iconColor: '#FF6B6B',
+      })
       return
     }
 
@@ -128,7 +135,14 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
 
       onClose()
     } catch {
-      Alert.alert('错误', '保存失败，请重试')
+      await showConfirmDialog({
+        title: '错误',
+        message: '保存失败，请重试',
+        confirmText: '确定',
+        cancelText: '',
+        icon: 'alert-circle-outline',
+        iconColor: '#FF6B6B',
+      })
     } finally {
       setLoading(false)
     }

@@ -15,8 +15,6 @@ export const PlayerAvatar: React.FC<PlayerAvatarProps> = ({
   size = 40,
   backgroundColor,
 }) => {
-  const iconSize = size * 0.6 // SVG图标占头像的60%
-
   return (
     <View
       style={[

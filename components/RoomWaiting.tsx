@@ -1,5 +1,5 @@
 import React from 'react'
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useColorScheme } from '@/hooks/use-color-scheme'
@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next'
 import { OnlinePlayer } from '@/types/online'
 import * as Clipboard from 'expo-clipboard'
 import { PlayerIcon } from '@/components/icons'
+import { showConfirmDialog } from '@/components/ConfirmDialog'
 
 interface RoomWaitingProps {
   roomId: string
@@ -40,13 +41,23 @@ export const RoomWaiting: React.FC<RoomWaitingProps> = ({
   const copyRoomId = async () => {
     try {
       await Clipboard.setStringAsync(roomId.toUpperCase())
-      Alert.alert(
-        t('common.success', '成功'),
-        t('online.roomCodeCopied', '房间代码已复制到剪贴板'),
-        [{ text: t('common.ok', '确定') }],
-      )
+      await showConfirmDialog({
+        title: t('common.success', '成功'),
+        message: t('online.roomCodeCopied', '房间代码已复制到剪贴板'),
+        confirmText: t('common.ok', '确定'),
+        cancelText: '',
+        icon: 'checkmark-circle-outline',
+        iconColor: '#4CAF50',
+      })
     } catch {
-      Alert.alert(t('common.error', '错误'), t('online.copyFailed', '复制失败，请手动复制房间代码'))
+      await showConfirmDialog({
+        title: t('common.error', '错误'),
+        message: t('online.copyFailed', '复制失败，请手动复制房间代码'),
+        confirmText: t('common.ok', '确定'),
+        cancelText: '',
+        icon: 'alert-circle-outline',
+        iconColor: '#FF6B6B',
+      })
     }
   }
 
@@ -112,7 +123,7 @@ export const RoomWaiting: React.FC<RoomWaitingProps> = ({
                 >
                   {player ? (
                     <>
-                      <PlayerIcon see={player.iconType} />
+                      <PlayerIcon avatarId={player.avatar} />
                       <View style={styles.playerInfo}>
                         <View style={styles.playerNameRow}>
                           <Text style={[styles.playerName, { color: colors.homeCardTitle }]}>
@@ -162,27 +173,30 @@ export const RoomWaiting: React.FC<RoomWaitingProps> = ({
         <View style={styles.gameControls}>
           {isHost ? (
             <TouchableOpacity
-              style={[styles.startGameButton, { opacity: canStartGame && isConnected && !isStartingGame ? 1 : 0.5 }]}
+              style={[
+                styles.startGameButton,
+                { opacity: canStartGame && isConnected && !isStartingGame ? 1 : 0.5 },
+              ]}
               onPress={onStartGame}
               disabled={!canStartGame || !isConnected || isStartingGame}
             >
               <LinearGradient
-                colors={canStartGame && isConnected && !isStartingGame ? ['#4CAF50', '#66BB6A'] : ['#CCCCCC', '#AAAAAA']}
+                colors={
+                  canStartGame && isConnected && !isStartingGame
+                    ? ['#4CAF50', '#66BB6A']
+                    : ['#CCCCCC', '#AAAAAA']
+                }
                 style={styles.startGameGradient}
               >
-                <Ionicons 
-                  name={isStartingGame ? "hourglass" : "play"} 
-                  size={20} 
-                  color="white" 
-                />
+                <Ionicons name={isStartingGame ? 'hourglass' : 'play'} size={20} color="white" />
                 <Text style={styles.startGameText}>
                   {isStartingGame
                     ? t('online.starting', '正在开始...')
                     : !isConnected
-                    ? t('online.connecting', '连接中...')
-                    : canStartGame
-                    ? t('online.startGame', '开始游戏')
-                    : t('online.waitingPlayers', '等待玩家')}
+                      ? t('online.connecting', '连接中...')
+                      : canStartGame
+                        ? t('online.startGame', '开始游戏')
+                        : t('online.waitingPlayers', '等待玩家')}
                 </Text>
               </LinearGradient>
             </TouchableOpacity>

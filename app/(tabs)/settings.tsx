@@ -1,7 +1,6 @@
 import React, { useState } from 'react'
 import {
   ActivityIndicator,
-  Alert,
   Linking,
   Modal,
   Platform,
@@ -24,6 +23,7 @@ import { checkForUpdates, getAppInfo } from '@/utils/app-info'
 import { getLocalIP } from '@/utils'
 import { useRequest } from 'ahooks'
 import * as Clipboard from 'expo-clipboard'
+import { showConfirmDialog } from '@/components/ConfirmDialog'
 
 const Settings: React.FC = () => {
   const insets = useSafeAreaInsets()
@@ -91,55 +91,70 @@ const Settings: React.FC = () => {
         setIsCheckingUpdate(true)
         try {
           const updateInfo = await checkForUpdates()
-          Alert.alert(
-            t('settings.updateCheck.alertTitle', '检查更新'),
-            updateInfo.message ||
-              (updateInfo.hasUpdate
-                ? t('settings.updateCheck.hasUpdate', '发现新版本 {{version}}！', {
-                    version: updateInfo.latestVersion,
-                  })
-                : t('settings.updateCheck.noUpdate', '当前已是最新版本')),
-            updateInfo.hasUpdate
-              ? [
-                  { text: t('settings.updateCheck.later', '稍后更新'), style: 'cancel' },
-                  {
-                    text: t('settings.updateCheck.update', '立即更新'),
-                    onPress: () => {
-                      // 打开 GitHub 页面
-                      if (updateInfo.updateUrl) {
-                        Linking.openURL(updateInfo.updateUrl)
-                      }
-                    },
-                  },
-                ]
-              : [{ text: t('common.ok', '确定') }],
-          )
+
+          if (updateInfo.hasUpdate) {
+            const confirmed = await showConfirmDialog({
+              title: t('settings.updateCheck.alertTitle', '检查更新'),
+              message: updateInfo.message || t('settings.updateCheck.hasUpdate', '发现新版本 {{version}}！', {
+                version: updateInfo.latestVersion,
+              }),
+              confirmText: t('settings.updateCheck.update', '立即更新'),
+              cancelText: t('settings.updateCheck.later', '稍后更新'),
+              icon: 'download-outline',
+              iconColor: '#4CAF50',
+            })
+
+            if (confirmed && updateInfo.updateUrl) {
+              Linking.openURL(updateInfo.updateUrl)
+            }
+          } else {
+            await showConfirmDialog({
+              title: t('settings.updateCheck.alertTitle', '检查更新'),
+              message: updateInfo.message || t('settings.updateCheck.noUpdate', '当前已是最新版本'),
+              confirmText: t('common.ok', '确定'),
+              cancelText: '',
+              icon: 'checkmark-circle-outline',
+              iconColor: '#4CAF50',
+            })
+          }
         } catch {
-          Alert.alert(
-            t('settings.updateCheck.alertTitle', '检查更新'),
-            t('settings.updateCheck.error', '检查更新失败，请稍后再试'),
-          )
+          await showConfirmDialog({
+            title: t('settings.updateCheck.alertTitle', '检查更新'),
+            message: t('settings.updateCheck.error', '检查更新失败，请稍后再试'),
+            confirmText: t('common.ok', '确定'),
+            cancelText: '',
+            icon: 'alert-circle-outline',
+            iconColor: '#FF6B6B',
+          })
         } finally {
           setIsCheckingUpdate(false)
         }
         break
       case 'privacy':
-        Alert.alert(
-          t('settings.privacyPolicy.alertTitle', '隐私政策'),
-          t(
+        await showConfirmDialog({
+          title: t('settings.privacyPolicy.alertTitle', '隐私政策'),
+          message: t(
             'settings.privacyPolicy.alertMessage',
             '我们重视您的隐私，所有数据均存储在本地，不会上传到服务器。',
           ),
-        )
+          confirmText: t('common.ok', '确定'),
+          cancelText: '',
+          icon: 'shield-checkmark-outline',
+          iconColor: '#4CAF50',
+        })
         break
       case 'terms':
-        Alert.alert(
-          t('settings.userAgreement.alertTitle', '用户协议'),
-          t(
+        await showConfirmDialog({
+          title: t('settings.userAgreement.alertTitle', '用户协议'),
+          message: t(
             'settings.userAgreement.alertMessage',
             '感谢使用我们的应用，请合理使用本应用的各项功能。',
           ),
-        )
+          confirmText: t('common.ok', '确定'),
+          cancelText: '',
+          icon: 'document-text-outline',
+          iconColor: '#4CAF50',
+        })
         break
     }
   }
@@ -209,24 +224,32 @@ const Settings: React.FC = () => {
                   : fetchIp.error
                     ? t('settings.lan.error', '获取失败')
                     : fetchIp.data || t('settings.lan.unavailable', '不可用'),
-                onPress: () => {
+                onPress: async () => {
                   if (!fetchIp.data) {
-                    Alert.alert(
-                      t('settings.lan.error', '获取失败'),
-                      t(
+                    await showConfirmDialog({
+                      title: t('settings.lan.error', '获取失败'),
+                      message: t(
                         'settings.lan.errorMessage',
                         Platform.OS === 'web'
                           ? '浏览器可能不支持或限制了 IP 获取功能，请手动输入 IP 地址'
                           : '无法获取本机 IP 地址，请检查网络连接',
                       ),
-                    )
+                      confirmText: t('common.ok', '确定'),
+                      cancelText: '',
+                      icon: 'alert-circle-outline',
+                      iconColor: '#FF6B6B',
+                    })
                     return
                   }
-                  Clipboard.setStringAsync(fetchIp.data)
-                  Alert.alert(
-                    t('common.success', '成功'),
-                    t('settings.lan.copied', 'IP地址已复制到剪贴板'),
-                  )
+                  await Clipboard.setStringAsync(fetchIp.data)
+                  await showConfirmDialog({
+                    title: t('common.success', '成功'),
+                    message: t('settings.lan.copied', 'IP地址已复制到剪贴板'),
+                    confirmText: t('common.ok', '确定'),
+                    cancelText: '',
+                    icon: 'checkmark-circle-outline',
+                    iconColor: '#4CAF50',
+                  })
                 },
               },
               {
@@ -531,13 +554,17 @@ const Settings: React.FC = () => {
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalButton, styles.modalButtonConfirm, { backgroundColor: accentColor }]}
-                onPress={() => {
+                onPress={async () => {
                   setNetworkSettings({ socketUrl: socketUrlInput })
                   setShowSocketUrlModal(false)
-                  Alert.alert(
-                    t('common.success', '成功'),
-                    t('settings.network.socketUrlSaved', 'Socket 地址已保存'),
-                  )
+                  await showConfirmDialog({
+                    title: t('common.success', '成功'),
+                    message: t('settings.network.socketUrlSaved', 'Socket 地址已保存'),
+                    confirmText: t('common.ok', '确定'),
+                    cancelText: '',
+                    icon: 'checkmark-circle-outline',
+                    iconColor: '#4CAF50',
+                  })
                 }}
               >
                 <Text style={[styles.modalButtonText, { color: '#fff' }]}>
@@ -616,13 +643,17 @@ const Settings: React.FC = () => {
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalButton, styles.modalButtonConfirm, { backgroundColor: accentColor }]}
-                onPress={() => {
+                onPress={async () => {
                   const port = parseInt(lanPortInput, 10)
                   if (isNaN(port) || port < 1024 || port > 65535) {
-                    Alert.alert(
-                      t('common.error', '错误'),
-                      t('settings.lan.invalidPort', '端口号必须在 1024-65535 之间'),
-                    )
+                    await showConfirmDialog({
+                      title: t('common.error', '错误'),
+                      message: t('settings.lan.invalidPort', '端口号必须在 1024-65535 之间'),
+                      confirmText: t('common.ok', '确定'),
+                      cancelText: '',
+                      icon: 'alert-circle-outline',
+                      iconColor: '#FF6B6B',
+                    })
                     return
                   }
 
@@ -631,10 +662,14 @@ const Settings: React.FC = () => {
                     lanPort: port
                   })
                   setShowLanConfigModal(false)
-                  Alert.alert(
-                    t('common.success', '成功'),
-                    t('settings.lan.portSaved', '局域网端口已保存'),
-                  )
+                  await showConfirmDialog({
+                    title: t('common.success', '成功'),
+                    message: t('settings.lan.portSaved', '局域网端口已保存'),
+                    confirmText: t('common.ok', '确定'),
+                    cancelText: '',
+                    icon: 'checkmark-circle-outline',
+                    iconColor: '#4CAF50',
+                  })
                 }}
               >
                 <Text style={[styles.modalButtonText, { color: '#fff' }]}>

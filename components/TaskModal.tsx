@@ -375,7 +375,7 @@ export default function TaskModal({ visible, task, onComplete, onClose }: TaskMo
                                 { backgroundColor: executor.color },
                               ]}
                             >
-                              <PlayerIcon see={executor.iconType} />
+                              <PlayerIcon avatarId={executor.avatar} />
                             </View>
                             <Text
                               style={[styles.executorNameSingle, { color: colors.homeCardTitle }]}
@@ -403,7 +403,7 @@ export default function TaskModal({ visible, task, onComplete, onClose }: TaskMo
                             <View
                               style={[styles.executorAvatar, { backgroundColor: executor.color }]}
                             >
-                              <PlayerIcon see={executor.iconType} />
+                              <PlayerIcon avatarId={executor.avatar} />
                             </View>
                             <Text
                               style={[styles.executorName, { color: colors.homeCardTitle }]}
@@ -428,7 +428,7 @@ export default function TaskModal({ visible, task, onComplete, onClose }: TaskMo
                             <View
                               style={[styles.executorAvatar, { backgroundColor: executor.color }]}
                             >
-                              <PlayerIcon see={executor.iconType} />
+                              <PlayerIcon avatarId={executor.avatar} />
                             </View>
                             <Text
                               style={[styles.executorName, { color: colors.homeCardTitle }]}
@@ -673,7 +673,7 @@ export default function TaskModal({ visible, task, onComplete, onClose }: TaskMo
                                 { backgroundColor: executor.color },
                               ]}
                             >
-                              <PlayerIcon see={executor.iconType} />
+                              <PlayerIcon avatarId={executor.avatar} />
                             </View>
                             <Text style={[styles.affectedPlayerName, { color: executor.color }]}>
                               {executor.name}

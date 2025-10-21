@@ -1,8 +1,8 @@
 import { useCallback, useState } from 'react'
-import { Alert } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { AvatarGender } from '@/types/settings'
 import { getRandomAvatarByGender } from '@/constants/avatars'
+import { showConfirmDialog } from '@/components/ConfirmDialog'
 
 export interface GamePlayer {
   id: number
@@ -326,7 +326,7 @@ export const useGamePlayers = (initialPlayerCount: number = 2, boardSize: number
 
   // 显示胜利弹窗
   const showWinDialog = useCallback(
-    (winner: GamePlayer, onRestart: () => void, onExit: () => void) => {
+    async (winner: GamePlayer, onRestart: () => void, onExit: () => void) => {
       const ranking = getPlayerRanking()
       const winnerStats = getPlayerStats(winner.id)
 
@@ -343,10 +343,20 @@ export const useGamePlayers = (initialPlayerCount: number = 2, boardSize: number
 
       const message = `${t('players.victory', '{{name}} 获得胜利！', { name: winner.name })}\n\n${t('players.finalRanking', '📊 最终排名:')}\n${rankingText}\n\n${t('players.winnerStats', '🏆 获胜者统计:')}\n${t('players.completedTasks', '✅ 完成任务: {{count}} 个', { count: winnerStats?.tasksCompleted || 0 })}\n${t('players.achievements', '🌟 获得成就: {{count}} 个', { count: winnerStats?.achievements || 0 })}`
 
-      Alert.alert(t('players.gameEnd', '🎉 游戏结束'), message, [
-        { text: t('players.restart', '重新开始'), onPress: onRestart },
-        { text: t('players.exitGame', '退出游戏'), onPress: onExit },
-      ])
+      const result = await showConfirmDialog({
+        title: t('players.gameEnd', '🎉 游戏结束'),
+        message,
+        confirmText: t('players.restart', '重新开始'),
+        cancelText: t('players.exitGame', '退出游戏'),
+        icon: 'trophy-outline',
+        iconColor: '#FFD700',
+      })
+
+      if (result) {
+        onRestart()
+      } else {
+        onExit()
+      }
     },
     [getPlayerRanking, getPlayerStats, t],
   )

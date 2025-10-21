@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react'
 import {
-  Alert,
   Modal,
   ScrollView,
   StyleSheet,
@@ -16,6 +15,7 @@ import { Colors } from '@/constants/theme'
 import { TaskSet } from '@/types/tasks'
 import { useTasksStore } from '@/store/tasksStore'
 import * as Clipboard from 'expo-clipboard'
+import { showConfirmDialog } from '@/components/ConfirmDialog'
 
 interface TaskSetModalProps {
   visible: boolean
@@ -62,18 +62,26 @@ export const TaskSetModal: React.FC<TaskSetModalProps> = ({ visible, onClose, ta
 
   const handleSave = async () => {
     if (!formData.name.trim()) {
-      Alert.alert(
-        t('taskSetModal.alerts.nameRequired.title', '提示'),
-        t('taskSetModal.alerts.nameRequired.message', '请输入任务集名称'),
-      )
+      await showConfirmDialog({
+        title: t('taskSetModal.alerts.nameRequired.title', '提示'),
+        message: t('taskSetModal.alerts.nameRequired.message', '请输入任务集名称'),
+        confirmText: t('common.ok', '确定'),
+        cancelText: '',
+        icon: 'alert-circle-outline',
+        iconColor: '#FF6B6B',
+      })
       return
     }
 
     if (formData.tasks.every((task) => !task.trim())) {
-      Alert.alert(
-        t('taskSetModal.alerts.tasksRequired.title', '提示'),
-        t('taskSetModal.alerts.tasksRequired.message', '请至少添加一个任务'),
-      )
+      await showConfirmDialog({
+        title: t('taskSetModal.alerts.tasksRequired.title', '提示'),
+        message: t('taskSetModal.alerts.tasksRequired.message', '请至少添加一个任务'),
+        confirmText: t('common.ok', '确定'),
+        cancelText: '',
+        icon: 'alert-circle-outline',
+        iconColor: '#FF6B6B',
+      })
       return
     }
 
@@ -117,10 +125,14 @@ export const TaskSetModal: React.FC<TaskSetModalProps> = ({ visible, onClose, ta
 
       onClose()
     } catch {
-      Alert.alert(
-        t('taskSetModal.alerts.saveError.title', '错误'),
-        t('taskSetModal.alerts.saveError.message', '保存失败，请重试'),
-      )
+      await showConfirmDialog({
+        title: t('taskSetModal.alerts.saveError.title', '错误'),
+        message: t('taskSetModal.alerts.saveError.message', '保存失败，请重试'),
+        confirmText: t('common.ok', '确定'),
+        cancelText: '',
+        icon: 'alert-circle-outline',
+        iconColor: '#FF6B6B',
+      })
     } finally {
       setLoading(false)
     }
@@ -153,10 +165,14 @@ export const TaskSetModal: React.FC<TaskSetModalProps> = ({ visible, onClose, ta
       const clipboardText = await Clipboard.getStringAsync()
 
       if (!clipboardText.trim()) {
-        Alert.alert(
-          t('taskSetModal.alerts.clipboardEmpty.title', '提示'),
-          t('taskSetModal.alerts.clipboardEmpty.message', '剪切板为空'),
-        )
+        await showConfirmDialog({
+          title: t('taskSetModal.alerts.clipboardEmpty.title', '提示'),
+          message: t('taskSetModal.alerts.clipboardEmpty.message', '剪切板为空'),
+          confirmText: t('common.ok', '确定'),
+          cancelText: '',
+          icon: 'alert-circle-outline',
+          iconColor: '#FF6B6B',
+        })
         return
       }
 
@@ -167,10 +183,14 @@ export const TaskSetModal: React.FC<TaskSetModalProps> = ({ visible, onClose, ta
         .filter((task) => task.length > 0)
 
       if (pastedTasks.length === 0) {
-        Alert.alert(
-          t('taskSetModal.alerts.clipboardNoTasks.title', '提示'),
-          t('taskSetModal.alerts.clipboardNoTasks.message', '剪切板中没有有效的任务内容'),
-        )
+        await showConfirmDialog({
+          title: t('taskSetModal.alerts.clipboardNoTasks.title', '提示'),
+          message: t('taskSetModal.alerts.clipboardNoTasks.message', '剪切板中没有有效的任务内容'),
+          confirmText: t('common.ok', '确定'),
+          cancelText: '',
+          icon: 'alert-circle-outline',
+          iconColor: '#FF6B6B',
+        })
         return
       }
 
@@ -188,17 +208,25 @@ export const TaskSetModal: React.FC<TaskSetModalProps> = ({ visible, onClose, ta
         }))
       }
 
-      Alert.alert(
-        t('taskSetModal.alerts.pasteSuccess.title', '成功'),
-        t('taskSetModal.alerts.pasteSuccess.message', '已粘贴 {{count}} 个任务', {
+      await showConfirmDialog({
+        title: t('taskSetModal.alerts.pasteSuccess.title', '成功'),
+        message: t('taskSetModal.alerts.pasteSuccess.message', '已粘贴 {{count}} 个任务', {
           count: pastedTasks.length,
         }),
-      )
+        confirmText: t('common.ok', '确定'),
+        cancelText: '',
+        icon: 'checkmark-circle-outline',
+        iconColor: '#4CAF50',
+      })
     } catch {
-      Alert.alert(
-        t('taskSetModal.alerts.pasteError.title', '错误'),
-        t('taskSetModal.alerts.pasteError.message', '粘贴失败，请重试'),
-      )
+      await showConfirmDialog({
+        title: t('taskSetModal.alerts.pasteError.title', '错误'),
+        message: t('taskSetModal.alerts.pasteError.message', '粘贴失败，请重试'),
+        confirmText: t('common.ok', '确定'),
+        cancelText: '',
+        icon: 'alert-circle-outline',
+        iconColor: '#FF6B6B',
+      })
     }
   }
 

@@ -142,8 +142,12 @@ const CellComponent: React.FC<CellComponentProps> = ({
       style={[
         styles.cell,
         {
-          left: cell.x * (ACTUAL_BOARD_WIDTH / BOARD_SIZE) + (ACTUAL_BOARD_WIDTH / BOARD_SIZE - ACTUAL_CELL_SIZE) / 2,
-          top: cell.y * (ACTUAL_BOARD_WIDTH / BOARD_SIZE) + (ACTUAL_BOARD_WIDTH / BOARD_SIZE - ACTUAL_CELL_SIZE) / 2,
+          left:
+            cell.x * (ACTUAL_BOARD_WIDTH / BOARD_SIZE) +
+            (ACTUAL_BOARD_WIDTH / BOARD_SIZE - ACTUAL_CELL_SIZE) / 2,
+          top:
+            cell.y * (ACTUAL_BOARD_WIDTH / BOARD_SIZE) +
+            (ACTUAL_BOARD_WIDTH / BOARD_SIZE - ACTUAL_CELL_SIZE) / 2,
         },
       ]}
       onPress={handlePress}
@@ -287,7 +291,7 @@ const PlayerPiece: React.FC<PlayerPieceProps> = ({ player, index, total }) => {
           },
         ]}
       >
-        <PlayerIcon see={player.iconType} />
+        <PlayerIcon avatarId={player.avatar} />
       </View>
     </Animated.View>
   )
