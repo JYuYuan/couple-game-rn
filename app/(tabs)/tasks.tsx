@@ -271,8 +271,8 @@ const TaskSettings: React.FC = () => {
         const confirmed = await showConfirmDialog({
           title: t('tasks.export.title', '导出任务集'),
           message: t('tasks.export.message', '请选择导出方式'),
-          confirmText: t('common.cancel', '取消'),
-          cancelText: t('tasks.export.saveToFile', '保存到文件'),
+          confirmText: t('tasks.export.saveToFile', '保存到文件'),
+          cancelText: t('common.cancel', '取消'),
         })
 
         if (confirmed) await saveToFile(exportData.name, jsonString)

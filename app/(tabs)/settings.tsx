@@ -95,9 +95,11 @@ const Settings: React.FC = () => {
           if (updateInfo.hasUpdate) {
             const confirmed = await showConfirmDialog({
               title: t('settings.updateCheck.alertTitle', '检查更新'),
-              message: updateInfo.message || t('settings.updateCheck.hasUpdate', '发现新版本 {{version}}！', {
-                version: updateInfo.latestVersion,
-              }),
+              message:
+                updateInfo.message ||
+                t('settings.updateCheck.hasUpdate', '发现新版本 {{version}}！', {
+                  version: updateInfo.latestVersion,
+                }),
               confirmText: t('settings.updateCheck.update', '立即更新'),
               cancelText: t('settings.updateCheck.later', '稍后更新'),
               icon: 'download-outline',
@@ -112,7 +114,7 @@ const Settings: React.FC = () => {
               title: t('settings.updateCheck.alertTitle', '检查更新'),
               message: updateInfo.message || t('settings.updateCheck.noUpdate', '当前已是最新版本'),
               confirmText: t('common.ok', '确定'),
-              cancelText: '',
+              cancelText: false,
               icon: 'checkmark-circle-outline',
               iconColor: '#4CAF50',
             })
@@ -122,7 +124,7 @@ const Settings: React.FC = () => {
             title: t('settings.updateCheck.alertTitle', '检查更新'),
             message: t('settings.updateCheck.error', '检查更新失败，请稍后再试'),
             confirmText: t('common.ok', '确定'),
-            cancelText: '',
+            cancelText: false,
             icon: 'alert-circle-outline',
             iconColor: '#FF6B6B',
           })
@@ -138,7 +140,7 @@ const Settings: React.FC = () => {
             '我们重视您的隐私，所有数据均存储在本地，不会上传到服务器。',
           ),
           confirmText: t('common.ok', '确定'),
-          cancelText: '',
+          cancelText: false,
           icon: 'shield-checkmark-outline',
           iconColor: '#4CAF50',
         })
@@ -151,7 +153,7 @@ const Settings: React.FC = () => {
             '感谢使用我们的应用，请合理使用本应用的各项功能。',
           ),
           confirmText: t('common.ok', '确定'),
-          cancelText: '',
+          cancelText: false,
           icon: 'document-text-outline',
           iconColor: '#4CAF50',
         })
@@ -235,7 +237,7 @@ const Settings: React.FC = () => {
                           : '无法获取本机 IP 地址，请检查网络连接',
                       ),
                       confirmText: t('common.ok', '确定'),
-                      cancelText: '',
+                      cancelText: false,
                       icon: 'alert-circle-outline',
                       iconColor: '#FF6B6B',
                     })
@@ -246,7 +248,7 @@ const Settings: React.FC = () => {
                     title: t('common.success', '成功'),
                     message: t('settings.lan.copied', 'IP地址已复制到剪贴板'),
                     confirmText: t('common.ok', '确定'),
-                    cancelText: '',
+                    cancelText: false,
                     icon: 'checkmark-circle-outline',
                     iconColor: '#4CAF50',
                   })
@@ -553,7 +555,11 @@ const Settings: React.FC = () => {
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.modalButton, styles.modalButtonConfirm, { backgroundColor: accentColor }]}
+                style={[
+                  styles.modalButton,
+                  styles.modalButtonConfirm,
+                  { backgroundColor: accentColor },
+                ]}
                 onPress={async () => {
                   setNetworkSettings({ socketUrl: socketUrlInput })
                   setShowSocketUrlModal(false)
@@ -561,7 +567,7 @@ const Settings: React.FC = () => {
                     title: t('common.success', '成功'),
                     message: t('settings.network.socketUrlSaved', 'Socket 地址已保存'),
                     confirmText: t('common.ok', '确定'),
-                    cancelText: '',
+                    cancelText: false,
                     icon: 'checkmark-circle-outline',
                     iconColor: '#4CAF50',
                   })
@@ -625,7 +631,12 @@ const Settings: React.FC = () => {
                 keyboardType="number-pad"
               />
 
-              <Text style={[styles.modalDescription, { color: secondaryText, marginTop: 12, fontSize: 12 }]}>
+              <Text
+                style={[
+                  styles.modalDescription,
+                  { color: secondaryText, marginTop: 12, fontSize: 12 },
+                ]}
+              >
                 {t(
                   'settings.lan.portHint',
                   '端口范围：1024-65535。创建房间时，系统会使用此端口启动服务。',
@@ -642,7 +653,11 @@ const Settings: React.FC = () => {
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.modalButton, styles.modalButtonConfirm, { backgroundColor: accentColor }]}
+                style={[
+                  styles.modalButton,
+                  styles.modalButtonConfirm,
+                  { backgroundColor: accentColor },
+                ]}
                 onPress={async () => {
                   const port = parseInt(lanPortInput, 10)
                   if (isNaN(port) || port < 1024 || port > 65535) {
@@ -650,7 +665,7 @@ const Settings: React.FC = () => {
                       title: t('common.error', '错误'),
                       message: t('settings.lan.invalidPort', '端口号必须在 1024-65535 之间'),
                       confirmText: t('common.ok', '确定'),
-                      cancelText: '',
+                      cancelText: false,
                       icon: 'alert-circle-outline',
                       iconColor: '#FF6B6B',
                     })
@@ -659,14 +674,14 @@ const Settings: React.FC = () => {
 
                   setNetworkSettings({
                     lanIP: fetchIp.data || '',
-                    lanPort: port
+                    lanPort: port,
                   })
                   setShowLanConfigModal(false)
                   await showConfirmDialog({
                     title: t('common.success', '成功'),
                     message: t('settings.lan.portSaved', '局域网端口已保存'),
                     confirmText: t('common.ok', '确定'),
-                    cancelText: '',
+                    cancelText: false,
                     icon: 'checkmark-circle-outline',
                     iconColor: '#4CAF50',
                   })

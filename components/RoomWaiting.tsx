@@ -45,7 +45,7 @@ export const RoomWaiting: React.FC<RoomWaitingProps> = ({
         title: t('common.success', '成功'),
         message: t('online.roomCodeCopied', '房间代码已复制到剪贴板'),
         confirmText: t('common.ok', '确定'),
-        cancelText: '',
+        cancelText: false,
         icon: 'checkmark-circle-outline',
         iconColor: '#4CAF50',
       })
@@ -54,7 +54,7 @@ export const RoomWaiting: React.FC<RoomWaitingProps> = ({
         title: t('common.error', '错误'),
         message: t('online.copyFailed', '复制失败，请手动复制房间代码'),
         confirmText: t('common.ok', '确定'),
-        cancelText: '',
+        cancelText: false,
         icon: 'alert-circle-outline',
         iconColor: '#FF6B6B',
       })

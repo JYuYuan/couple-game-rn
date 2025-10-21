@@ -18,7 +18,7 @@ export interface ConfirmDialogOptions {
   title?: string
   message?: string
   confirmText?: string
-  cancelText?: string
+  cancelText?: false | string
   confirmColor?: string
   cancelColor?: string
   icon?: string
@@ -49,15 +49,15 @@ export function ConfirmDialogProvider() {
 
   useEffect(() => {
     if (state.visible) {
-      backdropOpacity.value = withTiming(1, { duration: 300 })
-      modalScale.value = withSpring(1, { damping: 15, stiffness: 150 })
-      modalTranslateY.value = withSpring(0, { damping: 15, stiffness: 150 })
-      modalOpacity.value = withTiming(1, { duration: 300 })
+      backdropOpacity.value = 1
+      modalScale.value = 1
+      modalTranslateY.value = 0
+      modalOpacity.value = 1
     } else {
-      backdropOpacity.value = withTiming(0, { duration: 200 })
-      modalScale.value = withTiming(0.8, { duration: 200 })
-      modalTranslateY.value = withTiming(50, { duration: 200 })
-      modalOpacity.value = withTiming(0, { duration: 200 })
+      backdropOpacity.value = 0
+      modalScale.value = 0.8
+      modalTranslateY.value = 50
+      modalOpacity.value = 0
     }
   }, [state.visible])
 
@@ -140,15 +140,17 @@ export function ConfirmDialogProvider() {
             ) : null}
 
             <View style={styles.buttonContainer}>
-              <TouchableOpacity
-                style={[styles.button, styles.cancelButton]}
-                onPress={handleCancel}
-                activeOpacity={0.8}
-              >
-                <View style={[styles.buttonContent, { backgroundColor: cancelColor + '15' }]}>
-                  <Text style={[styles.buttonText, { color: cancelColor }]}>{cancelText}</Text>
-                </View>
-              </TouchableOpacity>
+              {cancelText !== false && (
+                <TouchableOpacity
+                  style={[styles.button, styles.cancelButton]}
+                  onPress={handleCancel}
+                  activeOpacity={0.8}
+                >
+                  <View style={[styles.buttonContent, { backgroundColor: cancelColor + '15' }]}>
+                    <Text style={[styles.buttonText, { color: cancelColor }]}>{cancelText}</Text>
+                  </View>
+                </TouchableOpacity>
+              )}
 
               <TouchableOpacity
                 style={[styles.button, styles.confirmButton]}

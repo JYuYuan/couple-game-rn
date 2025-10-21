@@ -108,7 +108,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
         title: '提示',
         message: '请输入分类名称',
         confirmText: '确定',
-        cancelText: '',
+        cancelText: false,
         icon: 'alert-circle-outline',
         iconColor: '#FF6B6B',
       })
@@ -139,7 +139,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
         title: '错误',
         message: '保存失败，请重试',
         confirmText: '确定',
-        cancelText: '',
+        cancelText: false,
         icon: 'alert-circle-outline',
         iconColor: '#FF6B6B',
       })

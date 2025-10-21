@@ -66,7 +66,7 @@ export const TaskSetModal: React.FC<TaskSetModalProps> = ({ visible, onClose, ta
         title: t('taskSetModal.alerts.nameRequired.title', '提示'),
         message: t('taskSetModal.alerts.nameRequired.message', '请输入任务集名称'),
         confirmText: t('common.ok', '确定'),
-        cancelText: '',
+        cancelText: false,
         icon: 'alert-circle-outline',
         iconColor: '#FF6B6B',
       })
@@ -78,7 +78,7 @@ export const TaskSetModal: React.FC<TaskSetModalProps> = ({ visible, onClose, ta
         title: t('taskSetModal.alerts.tasksRequired.title', '提示'),
         message: t('taskSetModal.alerts.tasksRequired.message', '请至少添加一个任务'),
         confirmText: t('common.ok', '确定'),
-        cancelText: '',
+        cancelText: false,
         icon: 'alert-circle-outline',
         iconColor: '#FF6B6B',
       })
@@ -129,7 +129,7 @@ export const TaskSetModal: React.FC<TaskSetModalProps> = ({ visible, onClose, ta
         title: t('taskSetModal.alerts.saveError.title', '错误'),
         message: t('taskSetModal.alerts.saveError.message', '保存失败，请重试'),
         confirmText: t('common.ok', '确定'),
-        cancelText: '',
+        cancelText: false,
         icon: 'alert-circle-outline',
         iconColor: '#FF6B6B',
       })
@@ -169,7 +169,7 @@ export const TaskSetModal: React.FC<TaskSetModalProps> = ({ visible, onClose, ta
           title: t('taskSetModal.alerts.clipboardEmpty.title', '提示'),
           message: t('taskSetModal.alerts.clipboardEmpty.message', '剪切板为空'),
           confirmText: t('common.ok', '确定'),
-          cancelText: '',
+          cancelText: false,
           icon: 'alert-circle-outline',
           iconColor: '#FF6B6B',
         })
@@ -187,7 +187,7 @@ export const TaskSetModal: React.FC<TaskSetModalProps> = ({ visible, onClose, ta
           title: t('taskSetModal.alerts.clipboardNoTasks.title', '提示'),
           message: t('taskSetModal.alerts.clipboardNoTasks.message', '剪切板中没有有效的任务内容'),
           confirmText: t('common.ok', '确定'),
-          cancelText: '',
+          cancelText: false,
           icon: 'alert-circle-outline',
           iconColor: '#FF6B6B',
         })
@@ -214,7 +214,7 @@ export const TaskSetModal: React.FC<TaskSetModalProps> = ({ visible, onClose, ta
           count: pastedTasks.length,
         }),
         confirmText: t('common.ok', '确定'),
-        cancelText: '',
+        cancelText: false,
         icon: 'checkmark-circle-outline',
         iconColor: '#4CAF50',
       })
@@ -223,7 +223,7 @@ export const TaskSetModal: React.FC<TaskSetModalProps> = ({ visible, onClose, ta
         title: t('taskSetModal.alerts.pasteError.title', '错误'),
         message: t('taskSetModal.alerts.pasteError.message', '粘贴失败，请重试'),
         confirmText: t('common.ok', '确定'),
-        cancelText: '',
+        cancelText: false,
         icon: 'alert-circle-outline',
         iconColor: '#FF6B6B',
       })
