@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
+import { Stack, useLocalSearchParams, useRouter, useNavigation } from 'expo-router'
 import { useColorScheme } from '@/hooks/use-color-scheme'
 import { Colors } from '@/constants/theme'
 import { RoomWaiting } from '@/components/RoomWaiting'
@@ -11,17 +11,36 @@ import { showError, showSuccess } from '@/utils/toast'
 
 export default function WaitingRoomPage() {
   const router = useRouter()
+  const navigation = useNavigation()
   const params = useLocalSearchParams()
   const colorScheme = useColorScheme() ?? 'light'
   const colors = Colors[colorScheme] as any
   const { t } = useTranslation()
 
   const socket = useSocket()
-  const { currentRoom, setCurrentRoom } = useRoomStore()
+  const { currentRoom, clearRoom } = useRoomStore()
   const [isStartingGame, setIsStartingGame] = useState(false)
 
   // 获取传入的参数
   const roomId = params.roomId as string
+
+  // 监听返回按钮点击事件
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', (e) => {
+      // 如果正在离开页面，清除房间状态
+      console.log('🚪 等待室检测到返回操作，清除房间状态')
+
+      // 清除房间状态
+      clearRoom()
+
+      // 离开房间
+      if (currentRoom?.id) {
+        socket.leaveRoom()
+      }
+    })
+
+    return unsubscribe
+  }, [navigation, currentRoom?.id])
 
   // 监听游戏状态变化，自动跳转到游戏页面
   useEffect(() => {

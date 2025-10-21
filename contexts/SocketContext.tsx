@@ -226,6 +226,9 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     } else {
       socketService.leaveRoom()
     }
+    // 确保清除 roomStore 中的房间状态
+    const { useRoomStore } = require('@/store/roomStore')
+    useRoomStore.getState().clearRoom()
   }, [connectionType])
 
   const resetRoomState = useCallback(() => {
@@ -242,10 +245,10 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         if (!isLANAvailable()) {
           throw new Error(
             'LAN 功能不可用\n' +
-            '请使用 expo-dev-client 或生产构建\n\n' +
-            '安装方法:\n' +
-            '1. npx expo install expo-dev-client\n' +
-            '2. npx expo run:ios',
+              '请使用 expo-dev-client 或生产构建\n\n' +
+              '安装方法:\n' +
+              '1. npx expo install expo-dev-client\n' +
+              '2. npx expo run:ios',
           )
         }
 
@@ -260,11 +263,12 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setConnectionType('lan')
         setIsConnected(true)
 
-        // 创建局域网房间
-        const room = await lanService.createRoom(data)
+        // 创建局域网房间，使用配置的端口
+        const room = await lanService.createRoom(data, networkSettings.lanPort)
 
         console.log('✅ 局域网房间创建成功！')
         console.log('📱 房间ID:', room.id)
+        console.log('🔌 端口:', networkSettings.lanPort)
         console.log('💡 其他玩家可以通过扫描加入')
 
         return room as LANRoom
@@ -275,7 +279,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         throw error
       }
     },
-    [playerId],
+    [playerId, networkSettings.lanPort],
   )
 
   const joinLANRoom = useCallback(
@@ -286,10 +290,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
         // 检查是否支持
         if (!isLANAvailable()) {
-          throw new Error(
-            'LAN 功能不可用\n' +
-            '请使用 expo-dev-client 或生产构建',
-          )
+          throw new Error('LAN 功能不可用\n' + '请使用 expo-dev-client 或生产构建')
         }
 
         // 加载 LAN 模块
@@ -312,7 +313,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
         // 否则，尝试从扫描结果中查找
         const discovered = lanService.getDiscoveredRooms()
-        const targetRoom = discovered.find((r) => r.roomId === data.roomId)
+        const targetRoom = discovered.find((r: any) => r.roomId === data.roomId)
 
         if (!targetRoom) {
           throw new Error('未找到该房间，请确保在同一 Wi-Fi 网络下并开始扫描')

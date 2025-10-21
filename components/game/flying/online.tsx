@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react'
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View, Dimensions } from 'react-native'
-import { Stack, useRouter } from 'expo-router'
+import { Stack, useRouter, useNavigation } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 import { LinearGradient } from 'expo-linear-gradient'
@@ -21,6 +21,7 @@ import toast from '@/utils/toast'
 
 export default function FlyingChessGame() {
   const router = useRouter()
+  const navigation = useNavigation()
   const colorScheme = useColorScheme() ?? 'light'
   const colors = Colors[colorScheme] as any
   const { t } = useTranslation()
@@ -35,6 +36,28 @@ export default function FlyingChessGame() {
   const taskSet = room?.taskSet
   // 使用 state 管理 currentUserId，避免依赖 room 状态同步
   const [currentUserId, setCurrentUserId] = useState<string | null>(room?.currentUser || null)
+
+  // 监听返回按钮点击事件
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', (e) => {
+      // 如果正在离开页面，清除房间状态
+      console.log('🚪 检测到返回操作，清除房间状态')
+
+      // 设置离开标记
+      isLeavingRef.current = true
+
+      // 清除房间状态
+      const { clearRoom } = useRoomStore.getState()
+      clearRoom()
+
+      // 离开房间
+      if (room?.id) {
+        socket.leaveRoom()
+      }
+    })
+
+    return unsubscribe
+  }, [navigation, room?.id])
 
   // 初始化和同步 currentUserId
   useEffect(() => {
@@ -71,8 +94,13 @@ export default function FlyingChessGame() {
   // 胜利弹窗状态
   const [showVictoryModal, setShowVictoryModal] = useState(false)
   const [winner, setWinner] = useState<GamePlayer | null>(null)
+  // 添加标记以防止离开房间后触发导航
+  const isLeavingRef = useRef(false)
 
   useEffect(() => {
+    // 如果正在离开房间,不触发任何导航
+    if (isLeavingRef.current) return
+
     if (room?.gameStatus === 'waiting') {
       router.replace({
         pathname: '/waiting-room',
@@ -151,11 +179,20 @@ export default function FlyingChessGame() {
     console.log('🚪 请求离开房间')
     if (!room?.id) return
 
+    // 设置离开标记,防止 useEffect 触发导航
+    isLeavingRef.current = true
+
+    // 先清除 roomStore 中的房间状态
+    const { clearRoom } = useRoomStore.getState()
+    clearRoom()
+
     // 发送离开房间请求给服务端
     socket.leaveRoom()
 
-    // 返回首页
-    router.replace('/')
+    // 使用 setTimeout 确保状态清除后再导航
+    setTimeout(() => {
+      router.replace('/')
+    }, 100)
   }
 
   // 任务完成反馈 - 只发送结果给服务端
@@ -482,9 +519,16 @@ export default function FlyingChessGame() {
       }
     }
 
-    // 监听房间销毁事件（房主离开）
+    // 监听房间销毁事件(房主离开)
     const handleRoomDestroyed = (data: { reason: string; message: string }) => {
       console.log('🚪 房间被销毁:', data)
+
+      // 设置离开标记,防止 useEffect 触发导航
+      isLeavingRef.current = true
+
+      // 清除房间状态
+      const { clearRoom } = useRoomStore.getState()
+      clearRoom()
 
       // 显示提示
       toast.error(t('online.roomDestroyed', '房间已关闭'), data.message, 3000)

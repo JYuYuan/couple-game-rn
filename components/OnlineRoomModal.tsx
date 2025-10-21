@@ -60,6 +60,10 @@ export const OnlineRoomModal: React.FC<OnlineRoomModalProps> = ({
   const [isLoading, setIsLoading] = useState(false)
   const [discoveredRooms, setDiscoveredRooms] = useState<LANRoomDiscovery[]>([])
   const [isScanning, setIsScanning] = useState(false)
+  const [onlineRooms, setOnlineRooms] = useState<OnlineRoom[]>([])
+  const [isLoadingOnlineRooms, setIsLoadingOnlineRooms] = useState(false)
+  const [manualLanIP, setManualLanIP] = useState('')
+  const [manualLanPort, setManualLanPort] = useState('8080')
 
   // 头像和性别状态
   const [selectedGender, setSelectedGender] = useState<AvatarGender>('man')
@@ -119,6 +123,33 @@ export const OnlineRoomModal: React.FC<OnlineRoomModalProps> = ({
     }
   }, [visible, connectionMode, activeTab, isLANSupported])
 
+  // 在线房间列表监听
+  useEffect(() => {
+    if (visible && connectionMode === 'online' && activeTab === 'join') {
+      // 请求房间列表
+      handleRefreshOnlineRooms()
+
+      // 监听房间列表更新
+      const handleRoomList = (rooms: OnlineRoom[]) => {
+        console.log('收到在线房间列表:', rooms)
+        setOnlineRooms(rooms)
+        setIsLoadingOnlineRooms(false)
+      }
+
+      socket.on('room:list', handleRoomList)
+
+      // 设置定时刷新
+      const refreshInterval = setInterval(() => {
+        handleRefreshOnlineRooms()
+      }, 5000)
+
+      return () => {
+        socket.off('room:list', handleRoomList)
+        clearInterval(refreshInterval)
+      }
+    }
+  }, [visible, connectionMode, activeTab])
+
   const handleCreateRoom = async () => {
     if (!playerName.trim() || !roomName.trim()) {
       showError(t('common.error', '错误'), t('online.error.fillRequired', '请填写所有必需信息'))
@@ -174,15 +205,30 @@ export const OnlineRoomModal: React.FC<OnlineRoomModalProps> = ({
       return
     }
 
-    if (connectionMode === 'lan' && lanRoomData) {
-      // 加入局域网房间
+    if (connectionMode === 'lan') {
+      // 局域网模式：可以通过发现的房间或手动输入IP和端口
+      const targetIP = lanRoomData?.hostIP || manualLanIP.trim()
+      const targetPort = lanRoomData?.tcpPort || parseInt(manualLanPort, 10)
+      const targetRoomId = lanRoomData?.roomId || ''
+
+      if (!targetIP) {
+        showError(t('common.error', '错误'), t('online.lan.error.noIP', '请选择一个房间或输入IP地址'))
+        return
+      }
+
+      if (!targetPort || isNaN(targetPort)) {
+        showError(t('common.error', '错误'), t('online.lan.error.invalidPort', '请输入有效的端口号'))
+        return
+      }
+
       setIsLoading(true)
       try {
         await socket.switchToLANMode()
 
         const joinData: JoinLANRoomData = {
-          hostIP: lanRoomData.hostIP,
-          roomId: lanRoomData.roomId,
+          hostIP: targetIP,
+          hostPort: targetPort,
+          roomId: targetRoomId,
           playerName: playerName.trim(),
           avatar: selectedAvatar.id,
           gender: selectedGender,
@@ -193,7 +239,7 @@ export const OnlineRoomModal: React.FC<OnlineRoomModalProps> = ({
         console.error('加入局域网房间失败:', error)
         showError(
           t('common.error', '错误'),
-          error instanceof Error ? error.message : t('online.error.joinFailed', '加入房间失败'),
+          error instanceof Error ? error.message : t('online.error.joinFailed', '加��房间失败'),
         )
       } finally {
         setIsLoading(false)
@@ -265,6 +311,66 @@ export const OnlineRoomModal: React.FC<OnlineRoomModalProps> = ({
     socket.stopRoomScan?.()
     setIsScanning(false)
   }
+
+  // 刷新在线房间列表
+  const handleRefreshOnlineRooms = () => {
+    if (socket.isConnected) {
+      setIsLoadingOnlineRooms(true)
+      socket.requestRoomList?.()
+    }
+  }
+
+  // 渲染在线房间项
+  const renderOnlineRoomItem = (room: OnlineRoom) => (
+    <TouchableOpacity
+      key={room.id}
+      style={[
+        styles.lanRoomItem,
+        {
+          backgroundColor: colors.homeBackground,
+          borderColor: colors.homeCardBorder,
+        },
+      ]}
+      onPress={() => handleJoinRoom(room.id)}
+      disabled={isLoading || room.gameStatus !== 'waiting'}
+    >
+      <View style={styles.lanRoomHeader}>
+        <Text style={[styles.lanRoomName, { color: colors.homeCardTitle }]}>{room.name}</Text>
+        <Text style={[styles.lanRoomType, { color: colors.settingsAccent }]}>
+          {getGameTypeText(room.gameType)}
+        </Text>
+      </View>
+      <View style={styles.lanRoomInfo}>
+        <Text style={[styles.lanRoomDetail, { color: colors.homeCardDescription }]}>
+          房主: {room.players.find((p) => p.id === room.hostId)?.name || '未知'}
+        </Text>
+        <Text style={[styles.lanRoomDetail, { color: colors.homeCardDescription }]}>
+          玩家: {room.players.length}/{room.maxPlayers}
+        </Text>
+      </View>
+      <View style={styles.onlineRoomStatus}>
+        <Text
+          style={[
+            styles.onlineRoomStatusText,
+            {
+              color:
+                room.gameStatus === 'waiting'
+                  ? '#4CAF50'
+                  : room.gameStatus === 'playing'
+                    ? '#FF9500'
+                    : '#FF6B6B',
+            },
+          ]}
+        >
+          {room.gameStatus === 'waiting'
+            ? '等待中'
+            : room.gameStatus === 'playing'
+              ? '游戏中'
+              : '已结束'}
+        </Text>
+      </View>
+    </TouchableOpacity>
+  )
 
   // 渲染局域网房间项
   const renderLANRoomItem = (room: LANRoomDiscovery) => (
@@ -544,8 +650,114 @@ export const OnlineRoomModal: React.FC<OnlineRoomModalProps> = ({
                   </View>
                 )}
 
+                {connectionMode === 'online' && (
+                  <View style={styles.lanRoomsSection}>
+                    <View style={styles.scanHeader}>
+                      <Text style={[styles.label, { color: colors.homeCardDescription }]}>
+                        可用房间
+                      </Text>
+                      <TouchableOpacity
+                        onPress={handleRefreshOnlineRooms}
+                        style={[
+                          styles.scanButton,
+                          { backgroundColor: colors.settingsAccent },
+                        ]}
+                        disabled={!socket.isConnected}
+                      >
+                        <Ionicons name="refresh" size={14} color="white" />
+                        <Text style={styles.scanButtonText}>刷新</Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    {isLoadingOnlineRooms && (
+                      <View
+                        style={[
+                          styles.scanningIndicator,
+                          { backgroundColor: colors.homeBackground },
+                        ]}
+                      >
+                        <Ionicons name="search" size={16} color={colors.settingsAccent} />
+                        <Text style={[styles.scanningText, { color: colors.homeCardDescription }]}>
+                          正在加载房间列表...
+                        </Text>
+                      </View>
+                    )}
+
+                    {onlineRooms.length > 0 ? (
+                      <View style={styles.roomsList}>
+                        {onlineRooms
+                          .filter((room) => room.gameStatus === 'waiting')
+                          .map(renderOnlineRoomItem)}
+                      </View>
+                    ) : (
+                      !isLoadingOnlineRooms && (
+                        <View
+                          style={[styles.noRoomsFound, { backgroundColor: colors.homeBackground }]}
+                        >
+                          <Ionicons
+                            name="cloud-offline-outline"
+                            size={24}
+                            color={colors.homeCardDescription}
+                          />
+                          <Text style={[styles.noRoomsText, { color: colors.homeCardDescription }]}>
+                            暂无可用房间
+                          </Text>
+                          <Text style={[styles.noRoomsHint, { color: colors.homeCardDescription }]}>
+                            您可以创建一个新房间或输入房间代码加入
+                          </Text>
+                        </View>
+                      )
+                    )}
+                  </View>
+                )}
+
                 {connectionMode === 'lan' && (
                   <View style={styles.lanRoomsSection}>
+                    {/* 手动输入IP和端口 */}
+                    <View style={styles.manualConnectSection}>
+                      <Text style={[styles.label, { color: colors.homeCardDescription }]}>
+                        {t('online.lan.manualConnect', '手动连接')}
+                      </Text>
+                      <View style={styles.manualConnectInputs}>
+                        <View style={[styles.inputGroup, { flex: 2 }]}>
+                          <TextInput
+                            style={[
+                              styles.input,
+                              {
+                                backgroundColor: colors.homeBackground,
+                                borderColor: colors.homeCardBorder,
+                                color: colors.homeCardTitle,
+                              },
+                            ]}
+                            value={manualLanIP}
+                            onChangeText={setManualLanIP}
+                            placeholder={t('online.lan.ipPlaceholder', 'IP地址(如: 192.168.1.100)')}
+                            placeholderTextColor={colors.homeCardDescription}
+                            autoCapitalize="none"
+                            autoCorrect={false}
+                            keyboardType="decimal-pad"
+                          />
+                        </View>
+                        <View style={[styles.inputGroup, { flex: 1 }]}>
+                          <TextInput
+                            style={[
+                              styles.input,
+                              {
+                                backgroundColor: colors.homeBackground,
+                                borderColor: colors.homeCardBorder,
+                                color: colors.homeCardTitle,
+                              },
+                            ]}
+                            value={manualLanPort}
+                            onChangeText={setManualLanPort}
+                            placeholder={t('online.lan.portPlaceholder', '端口')}
+                            placeholderTextColor={colors.homeCardDescription}
+                            keyboardType="number-pad"
+                          />
+                        </View>
+                      </View>
+                    </View>
+
                     <View style={styles.scanHeader}>
                       <Text style={[styles.label, { color: colors.homeCardDescription }]}>
                         {t('online.lan.discoveredRooms', '发现的局域网房间')}
@@ -606,6 +818,7 @@ export const OnlineRoomModal: React.FC<OnlineRoomModalProps> = ({
                   </View>
                 )}
 
+                {/* 加入按钮 */}
                 {connectionMode === 'online' && (
                   <TouchableOpacity
                     style={[styles.actionButton, { opacity: isLoading ? 0.6 : 1 }]}
@@ -618,6 +831,23 @@ export const OnlineRoomModal: React.FC<OnlineRoomModalProps> = ({
                         {isLoading
                           ? t('online.joining', '加入中...')
                           : t('online.join.button', '加入房间')}
+                      </Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                )}
+
+                {connectionMode === 'lan' && (
+                  <TouchableOpacity
+                    style={[styles.actionButton, { opacity: isLoading ? 0.6 : 1 }]}
+                    onPress={() => handleJoinRoom()}
+                    disabled={isLoading}
+                  >
+                    <LinearGradient colors={['#4CAF50', '#66BB6A']} style={styles.buttonGradient}>
+                      <Ionicons name="enter" size={20} color="white" />
+                      <Text style={styles.buttonText}>
+                        {isLoading
+                          ? t('online.joining', '加入中...')
+                          : t('online.lan.join.button', '连接并加入')}
                       </Text>
                     </LinearGradient>
                   </TouchableOpacity>
@@ -1007,6 +1237,14 @@ const styles = StyleSheet.create({
   lanRoomsSection: {
     marginBottom: 16,
   },
+  manualConnectSection: {
+    marginBottom: 16,
+  },
+  manualConnectInputs: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 8,
+  },
   scanHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1075,6 +1313,13 @@ const styles = StyleSheet.create({
   lanRoomIP: {
     fontSize: 12,
     fontFamily: 'monospace',
+  },
+  onlineRoomStatus: {
+    marginTop: 4,
+  },
+  onlineRoomStatusText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
   noRoomsFound: {
     alignItems: 'center',

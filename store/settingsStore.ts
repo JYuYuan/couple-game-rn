@@ -14,6 +14,8 @@ const defaultNetworkSettings: NetworkSettings = {
   enabled: false,
   socketUrl: 'http://localhost:3001',
   lanMode: false,
+  lanIP: '',
+  lanPort: 8080,
 }
 
 type SettingsStoreType = () => SettingsState

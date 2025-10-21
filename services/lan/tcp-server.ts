@@ -33,7 +33,7 @@ class TCPServer {
   private messageBuffer: Map<string, string> = new Map() // 用于处理粘包
 
   /**
-   * 启动 TCP 服务器
+   * 启动 TCP 服务器（支持端口自动重试）
    */
   start(port: number = TCP_PORT): Promise<number> {
     return new Promise((resolve, reject) => {
@@ -44,23 +44,49 @@ class TCPServer {
       }
 
       this.port = port
+      let retryCount = 0
+      const maxRetries = 10
 
-      // 创建 TCP 服务器
-      this.server = TcpSocket.createServer((socket: any) => {
-        this.handleNewConnection(socket)
-      })
+      const tryStartServer = (currentPort: number) => {
+        // 创建 TCP 服务器
+        this.server = TcpSocket.createServer((socket: any) => {
+          this.handleNewConnection(socket)
+        })
 
-      // 监听错误
-      this.server.on('error', (error: any) => {
-        console.error('TCP Server 错误:', error)
-        reject(error)
-      })
+        // 监听错误
+        this.server.on('error', (error: any) => {
+          console.error(`TCP Server 错误 (端口 ${currentPort}):`, error.message)
 
-      // 开始监听
-      this.server.listen({ port: this.port, host: '0.0.0.0' }, () => {
-        console.log(`🚀 TCP Server 启动成功,监听端口: ${this.port}`)
-        resolve(this.port)
-      })
+          // 如果是端口占用错误，尝试下一个端口
+          if (error.code === 'EADDRINUSE' && retryCount < maxRetries) {
+            retryCount++
+            const nextPort = currentPort + 1
+            console.log(`⚠️ 端口 ${currentPort} 被占用，尝试端口 ${nextPort}...`)
+
+            // 清理当前服务器
+            if (this.server) {
+              this.server.close()
+              this.server = null
+            }
+
+            // 短暂延迟后尝试新端口
+            setTimeout(() => {
+              tryStartServer(nextPort)
+            }, 100)
+          } else {
+            reject(error)
+          }
+        })
+
+        // 开始监听
+        this.server.listen({ port: currentPort, host: '0.0.0.0' }, () => {
+          this.port = currentPort
+          console.log(`🚀 TCP Server 启动成功，监听端口: ${this.port}`)
+          resolve(this.port)
+        })
+      }
+
+      tryStartServer(port)
     })
   }
 

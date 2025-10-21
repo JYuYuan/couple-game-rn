@@ -20,7 +20,7 @@ import type {
   TaskCompleteData,
 } from '@/types/online'
 
-const TCP_PORT = 8080 // 默认 TCP 端口
+const DEFAULT_TCP_PORT = 8080 // 默认 TCP 端口
 
 /**
  * LAN Service 类
@@ -61,7 +61,7 @@ class LANService {
   /**
    * 创建局域网房间(作为房主)
    */
-  async createRoom(data: CreateRoomData): Promise<BaseRoom> {
+  async createRoom(data: CreateRoomData, lanPort?: number): Promise<BaseRoom> {
     console.log('🏠 创建局域网房间...')
 
     // 确保已初始化
@@ -72,8 +72,11 @@ class LANService {
     // 标记为房主
     this.isHost = true
 
+    // 使用配置的端口或默认端口
+    const targetPort = lanPort || DEFAULT_TCP_PORT
+
     // 启动 TCP 服务器
-    const tcpPort = await tcpServer.start(TCP_PORT)
+    const tcpPort = await tcpServer.start(targetPort)
     console.log(`✅ TCP Server 启动: ${this.localIP}:${tcpPort}`)
 
     // 创建房间数据

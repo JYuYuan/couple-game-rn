@@ -247,6 +247,7 @@ export interface LANRoomDiscovery {
   hostPeerId: string
   hostIP: string
   hostName: string
+  tcpPort: number // TCP服务端口
   maxPlayers: number
   currentPlayers: number
   gameType: 'fly' | 'wheel' | 'minesweeper'

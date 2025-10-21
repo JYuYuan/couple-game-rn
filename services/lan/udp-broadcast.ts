@@ -83,12 +83,36 @@ class UDPBroadcastService {
 
     this.socket.on('error', (error: any) => {
       console.error('UDP Socket 错误:', error)
+
+      // 如果是端口占用，尝试关闭并重新绑定
+      if (error.code === 'EADDRINUSE') {
+        console.warn(`⚠️ UDP 端口 ${BROADCAST_PORT} 被占用，尝试重用...`)
+        // UDP 可以设置 reuseAddr 允许多个监听器
+      }
     })
 
-    // 绑定到广播端口
-    this.socket.bind(BROADCAST_PORT, () => {
-      console.log(`🎧 开始监听 UDP 广播 (端口: ${BROADCAST_PORT})`)
-    })
+    // 绑定到广播端口，启用地址重用
+    try {
+      this.socket.bind(
+        {
+          port: BROADCAST_PORT,
+          address: '0.0.0.0',
+        },
+        () => {
+          console.log(`🎧 开始监听 UDP 广播 (端口: ${BROADCAST_PORT})`)
+          // 设置广播和地址重用
+          try {
+            this.socket?.setBroadcast(true)
+            this.socket?.setReuseAddress?.(true) // 允许端口重用
+          } catch (e) {
+            console.warn('设置 socket 选项失败:', e)
+          }
+        },
+      )
+    } catch (error: any) {
+      console.error('绑定 UDP 端口失败:', error)
+      throw error
+    }
   }
 
   /**

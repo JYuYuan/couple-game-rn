@@ -14,6 +14,8 @@ export interface NetworkSettings {
   enabled: boolean // 是否启用网络模式
   socketUrl: string // Socket 服务器地址
   lanMode: boolean // 是否启用局域网模式（仅 App）
+  lanIP: string // 局域网服务器IP地址
+  lanPort: number // 局域网TCP端口
 }
 
 export interface SettingsState {

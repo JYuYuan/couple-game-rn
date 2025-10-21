@@ -18,7 +18,6 @@ import { Colors, CommonStyles, Layout } from '@/constants/theme'
 import { useTasksStore } from '@/store/tasksStore'
 import { TaskSet } from '@/types/tasks'
 import { TaskSetDetailModal } from '@/components/TaskSetDetailModal'
-import { OnlineRoomModal } from '@/components/OnlineRoomModal'
 import { useSocket } from '@/hooks/use-socket'
 import { useSettingsStore } from '@/store'
 
@@ -61,7 +60,6 @@ export default function GameMode() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [modalVisible, setModalVisible] = useState(false)
   const [selectedTaskSet, setSelectedTaskSet] = useState<TaskSet | null>(null)
-  const [showOnlineModal, setShowOnlineModal] = useState(false)
   const hasInitialAnimated = useRef(false)
 
   // 动画值
@@ -265,8 +263,6 @@ export default function GameMode() {
         return
       }
 
-      setSelectedTaskSet(taskSet)
-
       // 检查是否已经在房间中
       if (socket.currentRoom) {
         console.log('Already in room, directly entering game:', socket.currentRoom.id)
@@ -280,9 +276,15 @@ export default function GameMode() {
           },
         })
       } else {
-        console.log('No active room, showing room creation modal')
-        // 如果没有房间，显示创建/加入房间的模态框
-        setShowOnlineModal(true)
+        console.log('No active room, navigating to online room page')
+        // 跳转到在线房间页面
+        router.push({
+          pathname: '/online-room',
+          params: {
+            gameType: gameType,
+            taskSetId: taskSet.id,
+          },
+        })
       }
     }
 
@@ -405,18 +407,6 @@ export default function GameMode() {
         </TouchableOpacity>
       </Animated.View>
     )
-  }
-
-  const handleOnlineRoomJoined = (roomId: string) => {
-    if (!routeConfig[gameType]) return
-    router.push({
-      pathname: '/waiting-room',
-      params: {
-        taskSetId: selectedTaskSet?.id || '',
-        onlineMode: 'true',
-        roomId: roomId,
-      },
-    })
   }
 
   // 辅助函数
@@ -580,15 +570,6 @@ export default function GameMode() {
               : null
           }
           onClose={() => setModalVisible(false)}
-        />
-
-        {/* 在线房间Modal */}
-        <OnlineRoomModal
-          taskSet={selectedTaskSet}
-          visible={showOnlineModal}
-          onClose={() => setShowOnlineModal(false)}
-          gameType={gameType as 'fly' | 'wheel' | 'minesweeper'}
-          onRoomJoined={handleOnlineRoomJoined}
         />
       </View>
     </>

@@ -41,8 +41,10 @@ const Settings: React.FC = () => {
   const [showLanguageModal, setShowLanguageModal] = useState(false)
   const [showThemeModal, setShowThemeModal] = useState(false)
   const [showSocketUrlModal, setShowSocketUrlModal] = useState(false)
+  const [showLanConfigModal, setShowLanConfigModal] = useState(false)
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false)
   const [socketUrlInput, setSocketUrlInput] = useState(networkSettings.socketUrl)
+  const [lanPortInput, setLanPortInput] = useState((networkSettings.lanPort || 8080).toString())
 
   // 获取应用信息
   const appInfo = getAppInfo()
@@ -225,6 +227,15 @@ const Settings: React.FC = () => {
                     t('common.success', '成功'),
                     t('settings.lan.copied', 'IP地址已复制到剪贴板'),
                   )
+                },
+              },
+              {
+                icon: 'settings-outline',
+                label: t('settings.lan.port', '局域网端口'),
+                value: (networkSettings.lanPort || 8080).toString(),
+                onPress: () => {
+                  setLanPortInput((networkSettings.lanPort || 8080).toString())
+                  setShowLanConfigModal(true)
                 },
               },
             ]
@@ -537,6 +548,103 @@ const Settings: React.FC = () => {
           </View>
         </TouchableOpacity>
       </Modal>
+
+      {/* 局域网配置模态框 */}
+      <Modal
+        visible={showLanConfigModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowLanConfigModal(false)}
+      >
+        <TouchableOpacity
+          style={[styles.modalOverlay, { backgroundColor: modalOverlay }]}
+          activeOpacity={1}
+          onPress={() => setShowLanConfigModal(false)}
+        >
+          <View
+            style={[styles.modalContent, { backgroundColor: modalBg }]}
+            onStartShouldSetResponder={() => true}
+          >
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: textColor }]}>
+                {t('settings.lan.port', '局域网端口')}
+              </Text>
+              <TouchableOpacity
+                onPress={() => setShowLanConfigModal(false)}
+                style={styles.modalCloseButton}
+              >
+                <Ionicons name="close" size={24} color={secondaryText} />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.modalBody}>
+              <Text style={[styles.modalDescription, { color: secondaryText }]}>
+                {t(
+                  'settings.lan.portDescription',
+                  '设置局域网服务端口。其他玩家可以使用本机IP和此端口连接到您的房间。',
+                )}
+              </Text>
+
+              <Text style={[styles.label, { color: textColor, marginTop: 16 }]}>
+                {t('settings.lan.port', '端口号')}
+              </Text>
+              <TextInput
+                style={[styles.input, { color: textColor, borderColor: cardBorder }]}
+                value={lanPortInput}
+                onChangeText={setLanPortInput}
+                placeholder="8080"
+                placeholderTextColor={secondaryText}
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="number-pad"
+              />
+
+              <Text style={[styles.modalDescription, { color: secondaryText, marginTop: 12, fontSize: 12 }]}>
+                {t(
+                  'settings.lan.portHint',
+                  '端口范围：1024-65535。创建房间时，系统会使用此端口启动服务。',
+                )}
+              </Text>
+            </View>
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonCancel, { borderColor: cardBorder }]}
+                onPress={() => setShowLanConfigModal(false)}
+              >
+                <Text style={[styles.modalButtonText, { color: secondaryText }]}>
+                  {t('common.cancel', '取消')}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonConfirm, { backgroundColor: accentColor }]}
+                onPress={() => {
+                  const port = parseInt(lanPortInput, 10)
+                  if (isNaN(port) || port < 1024 || port > 65535) {
+                    Alert.alert(
+                      t('common.error', '错误'),
+                      t('settings.lan.invalidPort', '端口号必须在 1024-65535 之间'),
+                    )
+                    return
+                  }
+
+                  setNetworkSettings({
+                    lanIP: fetchIp.data || '',
+                    lanPort: port
+                  })
+                  setShowLanConfigModal(false)
+                  Alert.alert(
+                    t('common.success', '成功'),
+                    t('settings.lan.portSaved', '局域网端口已保存'),
+                  )
+                }}
+              >
+                <Text style={[styles.modalButtonText, { color: '#fff' }]}>
+                  {t('common.confirm', '确认')}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   )
 }
@@ -674,6 +782,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     marginBottom: 16,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '500',
   },
   input: {
     borderWidth: 1,

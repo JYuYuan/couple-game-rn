@@ -343,6 +343,12 @@ class SocketService {
       const roomDiscovery = require('./room-discovery-service').roomDiscoveryService
       roomDiscovery.handleRoomList(rooms)
     })
+
+    // 在线房间列表事件
+    this.socket.on('room:list', (rooms: OnlineRoom[]) => {
+      console.log('SocketService: Received online room list:', rooms.length)
+      this.emit('room:list', rooms)
+    })
   }
 
   disconnect(): void {
@@ -522,6 +528,19 @@ class SocketService {
     if (this.socket && this.currentRoom) {
       this.socket.emit('room:leave', { roomId: this.currentRoom.id })
       this.setCurrentRoom(null, 'leaveRoom')
+      // 同时清除 roomStore 中的持久化状态
+      const { useRoomStore } = require('@/store/roomStore')
+      useRoomStore.getState().clearRoom()
+    }
+  }
+
+  // 获取房间列表
+  requestRoomList(): void {
+    if (this.socket?.connected) {
+      console.log('SocketService: Requesting room list')
+      this.socket.emit('room:list')
+    } else {
+      console.warn('SocketService: Cannot request room list - not connected')
     }
   }
 
