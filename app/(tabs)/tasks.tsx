@@ -27,6 +27,7 @@ import i18n from '@/i18n'
 import * as FileSystem from 'expo-file-system/legacy'
 import * as Sharing from 'expo-sharing'
 import { AlertButton, CustomAlert } from '@/components/CustomAlert'
+import { showConfirmDialog } from '@/components/ConfirmDialog'
 
 const TaskSettings: React.FC = () => {
   const insets = useSafeAreaInsets()
@@ -36,13 +37,7 @@ const TaskSettings: React.FC = () => {
 
   // 跨平台alert函数
   const showAlert = (title: string, message?: string) => {
-    if (Platform.OS === 'web') {
-      // Web端使用浏览器alert
-      window.alert(message ? `${title}\n\n${message}` : title)
-    } else {
-      // 移动端使用React Native Alert
-      Alert.alert(title, message)
-    }
+    showConfirmDialog({ title, message })
   }
 
   const {
