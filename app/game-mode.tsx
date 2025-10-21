@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View, Platform } from 'react-native'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import Animated, {
@@ -21,7 +21,6 @@ import { TaskSetDetailModal } from '@/components/TaskSetDetailModal'
 import { OnlineRoomModal } from '@/components/OnlineRoomModal'
 import { useSocket } from '@/hooks/use-socket'
 import { useSettingsStore } from '@/store'
-import { Platform } from 'react-native'
 
 const routeConfig: Record<string, string> = {
   fly: '/flying-chess',
@@ -54,7 +53,8 @@ export default function GameMode() {
   // 检查当前游戏类型是否支持在线模式
   // 需要同时满足：游戏本身支持在线 && (网络模式开启 || 局域网模式开启)
   const isNetworkEnabled = networkSettings.enabled || networkSettings.lanMode
-  const gameSupportsOnline = gameTypeConfig[gameType as keyof typeof gameTypeConfig]?.hasOnline || false
+  const gameSupportsOnline =
+    gameTypeConfig[gameType as keyof typeof gameTypeConfig]?.hasOnline || false
   const supportsOnlineMode = gameSupportsOnline && isNetworkEnabled
 
   // 状态管理
@@ -113,13 +113,9 @@ export default function GameMode() {
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.categoryScrollContent}
-          style={styles.categoryScroll}
           bounces={false}
           decelerationRate="fast"
-          maintainVisibleContentPosition={{
-            minIndexForVisible: 0,
-            autoscrollToTopThreshold: 10,
-          }}
+          nestedScrollEnabled={false}
         >
           <TouchableOpacity
             style={[
@@ -652,18 +648,18 @@ const styles = StyleSheet.create({
   categoryContainer: {
     paddingTop: 20,
     marginBottom: 20,
-  },
-  categoryScroll: {
     paddingHorizontal: 20,
+    maxHeight: 60, // 限制分类选择器的最大高度
   },
   categoryScrollContent: {
     paddingRight: 20,
   },
   categoryButton: {
     borderRadius: 20,
-    marginRight: 12,
     borderWidth: 1,
     overflow: 'hidden',
+    height: 40,
+    marginRight: 12,
   },
   categoryButtonActive: {
     borderWidth: 2,
@@ -672,7 +668,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    height: '100%',
     gap: 6,
   },
   categoryButtonText: {
@@ -680,11 +676,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   content: {
-    ...CommonStyles.content, // 使用通用内容样式
+    flex: 1,
+    width: '100%',
   },
   contentContainer: {
-    ...CommonStyles.contentContainer, // 使用通用内容容器样式
-    paddingBottom: 100, // 游戏模式页面需要更多底部空间
+    padding: Layout.padding.md,
+    paddingBottom: 100,
+    width: '100%',
   },
   taskSetCard: {
     marginBottom: 16,

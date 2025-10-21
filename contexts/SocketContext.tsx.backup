@@ -14,7 +14,6 @@ import {
 import { useSettingsStore } from '@/store'
 import { useRoomStore } from '@/store/roomStore'
 import { getLocalIP } from '@/utils'
-import { loadLANModules, getLANService, isLANAvailable, type RoomBroadcast } from '@/services/lan'
 
 interface SocketContextValue {
   // 连接状态
@@ -43,7 +42,7 @@ interface SocketContextValue {
   switchToLANMode: () => void
 
   // 房间发现
-  getDiscoveredRooms: (() => RoomBroadcast[]) | undefined
+  getDiscoveredRooms: (() => LANRoom[]) | undefined
   startRoomScan: (() => void) | undefined
   stopRoomScan: (() => void) | undefined
 
@@ -78,7 +77,6 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // 连接类型状态
   const [connectionType, setConnectionType] = useState<ConnectionType>('online')
   const [webrtcConnections] = useState<Map<string, WebRTCConnectionState>>(new Map())
-  const [discoveredRooms, setDiscoveredRooms] = useState<RoomBroadcast[]>([])
 
   // 监听 SocketService 的状态变化 - 只注册一次
   useEffect(() => {
@@ -141,63 +139,14 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   }, [playerId, setCurrentRoom])
 
-  // 监听 LAN Service 的事件
-  useEffect(() => {
-    if (connectionType !== 'lan') return
-
-    // 只在模块已加载时监听
-    try {
-      const lanService = getLANService()
-
-      const handleLANRoomUpdate = (room: any) => {
-        console.log('LAN Room updated:', room)
-        if (room) {
-          room.isHost = room.hostId === playerId
-          setCurrentRoom(room)
-        }
-      }
-
-      const handleLANConnected = () => {
-        console.log('LAN connected')
-        setIsConnected(true)
-      }
-
-      const handleLANDisconnected = () => {
-        console.log('LAN disconnected')
-        setIsConnected(false)
-      }
-
-      lanService.on('room:update', handleLANRoomUpdate)
-      lanService.on('connected', handleLANConnected)
-      lanService.on('disconnected', handleLANDisconnected)
-
-      return () => {
-        lanService.off('room:update', handleLANRoomUpdate)
-        lanService.off('connected', handleLANConnected)
-        lanService.off('disconnected', handleLANDisconnected)
-      }
-    } catch (error) {
-      console.warn('LAN 事件监听失败:', error)
-    }
-  }, [connectionType, playerId, setCurrentRoom])
-
   // 包装的方法
   const connect = useCallback(() => {
     if (!socketService.getIsConnected()) socketService.connect(playerId)
   }, [playerId])
 
   const disconnect = useCallback(() => {
-    if (connectionType === 'lan') {
-      try {
-        const lanService = getLANService()
-        lanService.leaveRoom()
-      } catch (error) {
-        console.warn('LAN 断开失败:', error)
-      }
-    } else {
-      socketService.disconnect()
-    }
-  }, [connectionType])
+    socketService.disconnect()
+  }, [])
 
   const forceReconnect = useCallback(() => {
     socketService.forceReconnect()
@@ -216,17 +165,8 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [])
 
   const leaveRoom = useCallback(() => {
-    if (connectionType === 'lan') {
-      try {
-        const lanService = getLANService()
-        lanService.leaveRoom()
-      } catch (error) {
-        console.warn('LAN 离开房间失败:', error)
-      }
-    } else {
-      socketService.leaveRoom()
-    }
-  }, [connectionType])
+    socketService.leaveRoom()
+  }, [])
 
   const resetRoomState = useCallback(() => {
     socketService.resetRoomState()
@@ -236,42 +176,54 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const createLANRoom = useCallback(
     async (data: CreateLANRoomData): Promise<LANRoom> => {
       try {
-        console.log('创建局域网房间（纯 Wi-Fi 模式）')
+        console.log('创建局域网房间（纯P2P模式，不需要服务器）')
 
-        // 检查是否支持
-        if (!isLANAvailable()) {
-          throw new Error(
-            'LAN 功能不可用\n' +
-            '请使用 expo-dev-client 或生产构建\n\n' +
-            '安装方法:\n' +
-            '1. npx expo install expo-dev-client\n' +
-            '2. npx expo run:ios',
-          )
-        }
-
-        // 加载 LAN 模块
-        await loadLANModules()
-        const lanService = getLANService()
-
-        // 初始化 LAN 服务
-        await lanService.initialize(playerId)
+        // 获取本地 IP
+        const localIP = await getLocalIP()
+        console.log('本地 IP:', localIP)
 
         // 标记为局域网模式
         setConnectionType('lan')
-        setIsConnected(true)
 
-        // 创建局域网房间
-        const room = await lanService.createRoom(data)
+        // 启动 P2P 服务器模式（useSignaling: false 表示纯局域网模式，不需要信令服务器）
+        await socketService.startP2PServer(playerId, false)
+
+        // 创建房间(使用 P2P 服务器)，并添加网络信息
+        const roomData = {
+          ...data,
+          networkInfo: {
+            hostIP: localIP,
+            port: 0,
+          },
+        }
+        await socketService.createRoom(roomData)
+
+        // 等待房间创建成功
+        const room = await new Promise<LANRoom>((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            reject(new Error('创建房间超时'))
+          }, 10000)
+
+          const handleRoomUpdate = (room: OnlineRoom | LANRoom | null) => {
+            if (room) {
+              clearTimeout(timeout)
+              socketService.off('currentRoomChanged', handleRoomUpdate)
+              resolve(room as LANRoom)
+            }
+          }
+
+          socketService.on('currentRoomChanged', handleRoomUpdate)
+        })
 
         console.log('✅ 局域网房间创建成功！')
         console.log('📱 房间ID:', room.id)
-        console.log('💡 其他玩家可以通过扫描加入')
+        console.log('🌐 房主IP:', localIP)
+        console.log('💡 其他玩家可以通过输入房间号加入')
 
-        return room as LANRoom
+        return room
       } catch (error: any) {
         console.error('创建局域网房间失败:', error)
         setConnectionType('online')
-        setIsConnected(false)
         throw error
       }
     },
@@ -281,51 +233,32 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const joinLANRoom = useCallback(
     async (data: JoinLANRoomData): Promise<LANRoom> => {
       try {
-        console.log('加入局域网房间（纯 Wi-Fi 模式）')
+        console.log('加入局域网房间（纯P2P模式）')
         console.log('房间ID:', data.roomId)
-
-        // 检查是否支持
-        if (!isLANAvailable()) {
-          throw new Error(
-            'LAN 功能不可用\n' +
-            '请使用 expo-dev-client 或生产构建',
-          )
-        }
-
-        // 加载 LAN 模块
-        await loadLANModules()
-        const lanService = getLANService()
-
-        // 初始化 LAN 服务
-        await lanService.initialize(playerId)
+        console.log('房主ID:', data.hostPlayerId || '未提供')
 
         // 标记为局域网模式
         setConnectionType('lan')
 
-        // 如果提供了房主 IP 和端口，直接连接
-        if (data.hostIP && data.hostPort) {
-          const room = await lanService.joinRoom(data.hostIP, data.hostPort, data)
-          setIsConnected(true)
-          console.log('✅ 加入房间成功')
-          return room as LANRoom
-        }
+        // 注意：在纯 P2P 模式下，需要房主的 peerId 来建立 WebRTC 连接
+        // 这个 peerId 应该就是房间ID（房主的 playerId）
+        const hostPlayerId = data.hostPlayerId || data.roomId
 
-        // 否则，尝试从扫描结果中查找
-        const discovered = lanService.getDiscoveredRooms()
-        const targetRoom = discovered.find((r) => r.roomId === data.roomId)
+        // 连接到 P2P 服务器（房主）
+        // 注意：这需要 WebRTC 信令交换，目前还是需要某种方式来交换 offer/answer
+        console.log('⚠️ 警告：纯 P2P 模式需要 WebRTC 信令交换')
+        console.log('建议：使用带信令服务器的模式，或者实现其���信令交换方式（如二维码）')
 
-        if (!targetRoom) {
-          throw new Error('未找到该房间，请确保在同一 Wi-Fi 网络下并开始扫描')
-        }
+        // 暂时抛出错误，提示需要实现信令交换
+        throw new Error('纯 P2P 局域网模式需要实现 WebRTC 信令交换机制。\n建议使用配置了 socketUrl 的局域网模式，或实现二维码扫描加入功能。')
 
-        const room = await lanService.joinRoomByBroadcast(targetRoom, data)
-        setIsConnected(true)
-        console.log('✅ 加入房间成功')
-        return room as LANRoom
+        // TODO: 实现纯 P2P 的信令交换
+        // await socketService.connectToP2PServer(playerId, hostPlayerId)
+        // await socketService.joinRoom(data)
+
       } catch (error: any) {
         console.error('加入局域网房间失败:', error)
         setConnectionType('online')
-        setIsConnected(false)
         throw error
       }
     },
@@ -335,152 +268,47 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const switchToOnlineMode = useCallback(() => {
     console.log('切换到在线模式')
     // 断开当前连接
-    if (connectionType === 'lan') {
-      try {
-        const lanService = getLANService()
-        lanService.cleanup()
-      } catch (error) {
-        console.warn('LAN cleanup 失败:', error)
-      }
-    } else if (socketService.getIsConnected()) {
+    if (socketService.getIsConnected()) {
       socketService.disconnect()
     }
     setConnectionType('online')
     // 重新连接到默认在线服务器
     socketService.connect(playerId)
-  }, [playerId, connectionType])
+  }, [playerId])
 
   const switchToLANMode = useCallback(() => {
     console.log('切换到局域网模式')
     if (currentRoom) {
-      if (connectionType === 'lan') {
-        try {
-          const lanService = getLANService()
-          lanService.leaveRoom()
-        } catch (error) {
-          console.warn('LAN 离开房间失败:', error)
-        }
-      } else {
-        socketService.leaveRoom()
-      }
+      socketService.leaveRoom()
     }
     setConnectionType('lan')
-  }, [currentRoom, connectionType])
-
-  // 房间扫描功能
-  const startRoomScan = useCallback(async () => {
-    try {
-      if (!isLANAvailable()) {
-        throw new Error('LAN 功能不可用')
-      }
-      await loadLANModules()
-      const lanService = getLANService()
-      lanService.startRoomScan((rooms: RoomBroadcast[]) => {
-        setDiscoveredRooms(rooms)
-      })
-    } catch (error) {
-      console.error('开始扫描失败:', error)
-    }
-  }, [])
-
-  const stopRoomScan = useCallback(() => {
-    try {
-      const lanService = getLANService()
-      lanService.stopRoomScan()
-    } catch (error) {
-      console.warn('停止扫描失败:', error)
-    }
-  }, [])
-
-  const getDiscoveredRooms = useCallback(() => {
-    return discoveredRooms
-  }, [discoveredRooms])
+  }, [currentRoom])
 
   // 游戏事件 - 统一使用socketService
-  const startGame = useCallback(
-    async (data: any) => {
-      console.log('🎮 startGame called with data:', data)
-      if (connectionType === 'lan') {
-        try {
-          const lanService = getLANService()
-          lanService.startGame(data)
-        } catch (error) {
-          console.error('LAN 开始游戏失败:', error)
-        }
-      } else {
-        socketService.startGame(data)
-      }
-    },
-    [connectionType],
-  )
+  const startGame = useCallback((data: any) => {
+    console.log('🎮 startGame called with data:', data)
+    socketService.startGame(data)
+  }, [])
 
-  const rollDice = useCallback(
-    async (data: any, callback: any) => {
-      if (connectionType === 'lan') {
-        try {
-          const lanService = getLANService()
-          lanService.handleGameAction(data).then(callback).catch(console.error)
-        } catch (error) {
-          console.error('LAN 掷骰子失败:', error)
-        }
-      } else {
-        socketService.rollDice(data, callback)
-      }
-    },
-    [connectionType],
-  )
+  const rollDice = useCallback((data: any, callback: any) => {
+    socketService.rollDice(data, callback)
+  }, [])
 
-  const completeTask = useCallback(
-    async (data: any) => {
-      if (connectionType === 'lan') {
-        try {
-          const lanService = getLANService()
-          lanService.handleGameAction(data)
-        } catch (error) {
-          console.error('LAN 完成任务失败:', error)
-        }
-      } else {
-        socketService.completeTask(data)
-      }
-    },
-    [connectionType],
-  )
+  const completeTask = useCallback((data: any) => {
+    socketService.completeTask(data)
+  }, [])
 
   const emit = useCallback((event: string, data?: any) => {
     socketService.socketEmit(event, data)
   }, [])
 
-  const on = useCallback(
-    (event: string, callback: Function) => {
-      if (connectionType === 'lan') {
-        try {
-          const lanService = getLANService()
-          lanService.on(event, callback)
-        } catch (error) {
-          console.warn('LAN 事件监听失败:', error)
-        }
-      } else {
-        socketService.on(event, callback)
-      }
-    },
-    [connectionType],
-  )
+  const on = useCallback((event: string, callback: Function) => {
+    socketService.on(event, callback)
+  }, [])
 
-  const off = useCallback(
-    (event: string, callback: Function) => {
-      if (connectionType === 'lan') {
-        try {
-          const lanService = getLANService()
-          lanService.off(event, callback)
-        } catch (error) {
-          console.warn('LAN 移除监听失败:', error)
-        }
-      } else {
-        socketService.off(event, callback)
-      }
-    },
-    [connectionType],
-  )
+  const off = useCallback((event: string, callback: Function) => {
+    socketService.off(event, callback)
+  }, [])
 
   const runActions = useCallback((event: string, data: any, callback?: (res: any) => void) => {
     socketService.runActions(event, data, callback)
@@ -547,10 +375,10 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     switchToOnlineMode,
     switchToLANMode,
 
-    // 房间发现
-    getDiscoveredRooms: connectionType === 'lan' ? getDiscoveredRooms : undefined,
-    startRoomScan: connectionType === 'lan' ? startRoomScan : undefined,
-    stopRoomScan: connectionType === 'lan' ? stopRoomScan : undefined,
+    // 房间发现 - 暂未实现
+    getDiscoveredRooms: undefined,
+    startRoomScan: undefined,
+    stopRoomScan: undefined,
 
     // 通用房间操作
     leaveRoom,

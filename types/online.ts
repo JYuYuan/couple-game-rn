@@ -231,11 +231,13 @@ export interface CreateLANRoomData extends Omit<CreateRoomData, 'roomName'> {
 
 // 局域网房间加入数据
 export interface JoinLANRoomData extends Omit<JoinRoomData, 'roomId'> {
-  hostIP: string
   roomId: string
+  hostIP?: string // 可选,如果通过扫描加入则不需要
+  hostPort?: number // 可选,默认 8080
   networkPassword?: string
   avatar?: string // 头像ID
   gender?: 'man' | 'woman' // 性别
+  hostPlayerId?: string // 房主玩家ID(用于 WebRTC 模式)
 }
 
 // 房间发现数据
