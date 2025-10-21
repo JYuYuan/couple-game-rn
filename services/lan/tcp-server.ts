@@ -35,14 +35,16 @@ class TCPServer {
   /**
    * 启动 TCP 服务器（支持端口自动重试）
    */
-  start(port: number = TCP_PORT): Promise<number> {
-    return new Promise((resolve, reject) => {
-      if (this.server) {
-        console.log('⚠️ TCP Server 已经在运行')
-        resolve(this.port)
-        return
-      }
+  async start(port: number = TCP_PORT): Promise<number> {
+    // 如果服务器已经在运行，先停止它
+    if (this.server) {
+      console.log('⚠️ TCP Server 已经在运行，先停止...')
+      await this.stop()
+      // 等待一段时间确保端口完全释放
+      await new Promise((resolve) => setTimeout(resolve, 500))
+    }
 
+    return new Promise((resolve, reject) => {
       this.port = port
       let retryCount = 0
       const maxRetries = 10
@@ -55,26 +57,36 @@ class TCPServer {
 
         // 监听错误
         this.server.on('error', (error: any) => {
-          console.error(`TCP Server 错误 (端口 ${currentPort}):`, error.message)
+          const errorMessage = error?.message || error?.toString() || JSON.stringify(error)
+          const errorCode = error?.code || 'UNKNOWN'
+          console.error(`TCP Server 错误 (端口 ${currentPort}):`, errorMessage)
+          console.error(`错误代码:`, errorCode)
+          console.error(`完整错误对象:`, error)
 
           // 如果是端口占用错误，尝试下一个端口
-          if (error.code === 'EADDRINUSE' && retryCount < maxRetries) {
+          if (errorCode === 'EADDRINUSE' && retryCount < maxRetries) {
             retryCount++
             const nextPort = currentPort + 1
             console.log(`⚠️ 端口 ${currentPort} 被占用，尝试端口 ${nextPort}...`)
 
             // 清理当前服务器
             if (this.server) {
-              this.server.close()
+              try {
+                this.server.close()
+              } catch (e) {
+                console.warn('关闭服务器时出错:', e)
+              }
               this.server = null
             }
 
             // 短暂延迟后尝试新端口
             setTimeout(() => {
               tryStartServer(nextPort)
-            }, 100)
+            }, 200)
           } else {
-            reject(error)
+            // 为其他错误提供更详细的信息
+            const detailedError = new Error(`TCP Server 启动失败: ${errorMessage} (code: ${errorCode})`)
+            reject(detailedError)
           }
         })
 
@@ -93,23 +105,39 @@ class TCPServer {
   /**
    * 停止 TCP 服务器
    */
-  stop(): void {
-    console.log('🛑 停止 TCP Server...')
+  stop(): Promise<void> {
+    return new Promise((resolve) => {
+      console.log('🛑 停止 TCP Server...')
 
-    // 关闭所有客户端连接
-    this.clients.forEach((client) => {
-      client.socket.destroy()
+      // 关闭所有客户端连接
+      this.clients.forEach((client) => {
+        try {
+          client.socket.destroy()
+        } catch (error) {
+          console.warn('关闭客户端连接失败:', error)
+        }
+      })
+      this.clients.clear()
+      this.messageBuffer.clear()
+
+      // 关闭服务器
+      if (this.server) {
+        try {
+          this.server.close(() => {
+            console.log('✅ TCP Server 已停止')
+            this.server = null
+            resolve()
+          })
+        } catch (error) {
+          console.warn('关闭服务器失败:', error)
+          this.server = null
+          resolve()
+        }
+      } else {
+        console.log('✅ TCP Server 已停止（无活动服务器）')
+        resolve()
+      }
     })
-    this.clients.clear()
-    this.messageBuffer.clear()
-
-    // 关闭服务器
-    if (this.server) {
-      this.server.close()
-      this.server = null
-    }
-
-    console.log('✅ TCP Server 已停止')
   }
 
   /**

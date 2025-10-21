@@ -201,7 +201,7 @@ class LANService {
     if (this.isHost) {
       // 房主离开,关闭服务器
       udpBroadcastService.stopBroadcasting()
-      tcpServer.stop()
+      await tcpServer.stop()
 
       // 清理房间数据
       if (this.currentRoom) {
@@ -582,7 +582,7 @@ class LANService {
     console.log('🧹 清理 LAN 服务...')
 
     udpBroadcastService.cleanup()
-    tcpServer.stop()
+    await tcpServer.stop()
     tcpClient.disconnect()
 
     if (this.currentRoom) {

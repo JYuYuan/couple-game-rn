@@ -6,10 +6,11 @@ import { useAudioManager } from '@/hooks/use-audio-manager'
 import { useSettingsStore } from '@/store'
 import * as SplashScreen from 'expo-splash-screen'
 import '@/i18n'
-import { Platform } from 'react-native'
+import { AppState, Platform } from 'react-native'
 import { ConfirmDialogProvider } from '@/components/ConfirmDialog'
 import { ToastProvider } from '@/components/Toast'
 import { SocketProvider } from '@/contexts/SocketContext'
+import { isLANAvailable, getLANService } from '@/services/lan'
 
 // 防止启动屏自动隐藏
 SplashScreen.preventAutoHideAsync()
@@ -61,6 +62,30 @@ export default function RootLayout() {
       setAppIsReady(true)
     }
   }, [])
+
+  // 监听 App 状态变化，清理 LAN 资源
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', async (nextAppState) => {
+      console.log('AppState changed to:', nextAppState)
+
+      // 当 app 进入后台或不活跃状态时，清理 LAN 资源
+      if (nextAppState === 'background' || nextAppState === 'inactive') {
+        if (networkSettings.lanMode && isLANAvailable()) {
+          try {
+            const lanService = getLANService()
+            console.log('App 进入后台，清理 LAN 服务...')
+            await lanService.cleanup()
+          } catch (error) {
+            console.warn('清理 LAN 服务失败:', error)
+          }
+        }
+      }
+    })
+
+    return () => {
+      subscription.remove()
+    }
+  }, [networkSettings.lanMode])
 
   const onLayoutRootView = useCallback(async () => {
     if (appIsReady) {
