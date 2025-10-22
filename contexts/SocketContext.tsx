@@ -271,6 +271,9 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         console.log('🔌 端口:', networkSettings.lanPort)
         console.log('💡 其他玩家可以通过扫描加入')
 
+        // 更新当前房间状态，触发跳转
+        setCurrentRoom(room)
+
         return room as LANRoom
       } catch (error: any) {
         console.error('创建局域网房间失败:', error)
@@ -308,6 +311,8 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           const room = await lanService.joinRoom(data.hostIP, data.hostPort, data)
           setIsConnected(true)
           console.log('✅ 加入房间成功')
+          // 更新当前房间状态，触发跳转
+          setCurrentRoom(room)
           return room as LANRoom
         }
 
@@ -322,6 +327,8 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         const room = await lanService.joinRoomByBroadcast(targetRoom, data)
         setIsConnected(true)
         console.log('✅ 加入房间成功')
+        // 更新当前房间状态，触发跳转
+        setCurrentRoom(room)
         return room as LANRoom
       } catch (error: any) {
         console.error('加入局域网房间失败:', error)
@@ -498,7 +505,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     if (!shouldAutoConnect) {
       console.log(
-        'SocketProvider: 跳过自动连接 (局域网模式或网络未启用)',
+        'SocketProvider: 跳过自动连接 (网络未启用)',
         'networkSettings.enabled:',
         networkSettings.enabled,
         'networkSettings.lanMode:',

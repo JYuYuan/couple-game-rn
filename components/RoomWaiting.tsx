@@ -19,6 +19,9 @@ interface RoomWaitingProps {
   onLeaveRoom: () => void
   isStartingGame?: boolean
   isConnected?: boolean
+  isLANRoom?: boolean
+  lanIP?: string
+  lanPort?: number
 }
 
 export const RoomWaiting: React.FC<RoomWaitingProps> = ({
@@ -30,6 +33,9 @@ export const RoomWaiting: React.FC<RoomWaitingProps> = ({
   onLeaveRoom,
   isStartingGame = false,
   isConnected = true,
+  isLANRoom = false,
+  lanIP,
+  lanPort,
 }) => {
   const colorScheme = useColorScheme() ?? 'light'
   const colors = Colors[colorScheme] as any
@@ -53,6 +59,33 @@ export const RoomWaiting: React.FC<RoomWaitingProps> = ({
       await showConfirmDialog({
         title: t('common.error', '错误'),
         message: t('online.copyFailed', '复制失败，请手动复制房间代码'),
+        confirmText: t('common.ok', '确定'),
+        cancelText: false,
+        icon: 'alert-circle-outline',
+        iconColor: '#FF6B6B',
+      })
+    }
+  }
+
+  // 复制局域网连接信息
+  const copyLANInfo = async () => {
+    if (!lanIP || !lanPort) return
+
+    try {
+      const lanInfo = `IP: ${lanIP}\n端口: ${lanPort}`
+      await Clipboard.setStringAsync(lanInfo)
+      await showConfirmDialog({
+        title: t('common.success', '成功'),
+        message: t('online.lan.infoCopied', '局域网信息已复制到剪贴板'),
+        confirmText: t('common.ok', '确定'),
+        cancelText: false,
+        icon: 'checkmark-circle-outline',
+        iconColor: '#4CAF50',
+      })
+    } catch {
+      await showConfirmDialog({
+        title: t('common.error', '错误'),
+        message: t('online.copyFailed', '复制失败'),
         confirmText: t('common.ok', '确定'),
         cancelText: false,
         icon: 'alert-circle-outline',
@@ -87,6 +120,33 @@ export const RoomWaiting: React.FC<RoomWaitingProps> = ({
                   {roomId.toUpperCase()}
                 </Text>
               </View>
+
+              {/* 局域网信息 */}
+              {isLANRoom && lanIP && lanPort && (
+                <View style={styles.lanInfoContainer}>
+                  <View style={[styles.lanBadge, { backgroundColor: '#2196F3' + '20' }]}>
+                    <Ionicons name="wifi" size={14} color="#2196F3" />
+                    <Text style={[styles.lanBadgeText, { color: '#2196F3' }]}>
+                      {t('online.lan.mode', '局域网模式')}
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.lanInfoRow}
+                    onPress={copyLANInfo}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.lanInfoContent}>
+                      <Text style={[styles.lanInfoLabel, { color: colors.homeCardDescription }]}>
+                        IP: <Text style={[styles.lanInfoValue, { color: colors.homeCardTitle }]}>{lanIP}</Text>
+                      </Text>
+                      <Text style={[styles.lanInfoLabel, { color: colors.homeCardDescription }]}>
+                        {t('online.lan.port', '端口')}: <Text style={[styles.lanInfoValue, { color: colors.homeCardTitle }]}>{lanPort}</Text>
+                      </Text>
+                    </View>
+                    <Ionicons name="copy-outline" size={20} color={colors.settingsAccent} />
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
 
             <TouchableOpacity
@@ -268,6 +328,43 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     letterSpacing: 2,
+  },
+  lanInfoContainer: {
+    marginTop: 12,
+    gap: 8,
+  },
+  lanBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    gap: 4,
+    alignSelf: 'flex-start',
+  },
+  lanBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  lanInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.03)',
+  },
+  lanInfoContent: {
+    flex: 1,
+    gap: 4,
+  },
+  lanInfoLabel: {
+    fontSize: 13,
+  },
+  lanInfoValue: {
+    fontWeight: '600',
+    fontFamily: 'monospace',
   },
   leaveButton: {
     flexDirection: 'row',

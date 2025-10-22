@@ -24,6 +24,10 @@ export default function WaitingRoomPage() {
   // 获取传入的参数
   const roomId = params.roomId as string
 
+  // 检查是否是局域网房间
+  const isLANRoom = socket.connectionType === 'lan'
+  const lanRoomInfo = isLANRoom && socket.currentLANRoom ? socket.currentLANRoom : null
+
   // 监听返回按钮点击事件
   useEffect(() => {
     const unsubscribe = navigation.addListener('beforeRemove', (e) => {
@@ -127,6 +131,9 @@ export default function WaitingRoomPage() {
         }}
         isStartingGame={isStartingGame}
         isConnected={socket.isConnected}
+        isLANRoom={isLANRoom}
+        lanIP={lanRoomInfo?.hostIP}
+        lanPort={lanRoomInfo?.tcpPort}
       />
     </>
   )

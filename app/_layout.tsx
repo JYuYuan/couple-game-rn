@@ -4,6 +4,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { useCallback, useEffect, useState } from 'react'
 import { useAudioManager } from '@/hooks/use-audio-manager'
 import { useSettingsStore } from '@/store'
+import { useRoomStore } from '@/store/roomStore'
 import * as SplashScreen from 'expo-splash-screen'
 import '@/i18n'
 import { AppState, Platform } from 'react-native'
@@ -18,6 +19,7 @@ SplashScreen.preventAutoHideAsync()
 export default function RootLayout() {
   const audioManager = useAudioManager()
   const { soundSettings, networkSettings } = useSettingsStore()
+  const { clearRoom } = useRoomStore()
   const [appIsReady, setAppIsReady] = useState(false)
 
   // 自动播放背景音乐
@@ -45,6 +47,20 @@ export default function RootLayout() {
   useEffect(() => {
     async function prepare() {
       try {
+        // 清理过期的房间状态（应用重启/热更新后房间可能已失效）
+        console.log('🧹 应用启动，清理过期的房间状态')
+        clearRoom()
+
+        // 如果有 LAN 服务在运行，也清理掉
+        if (networkSettings.lanMode && isLANAvailable()) {
+          try {
+            const lanService = getLANService()
+            await lanService.cleanup()
+          } catch (error) {
+            console.warn('清理 LAN 服务失败:', error)
+          }
+        }
+
         // 这里可以进行一些初始化操作，比如加载资源、检查更新等
         // 延长启动屏显示时间（3秒）
         await new Promise((resolve) => setTimeout(resolve, 3000))
@@ -59,8 +75,11 @@ export default function RootLayout() {
     if (Platform.OS !== 'web' && typeof window !== 'undefined') {
       prepare()
     } else {
+      // Web 平台也需要清理房间状态
+      clearRoom()
       setAppIsReady(true)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // 监听 App 状态变化，清理 LAN 资源

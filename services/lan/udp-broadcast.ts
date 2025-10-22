@@ -4,6 +4,7 @@
  */
 
 import dgram from 'react-native-udp'
+import { Buffer } from 'buffer'
 
 const BROADCAST_PORT = 8888 // UDP 广播端口
 const BROADCAST_INTERVAL = 2000 // 广播间隔 (毫秒)

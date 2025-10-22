@@ -16,9 +16,16 @@ export default function FlyingChessGame() {
   useEffect(() => {
     if (isOnlineMode && !hasCheckedConnection.current) {
       hasCheckedConnection.current = true
-      
+
       // 延迟检查连接状态，给socket一些时间初始化
       const checkTimer = setTimeout(() => {
+        // 局域网模式下不需要检查 socket 连接
+        if (socket.connectionType === 'lan') {
+          console.log('FlyingChess: 局域网模式，跳过 Socket 连接检查')
+          return
+        }
+
+        // 在线模式下才检查 socket 连接
         if (!socket.isConnected) {
           console.log('FlyingChess: Socket未连接，尝试强制重连')
           socket.forceReconnect()
@@ -27,11 +34,17 @@ export default function FlyingChessGame() {
 
       return () => clearTimeout(checkTimer)
     }
-  }, [isOnlineMode, socket.isConnected, socket.forceReconnect])
+  }, [isOnlineMode, socket.isConnected, socket.forceReconnect, socket.connectionType])
 
   // 在线模式下的连接状态检查
   if (isOnlineMode) {
-    // 如果有连接错误，也显示加载状态（因为可能正在重连）
+    // 局域网模式下，不需要检查 socket 连接状态
+    if (socket.connectionType === 'lan') {
+      // 局域网模式直接渲染游戏
+      return <OnlineGame />
+    }
+
+    // 在线模式下检查连接
     if (!socket.isConnected || socket.connectionError) {
       return <LoadingScreen />
     }

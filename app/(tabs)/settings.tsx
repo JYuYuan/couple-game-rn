@@ -205,64 +205,67 @@ const Settings: React.FC = () => {
               },
             ]
           : []),
-        {
-          icon: 'wifi',
-          label: t('settings.network.lanMode', '局域网模式'),
-          value: '',
-          type: 'switch',
-          switchValue: networkSettings.lanMode,
-          onPress: () => {
-            setNetworkSettings({ lanMode: !networkSettings.lanMode })
-          },
-        },
-        ...(networkSettings.lanMode
+        // Web 端不支持局域网模式，隐藏此设置
+        ...(Platform.OS !== 'web'
           ? [
               {
-                icon: 'information-circle',
-                label: t('settings.lan.label', '本机IP地址'),
-                disabled: fetchIp.loading || !fetchIp.data,
-                value: fetchIp.loading
-                  ? t('settings.lan.loading', '获取中...')
-                  : fetchIp.error
-                    ? t('settings.lan.error', '获取失败')
-                    : fetchIp.data || t('settings.lan.unavailable', '不可用'),
-                onPress: async () => {
-                  if (!fetchIp.data) {
-                    await showConfirmDialog({
-                      title: t('settings.lan.error', '获取失败'),
-                      message: t(
-                        'settings.lan.errorMessage',
-                        Platform.OS === 'web'
-                          ? '浏览器可能不支持或限制了 IP 获取功能，请手动输入 IP 地址'
-                          : '无法获取本机 IP 地址，请检查网络连接',
-                      ),
-                      confirmText: t('common.ok', '确定'),
-                      cancelText: false,
-                      icon: 'alert-circle-outline',
-                      iconColor: '#FF6B6B',
-                    })
-                    return
-                  }
-                  await Clipboard.setStringAsync(fetchIp.data)
-                  await showConfirmDialog({
-                    title: t('common.success', '成功'),
-                    message: t('settings.lan.copied', 'IP地址已复制到剪贴板'),
-                    confirmText: t('common.ok', '确定'),
-                    cancelText: false,
-                    icon: 'checkmark-circle-outline',
-                    iconColor: '#4CAF50',
-                  })
-                },
-              },
-              {
-                icon: 'settings-outline',
-                label: t('settings.lan.port', '局域网端口'),
-                value: (networkSettings.lanPort || 8080).toString(),
+                icon: 'wifi',
+                label: t('settings.network.lanMode', '局域网模式'),
+                value: '',
+                type: 'switch',
+                switchValue: networkSettings.lanMode,
                 onPress: () => {
-                  setLanPortInput((networkSettings.lanPort || 8080).toString())
-                  setShowLanConfigModal(true)
+                  setNetworkSettings({ lanMode: !networkSettings.lanMode })
                 },
               },
+              ...(networkSettings.lanMode
+                ? [
+                    {
+                      icon: 'information-circle',
+                      label: t('settings.lan.label', '本机IP地址'),
+                      disabled: fetchIp.loading || !fetchIp.data,
+                      value: fetchIp.loading
+                        ? t('settings.lan.loading', '获取中...')
+                        : fetchIp.error
+                          ? t('settings.lan.error', '获取失败')
+                          : fetchIp.data || t('settings.lan.unavailable', '不可用'),
+                      onPress: async () => {
+                        if (!fetchIp.data) {
+                          await showConfirmDialog({
+                            title: t('settings.lan.error', '获取失败'),
+                            message: t(
+                              'settings.lan.errorMessage',
+                              '无法获取本机 IP 地址，请检查网络连接',
+                            ),
+                            confirmText: t('common.ok', '确定'),
+                            cancelText: false,
+                            icon: 'alert-circle-outline',
+                            iconColor: '#FF6B6B',
+                          })
+                          return
+                        }
+                        await Clipboard.setStringAsync(fetchIp.data)
+                        await showConfirmDialog({
+                          title: t('common.success', '成功'),
+                          message: t('settings.lan.copied', 'IP地址已复制到剪贴板'),
+                          confirmText: t('common.ok', '确定'),
+                          cancelText: false,
+                          icon: 'checkmark-circle-outline',
+                          iconColor: '#4CAF50',
+                        })
+                      },
+                    },
+                    {
+                      icon: 'settings-outline',
+                      label: t('settings.lan.port', '局域网端口'),
+                      value: (networkSettings.lanPort || 8080).toString(),
+                      onPress: () => {
+                        setLanPortInput((networkSettings.lanPort || 8080).toString())
+                        setShowLanConfigModal(true)
+                      },
+                    },
+                  ]
+                : []),
             ]
           : []),
       ],

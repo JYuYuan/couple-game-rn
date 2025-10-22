@@ -20,7 +20,7 @@ import type {
   TaskCompleteData,
 } from '@/types/online'
 
-const DEFAULT_TCP_PORT = 8080 // 默认 TCP 端口
+const DEFAULT_TCP_PORT = 3306 // 默认 TCP 端口
 
 /**
  * LAN Service 类
@@ -141,7 +141,17 @@ class LANService {
     // 触发房间更新事件
     this.emit('room:update', room)
 
-    return room
+    // 返回包含网络信息的 LANRoom 对象
+    return {
+      ...room,
+      connectionType: 'lan' as const,
+      networkInfo: {
+        hostIP: this.localIP,
+        port: tcpPort,
+      },
+      hostIP: this.localIP,
+      tcpPort: tcpPort,
+    }
   }
 
   /**
@@ -179,7 +189,19 @@ class LANService {
         } else {
           this.currentRoom = response
           console.log('✅ 加入房间成功:', response)
-          resolve(response)
+
+          // 返回包含网络信息的 LANRoom 对象
+          const lanRoom = {
+            ...response,
+            connectionType: 'lan' as const,
+            networkInfo: {
+              hostIP: hostIP,
+              port: hostPort,
+            },
+            hostIP: hostIP,
+            tcpPort: hostPort,
+          }
+          resolve(lanRoom)
         }
       })
     })

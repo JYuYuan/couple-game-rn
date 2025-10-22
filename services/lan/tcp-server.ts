@@ -5,7 +5,7 @@
 
 import TcpSocket from 'react-native-tcp-socket'
 
-const TCP_PORT = 8080 // 默认 TCP 端口
+const TCP_PORT = 3306 // 默认 TCP 端口
 
 export interface TCPMessage {
   type: 'event' | 'response' | 'broadcast'
@@ -90,12 +90,44 @@ class TCPServer {
           }
         })
 
-        // 开始监听
-        this.server.listen({ port: currentPort, host: '0.0.0.0' }, () => {
-          this.port = currentPort
-          console.log(`🚀 TCP Server 启动成功，监听端口: ${this.port}`)
-          resolve(this.port)
-        })
+        // 开始监听 - 包裹在 try-catch 中捕获同步错误
+        try {
+          this.server.listen({ port: currentPort, host: '0.0.0.0' }, () => {
+            this.port = currentPort
+            console.log(`🚀 TCP Server 启动成功，监听端口: ${this.port}`)
+            resolve(this.port)
+          })
+        } catch (error: any) {
+          // 捕获 listen() 可能抛出的同步错误
+          const errorMessage = error?.message || error?.toString() || JSON.stringify(error)
+          const errorCode = error?.code || 'UNKNOWN'
+          console.error(`TCP Server 监听失败 (端口 ${currentPort}):`, errorMessage)
+
+          // 如果是端口占用错误，尝试下一个端口
+          if (errorCode === 'EADDRINUSE' && retryCount < maxRetries) {
+            retryCount++
+            const nextPort = currentPort + 1
+            console.log(`⚠️ 端口 ${currentPort} 被占用，尝试端口 ${nextPort}...`)
+
+            // 清理当前服务器
+            if (this.server) {
+              try {
+                this.server.close()
+              } catch (e) {
+                console.warn('关闭服务器时出错:', e)
+              }
+              this.server = null
+            }
+
+            // 短暂延迟后尝试新端口
+            setTimeout(() => {
+              tryStartServer(nextPort)
+            }, 200)
+          } else {
+            const detailedError = new Error(`TCP Server 启动失败: ${errorMessage} (code: ${errorCode})`)
+            reject(detailedError)
+          }
+        }
       }
 
       tryStartServer(port)
