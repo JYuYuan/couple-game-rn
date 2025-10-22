@@ -1,4 +1,5 @@
 import type { TaskSet } from './tasks'
+import type { Player } from './socket'
 
 export interface CreateRoomData {
   roomName: string
@@ -13,14 +14,7 @@ export interface TaskModalData {
   title: string
   description: string
   type: 'trap' | 'star' | 'collision'
-  executors: {
-    // 改为数组，支持多个执行者
-    id: any
-    name: string
-    color: string
-    iconType: number
-    [key: string]: any
-  }[]
+  executors: Player[]
   category: string
   difficulty: string
   triggerPlayerIds: number[] // 改为数组，支持多个触发者

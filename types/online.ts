@@ -1,6 +1,6 @@
 import { GamePlayer } from '@/hooks/use-game-players'
 import { TaskSet } from '@/types/tasks'
-import { PathCell } from '@/types/game'
+import { PathCell, Player } from '@/types/game'
 
 // 服务端TaskModalData接口（从服务端同步）
 export interface TaskModalData {
@@ -8,13 +8,7 @@ export interface TaskModalData {
   title: string
   description: string
   type: 'trap' | 'star' | 'collision'
-  executors: {
-    id: any
-    name: string
-    color: string
-    iconType: number
-    [key: string]: any
-  }[]
+  executors: Player[]
   category: string
   difficulty: string
   triggerPlayerIds: number[]

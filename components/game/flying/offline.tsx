@@ -196,16 +196,7 @@ export default function OfflineGame() {
       title: task.title,
       description: task.description || '',
       type: taskType,
-      executors: executorPlayer
-        ? [
-            {
-              id: executorPlayer.id,
-              name: executorPlayer.name,
-              color: executorPlayer.color,
-              iconType: executorPlayer.iconType,
-            },
-          ]
-        : [],
+      executors: executorPlayer ? [executorPlayer] : [],
       category: task.category,
       difficulty: task.difficulty,
       triggerPlayerIds: [triggerPlayerId],
