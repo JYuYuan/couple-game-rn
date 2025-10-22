@@ -70,7 +70,6 @@ export default function OnlineRoomPage() {
   const [manualLanIP, setManualLanIP] = useState('')
   const [manualLanPort, setManualLanPort] = useState('3306')
   const [manualLanRoomId, setManualLanRoomId] = useState('')
-
   // 头像和性别状态
   const [selectedGender, setSelectedGender] = useState<AvatarGender>('man')
   const [selectedAvatar, setSelectedAvatar] = useState<AvatarOption | null>(null)
@@ -147,7 +146,7 @@ export default function OnlineRoomPage() {
 
       const handleRoomList = (rooms: OnlineRoom[]) => {
         console.log('收到在线房间列表:', rooms)
-        setOnlineRooms(rooms)
+        setOnlineRooms(Object.values(rooms))
         setIsLoadingOnlineRooms(false)
         setRefreshing(false)
       }
@@ -246,12 +245,18 @@ export default function OnlineRoomPage() {
       const targetRoomId = lanRoomData?.roomId || manualLanRoomId.trim()
 
       if (!targetIP) {
-        showError(t('common.error', '错误'), t('online.lan.error.noIP', '请选择一个房间或输入IP地址'))
+        showError(
+          t('common.error', '错误'),
+          t('online.lan.error.noIP', '请选择一个房间或输入IP地址'),
+        )
         return
       }
 
       if (!targetPort || isNaN(targetPort)) {
-        showError(t('common.error', '错误'), t('online.lan.error.invalidPort', '请输入有效的端口号'))
+        showError(
+          t('common.error', '错误'),
+          t('online.lan.error.invalidPort', '请输入有效的端口号'),
+        )
         return
       }
 
@@ -385,9 +390,7 @@ export default function OnlineRoomPage() {
       <View style={styles.roomCardHeader}>
         <View style={styles.roomCardTitleRow}>
           <Ionicons name="game-controller" size={20} color={colors.settingsAccent} />
-          <Text style={[styles.roomCardTitle, { color: colors.homeCardTitle }]}>
-            {room.name}
-          </Text>
+          <Text style={[styles.roomCardTitle, { color: colors.homeCardTitle }]}>{room.name}</Text>
         </View>
         <View
           style={[
@@ -624,9 +627,7 @@ export default function OnlineRoomPage() {
 
           {/* 模式切换器 - 仅在有多个模式时显示 */}
           {availableModes.length > 1 && (
-            <View
-              style={[styles.modeSelector, { backgroundColor: colors.settingsCardBackground }]}
-            >
+            <View style={[styles.modeSelector, { backgroundColor: colors.settingsCardBackground }]}>
               {isOnlineEnabled && (
                 <TouchableOpacity
                   style={[
@@ -697,9 +698,7 @@ export default function OnlineRoomPage() {
 
           {/* Tab切换 - 局域网模式下 Web 平台只显示加入房间 */}
           {!(connectionMode === 'lan' && !canCreateLANRoom) && (
-            <View
-              style={[styles.tabContainer, { backgroundColor: colors.settingsCardBackground }]}
-            >
+            <View style={[styles.tabContainer, { backgroundColor: colors.settingsCardBackground }]}>
               <TouchableOpacity
                 style={[
                   styles.tab,
@@ -757,9 +756,7 @@ export default function OnlineRoomPage() {
             <View style={styles.joinSection}>
               {/* 头像选择 */}
               <View style={styles.section}>
-                <Text style={[styles.sectionTitle, { color: colors.homeCardTitle }]}>
-                  选择头像
-                </Text>
+                <Text style={[styles.sectionTitle, { color: colors.homeCardTitle }]}>选择头像</Text>
                 <AvatarPicker
                   selectedGender={selectedGender}
                   selectedAvatar={selectedAvatar}
@@ -770,9 +767,7 @@ export default function OnlineRoomPage() {
 
               {/* 玩家名称 */}
               <View style={styles.section}>
-                <Text style={[styles.sectionTitle, { color: colors.homeCardTitle }]}>
-                  玩家名称
-                </Text>
+                <Text style={[styles.sectionTitle, { color: colors.homeCardTitle }]}>玩家名称</Text>
                 <TextInput
                   style={[
                     styles.input,
@@ -822,9 +817,7 @@ export default function OnlineRoomPage() {
                   >
                     <LinearGradient colors={['#4CAF50', '#66BB6A']} style={styles.buttonGradient}>
                       <Ionicons name="enter" size={20} color="white" />
-                      <Text style={styles.buttonText}>
-                        {isLoading ? '加入中...' : '加入房间'}
-                      </Text>
+                      <Text style={styles.buttonText}>{isLoading ? '加入中...' : '加入房间'}</Text>
                     </LinearGradient>
                   </TouchableOpacity>
                 </View>
@@ -908,10 +901,7 @@ export default function OnlineRoomPage() {
                       </View>
                     </View>
                     <TouchableOpacity
-                      style={[
-                        styles.joinButton,
-                        { opacity: isLoading ? 0.6 : 1 },
-                      ]}
+                      style={[styles.joinButton, { opacity: isLoading ? 0.6 : 1 }]}
                       onPress={() => handleJoinRoom()}
                       disabled={isLoading}
                     >
@@ -955,21 +945,13 @@ export default function OnlineRoomPage() {
                     >
                       <Ionicons
                         name={
-                          connectionMode === 'online'
-                            ? 'refresh'
-                            : isScanning
-                              ? 'stop'
-                              : 'search'
+                          connectionMode === 'online' ? 'refresh' : isScanning ? 'stop' : 'search'
                         }
                         size={16}
                         color="white"
                       />
                       <Text style={styles.refreshButtonText}>
-                        {connectionMode === 'online'
-                          ? '刷新'
-                          : isScanning
-                            ? '停止'
-                            : '扫描'}
+                        {connectionMode === 'online' ? '刷新' : isScanning ? '停止' : '扫描'}
                       </Text>
                     </TouchableOpacity>
                   )}
@@ -1007,58 +989,58 @@ export default function OnlineRoomPage() {
                 )}
 
                 <View style={styles.roomsList}>
-                  {connectionMode === 'online' ? (
-                    onlineRooms.filter((room) => room.gameStatus === 'waiting').length > 0 ? (
-                      onlineRooms
-                        .filter((room) => room.gameStatus === 'waiting')
-                        .map(renderOnlineRoomItem)
-                    ) : (
-                      !isLoadingOnlineRooms && (
-                        <View
-                          style={[
-                            styles.emptyRooms,
-                            { backgroundColor: colors.settingsCardBackground },
-                          ]}
-                        >
-                          <Ionicons
-                            name="cloud-offline-outline"
-                            size={48}
-                            color={colors.homeCardDescription}
-                          />
-                          <Text style={[styles.emptyRoomsTitle, { color: colors.homeCardTitle }]}>
-                            暂无可用房间
-                          </Text>
-                          <Text style={[styles.emptyRoomsDesc, { color: colors.homeCardDescription }]}>
-                            您可以创建一个新房间或输入房间代码加入
-                          </Text>
-                        </View>
-                      )
-                    )
-                  ) : discoveredRooms.length > 0 ? (
-                    discoveredRooms.map(renderLANRoomItem)
-                  ) : (
-                    !isScanning &&
-                    !isLANSupported && (
-                      <View
-                        style={[
-                          styles.emptyRooms,
-                          { backgroundColor: colors.settingsCardBackground },
-                        ]}
-                      >
-                        <Ionicons
-                          name="desktop-outline"
-                          size={48}
-                          color={colors.homeCardDescription}
-                        />
-                        <Text style={[styles.emptyRoomsTitle, { color: colors.homeCardTitle }]}>
-                          Web 端无法自动扫描
-                        </Text>
-                        <Text style={[styles.emptyRoomsDesc, { color: colors.homeCardDescription }]}>
-                          请使用移动设备创建房间，然后在此处手动输入房间号、IP 地址和端口连接
-                        </Text>
-                      </View>
-                    )
-                  )}
+                  {connectionMode === 'online'
+                    ? onlineRooms.filter((room) => room.gameStatus === 'waiting').length > 0
+                      ? onlineRooms
+                          .filter((room) => room.gameStatus === 'waiting')
+                          .map(renderOnlineRoomItem)
+                      : !isLoadingOnlineRooms && (
+                          <View
+                            style={[
+                              styles.emptyRooms,
+                              { backgroundColor: colors.settingsCardBackground },
+                            ]}
+                          >
+                            <Ionicons
+                              name="cloud-offline-outline"
+                              size={48}
+                              color={colors.homeCardDescription}
+                            />
+                            <Text style={[styles.emptyRoomsTitle, { color: colors.homeCardTitle }]}>
+                              暂无可用房间
+                            </Text>
+                            <Text
+                              style={[styles.emptyRoomsDesc, { color: colors.homeCardDescription }]}
+                            >
+                              您可以创建一个新房间或输入房间代码加入
+                            </Text>
+                          </View>
+                        )
+                    : discoveredRooms.length > 0
+                      ? discoveredRooms.map(renderLANRoomItem)
+                      : !isScanning &&
+                        !isLANSupported && (
+                          <View
+                            style={[
+                              styles.emptyRooms,
+                              { backgroundColor: colors.settingsCardBackground },
+                            ]}
+                          >
+                            <Ionicons
+                              name="desktop-outline"
+                              size={48}
+                              color={colors.homeCardDescription}
+                            />
+                            <Text style={[styles.emptyRoomsTitle, { color: colors.homeCardTitle }]}>
+                              Web 端无法自动扫描
+                            </Text>
+                            <Text
+                              style={[styles.emptyRoomsDesc, { color: colors.homeCardDescription }]}
+                            >
+                              请使用移动设备创建房间，然后在此处手动输入房间号、IP 地址和端口连接
+                            </Text>
+                          </View>
+                        )}
                   {!isScanning && isLANSupported && discoveredRooms.length === 0 && (
                     <View
                       style={[
@@ -1097,9 +1079,7 @@ export default function OnlineRoomPage() {
 
               {/* 头像选择 */}
               <View style={styles.section}>
-                <Text style={[styles.sectionTitle, { color: colors.homeCardTitle }]}>
-                  选择头像
-                </Text>
+                <Text style={[styles.sectionTitle, { color: colors.homeCardTitle }]}>选择头像</Text>
                 <AvatarPicker
                   selectedGender={selectedGender}
                   selectedAvatar={selectedAvatar}
@@ -1110,9 +1090,7 @@ export default function OnlineRoomPage() {
 
               {/* 玩家名称 */}
               <View style={styles.section}>
-                <Text style={[styles.sectionTitle, { color: colors.homeCardTitle }]}>
-                  玩家名称
-                </Text>
+                <Text style={[styles.sectionTitle, { color: colors.homeCardTitle }]}>玩家名称</Text>
                 <TextInput
                   style={[
                     styles.input,
@@ -1132,9 +1110,7 @@ export default function OnlineRoomPage() {
 
               {/* 房间名称 */}
               <View style={styles.section}>
-                <Text style={[styles.sectionTitle, { color: colors.homeCardTitle }]}>
-                  房间名称
-                </Text>
+                <Text style={[styles.sectionTitle, { color: colors.homeCardTitle }]}>房间名称</Text>
                 <TextInput
                   style={[
                     styles.input,

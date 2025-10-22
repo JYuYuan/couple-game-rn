@@ -210,7 +210,12 @@ class FlyingGame extends BaseGame {
       title: selectedTask,
       description: taskSet?.description || '',
       type: taskType as 'trap' | 'star' | 'collision',
-      executors: executorPlayers,
+      executors: executorPlayers.map((p) => ({
+        id: p.id,
+        name: p.name,
+        color: p.color,
+        iconType: 0, // 默认值，可以根据实际需求修改
+      })),
       category: taskSet?.categoryName || 'default',
       difficulty: taskSet?.difficulty || 'medium',
       triggerPlayerIds: [parseInt(playerId)], // 转换为数字数组
