@@ -478,12 +478,18 @@ export default function TaskModal({ visible, task, onComplete, onClose }: TaskMo
                       </Text>
 
                       <TouchableOpacity
-                        style={[styles.observerButton, { backgroundColor: colors.homeCardBorder }]}
+                        style={[
+                          styles.observerButton,
+                          {
+                            backgroundColor: colors.homeCardDescription + '15',
+                            borderColor: colors.homeCardDescription + '30',
+                          },
+                        ]}
                         onPress={onClose}
                         activeOpacity={0.7}
                       >
-                        <Ionicons name="close" size={18} color={colors.homeCardTitle} />
-                        <Text style={[styles.observerButtonText, { color: colors.homeCardTitle }]}>
+                        <Ionicons name="eye-off-outline" size={20} color={colors.homeCardDescription} />
+                        <Text style={[styles.observerButtonText, { color: colors.homeCardDescription }]}>
                           {t('taskModal.closeObserver', '关闭观察')}
                         </Text>
                       </TouchableOpacity>
@@ -759,14 +765,16 @@ const styles = StyleSheet.create({
   observerButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 8,
-    gap: 6,
-    marginTop: 8,
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 10,
+    gap: 8,
+    marginTop: 12,
+    borderWidth: 1,
   },
   observerButtonText: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
   },
 
