@@ -5,12 +5,12 @@
     "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "qqs",
+    "scheme": "couplegamern",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.qqs.game",
+      "bundleIdentifier": "com.coupleup.game",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -24,7 +24,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.qqs.game"
+      "package": "com.coupleup.game"
     },
     "web": {
       "output": "static",
@@ -50,8 +50,7 @@
           }
         }
       ],
-      "expo-localization",
-      "@config-plugins/react-native-webrtc"
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": true,
