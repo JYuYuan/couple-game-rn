@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import { getStorage } from '@/utils/storage'
-import { OnlineRoom, LANRoom, BaseRoom } from '@/types/online'
+import { BaseRoom, LANRoom, OnlineRoom } from '@/types/online'
 
 interface RoomState {
   currentRoom: OnlineRoom | LANRoom | null

@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
 import {
-  Alert,
   Modal,
   Platform,
   ScrollView,
@@ -16,17 +15,9 @@ import { useColorScheme } from '@/hooks/use-color-scheme'
 import { Colors } from '@/constants/theme'
 import { useTranslation } from 'react-i18next'
 import { useSocket } from '@/hooks/use-socket'
-import {
-  CreateLANRoomData,
-  CreateRoomData,
-  JoinLANRoomData,
-  JoinRoomData,
-  LANRoomDiscovery,
-} from '@/types/online'
+import { CreateRoomData, JoinLANRoomData, JoinRoomData, LANRoomDiscovery } from '@/types/online'
 import { LinearGradient } from 'expo-linear-gradient'
 import { TaskSet } from '@/types/tasks'
-import { useSettingsStore } from '@/store'
-import { generateRoomId } from '@/utils'
 import { showError } from '@/utils/toast'
 import { AvatarGender } from '@/types/settings'
 import { AvatarOption, getRandomAvatarByGender } from '@/constants/avatars'
@@ -212,12 +203,18 @@ export const OnlineRoomModal: React.FC<OnlineRoomModalProps> = ({
       const targetRoomId = lanRoomData?.roomId || ''
 
       if (!targetIP) {
-        showError(t('common.error', '错误'), t('online.lan.error.noIP', '请选择一个房间或输入IP地址'))
+        showError(
+          t('common.error', '错误'),
+          t('online.lan.error.noIP', '请选择一个房间或输入IP地址'),
+        )
         return
       }
 
       if (!targetPort || isNaN(targetPort)) {
-        showError(t('common.error', '错误'), t('online.lan.error.invalidPort', '请输入有效的端口号'))
+        showError(
+          t('common.error', '错误'),
+          t('online.lan.error.invalidPort', '请输入有效的端口号'),
+        )
         return
       }
 
@@ -658,10 +655,7 @@ export const OnlineRoomModal: React.FC<OnlineRoomModalProps> = ({
                       </Text>
                       <TouchableOpacity
                         onPress={handleRefreshOnlineRooms}
-                        style={[
-                          styles.scanButton,
-                          { backgroundColor: colors.settingsAccent },
-                        ]}
+                        style={[styles.scanButton, { backgroundColor: colors.settingsAccent }]}
                         disabled={!socket.isConnected}
                       >
                         <Ionicons name="refresh" size={14} color="white" />

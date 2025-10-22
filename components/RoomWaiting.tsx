@@ -7,7 +7,6 @@ import { Colors } from '@/constants/theme'
 import { useTranslation } from 'react-i18next'
 import { OnlinePlayer } from '@/types/online'
 import * as Clipboard from 'expo-clipboard'
-import { PlayerIcon } from '@/components/icons'
 import { showConfirmDialog } from '@/components/ConfirmDialog'
 import { PlayerAvatar } from '@/components/PlayerAvatar'
 

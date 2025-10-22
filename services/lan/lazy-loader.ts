@@ -83,10 +83,10 @@ export const loadLANModules = async (): Promise<void> => {
   if (!isLANAvailable()) {
     throw new Error(
       'LAN 功能不可用。\n' +
-      '请使用以下方式启用:\n' +
-      '1. 安装 expo-dev-client: npx expo install expo-dev-client\n' +
-      '2. 重新构建: npx expo run:ios\n' +
-      '或使用生产构建。',
+        '请使用以下方式启用:\n' +
+        '1. 安装 expo-dev-client: npx expo install expo-dev-client\n' +
+        '2. 重新构建: npx expo run:ios\n' +
+        '或使用生产构建。',
     )
   }
 
@@ -112,9 +112,9 @@ export const loadLANModules = async (): Promise<void> => {
     console.error('❌ LAN 模块加载失败:', error)
     throw new Error(
       '无法加载 LAN 模块。请确保:\n' +
-      '1. 已安装 expo-dev-client\n' +
-      '2. 使用 npx expo run:ios 运行\n' +
-      '3. 不是在 Expo Go 中运行',
+        '1. 已安装 expo-dev-client\n' +
+        '2. 使用 npx expo run:ios 运行\n' +
+        '3. 不是在 Expo Go 中运行',
     )
   }
 }

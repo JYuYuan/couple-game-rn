@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react'
 import { socketService } from '@/services/socket-service'
 import {
   ConnectionType,
@@ -13,8 +13,7 @@ import {
 } from '@/types/online'
 import { useSettingsStore } from '@/store'
 import { useRoomStore } from '@/store/roomStore'
-import { getLocalIP } from '@/utils'
-import { loadLANModules, getLANService, isLANAvailable, type RoomBroadcast } from '@/services/lan'
+import { getLANService, isLANAvailable, loadLANModules, type RoomBroadcast } from '@/services/lan'
 
 interface SocketContextValue {
   // 连接状态

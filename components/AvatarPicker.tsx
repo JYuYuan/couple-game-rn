@@ -1,8 +1,8 @@
 import React from 'react'
-import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native'
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { AvatarGender } from '@/types/settings'
-import { AVATARS, AvatarOption, getRandomAvatarByGender } from '@/constants/avatars'
+import { AvatarOption, AVATARS, getRandomAvatarByGender } from '@/constants/avatars'
 import { useColorScheme } from '@/hooks/use-color-scheme'
 import { Colors } from '@/constants/theme'
 import { useTranslation } from 'react-i18next'
@@ -52,7 +52,8 @@ export const AvatarPicker: React.FC<AvatarPickerProps> = ({
               {
                 backgroundColor:
                   selectedGender === 'man' ? colors.settingsAccent + '20' : colors.homeBackground,
-                borderColor: selectedGender === 'man' ? colors.settingsAccent : colors.homeCardBorder,
+                borderColor:
+                  selectedGender === 'man' ? colors.settingsAccent : colors.homeCardBorder,
               },
             ]}
             onPress={() => handleGenderSelect('man')}
@@ -80,9 +81,7 @@ export const AvatarPicker: React.FC<AvatarPickerProps> = ({
               styles.genderButton,
               {
                 backgroundColor:
-                  selectedGender === 'woman'
-                    ? colors.settingsAccent + '20'
-                    : colors.homeBackground,
+                  selectedGender === 'woman' ? colors.settingsAccent + '20' : colors.homeBackground,
                 borderColor:
                   selectedGender === 'woman' ? colors.settingsAccent : colors.homeCardBorder,
               },
@@ -92,7 +91,9 @@ export const AvatarPicker: React.FC<AvatarPickerProps> = ({
             <Ionicons
               name="female"
               size={20}
-              color={selectedGender === 'woman' ? colors.settingsAccent : colors.homeCardDescription}
+              color={
+                selectedGender === 'woman' ? colors.settingsAccent : colors.homeCardDescription
+              }
             />
             <Text
               style={[

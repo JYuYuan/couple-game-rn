@@ -1,12 +1,7 @@
 // ConfirmDialog.tsx
 import React, { useEffect, useState } from 'react'
 import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-  withTiming,
-} from 'react-native-reanimated'
+import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated'
 import { BlurView } from 'expo-blur'
 import { LinearGradient } from 'expo-linear-gradient'
 import { Ionicons } from '@expo/vector-icons'

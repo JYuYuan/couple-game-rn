@@ -1,13 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react'
 import {
+  Platform,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
-  Platform,
-  RefreshControl,
 } from 'react-native'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
@@ -17,19 +17,17 @@ import { useTranslation } from 'react-i18next'
 import { useSocket } from '@/hooks/use-socket'
 import {
   CreateRoomData,
-  JoinRoomData,
   JoinLANRoomData,
+  JoinRoomData,
   LANRoomDiscovery,
   OnlineRoom,
 } from '@/types/online'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useSettingsStore } from '@/store'
-import { generateRoomId } from '@/utils'
 import { showError } from '@/utils/toast'
 import { AvatarGender } from '@/types/settings'
 import { AvatarOption, getRandomAvatarByGender } from '@/constants/avatars'
 import { AvatarPicker } from '@/components/AvatarPicker'
-import { TaskSet } from '@/types/tasks'
 import { useTasksStore } from '@/store/tasksStore'
 
 export default function OnlineRoomPage() {

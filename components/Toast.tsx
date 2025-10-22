@@ -1,11 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react'
-import {
-  View,
-  Text,
-  StyleSheet,
-  Animated,
-  TouchableOpacity,
-} from 'react-native'
+import React, { createContext, useContext, useEffect, useState } from 'react'
+import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { setToastRef } from '@/utils/toast'
 
@@ -124,13 +118,9 @@ const ToastItemComponent: React.FC<{
           <Ionicons name={config.icon} size={24} color={config.textColor} />
         </View>
         <View style={styles.textContainer}>
-          <Text style={[styles.title, { color: config.textColor }]}>
-            {toast.title}
-          </Text>
+          <Text style={[styles.title, { color: config.textColor }]}>{toast.title}</Text>
           {toast.message && (
-            <Text style={[styles.message, { color: config.textColor }]}>
-              {toast.message}
-            </Text>
+            <Text style={[styles.message, { color: config.textColor }]}>{toast.message}</Text>
           )}
         </View>
         <TouchableOpacity style={styles.closeButton} onPress={hideToast}>
@@ -141,9 +131,7 @@ const ToastItemComponent: React.FC<{
   )
 }
 
-export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
+export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [toasts, setToasts] = useState<ToastItem[]>([])
 
   const showToast = (toastData: Omit<ToastData, 'id'>) => {
@@ -172,12 +160,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({
       {children}
       <View style={styles.toastOverlay} pointerEvents="box-none">
         {toasts.map((toast, index) => (
-          <ToastItemComponent
-            key={toast.id}
-            toast={toast}
-            onHide={hideToast}
-            index={index}
-          />
+          <ToastItemComponent key={toast.id} toast={toast} onHide={hideToast} index={index} />
         ))}
       </View>
     </ToastContext.Provider>

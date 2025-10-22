@@ -15,7 +15,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { createBoardPath } from '@/utils/board'
 import { PathCell, Player } from '@/types/game'
 import { useColorScheme } from '@/hooks/use-color-scheme'
-import { Colors, Layout } from '@/constants/theme'
+import { Colors } from '@/constants/theme'
 import { PlayerIcon } from './icons'
 
 const BOARD_SIZE = 7

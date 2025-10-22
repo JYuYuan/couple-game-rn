@@ -53,7 +53,13 @@ export const toast = {
     }
   },
 
-  show: (type: ToastType, title: string, message?: string, duration?: number, onPress?: () => void) => {
+  show: (
+    type: ToastType,
+    title: string,
+    message?: string,
+    duration?: number,
+    onPress?: () => void,
+  ) => {
     if (toastRef) {
       toastRef.showToast({
         type,

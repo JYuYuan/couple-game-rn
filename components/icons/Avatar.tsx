@@ -1,5 +1,5 @@
 import React from 'react'
-import Svg, { G, Circle, Path, Ellipse } from 'react-native-svg'
+import Svg, { Circle, Ellipse, G, Path } from 'react-native-svg'
 
 // 颜色配置
 const skinColors = ['#FFD4C4', '#FFE0BD', '#FFCC99', '#F1C27D', '#E0C8B0', '#D2B48C']

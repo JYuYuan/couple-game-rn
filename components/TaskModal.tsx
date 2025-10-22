@@ -1,9 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import {
-  Alert,
   Dimensions,
   Modal,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -16,7 +14,6 @@ import Animated, {
   interpolate,
   useAnimatedStyle,
   useSharedValue,
-  withSpring,
   withTiming,
 } from 'react-native-reanimated'
 import { LinearGradient } from 'expo-linear-gradient'

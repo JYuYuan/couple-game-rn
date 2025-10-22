@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Stack, useLocalSearchParams, useRouter, useNavigation } from 'expo-router'
+import { Stack, useLocalSearchParams, useNavigation, useRouter } from 'expo-router'
 import { useColorScheme } from '@/hooks/use-color-scheme'
 import { Colors } from '@/constants/theme'
 import { RoomWaiting } from '@/components/RoomWaiting'

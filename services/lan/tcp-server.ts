@@ -85,7 +85,9 @@ class TCPServer {
             }, 200)
           } else {
             // 为其他错误提供更详细的信息
-            const detailedError = new Error(`TCP Server 启动失败: ${errorMessage} (code: ${errorCode})`)
+            const detailedError = new Error(
+              `TCP Server 启动失败: ${errorMessage} (code: ${errorCode})`,
+            )
             reject(detailedError)
           }
         })
@@ -124,7 +126,9 @@ class TCPServer {
               tryStartServer(nextPort)
             }, 200)
           } else {
-            const detailedError = new Error(`TCP Server 启动失败: ${errorMessage} (code: ${errorCode})`)
+            const detailedError = new Error(
+              `TCP Server 启动失败: ${errorMessage} (code: ${errorCode})`,
+            )
             reject(detailedError)
           }
         }

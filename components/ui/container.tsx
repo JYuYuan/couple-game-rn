@@ -1,5 +1,5 @@
 import React from 'react'
-import { View, ScrollView, StyleSheet, ViewStyle, ScrollViewProps } from 'react-native'
+import { ScrollView, ScrollViewProps, StyleSheet, View, ViewStyle } from 'react-native'
 import { CommonStyles, Layout } from '@/constants/theme'
 
 interface ContainerProps {
@@ -34,15 +34,9 @@ export function Container({
   padding = 'md',
   ...props
 }: CombinedContainerProps) {
-  const containerStyle = [
-    CommonStyles.container,
-    style,
-  ]
+  const containerStyle = [CommonStyles.container, style]
 
-  const contentStyle = [
-    CommonStyles.content,
-    { maxWidth },
-  ]
+  const contentStyle = [CommonStyles.content, { maxWidth }]
 
   const innerContentStyle = [
     centerContent ? CommonStyles.centeredContainer : CommonStyles.contentContainer,
@@ -71,9 +65,7 @@ export function Container({
   return (
     <View style={containerStyle}>
       <View style={contentStyle}>
-        <View style={innerContentStyle}>
-          {children}
-        </View>
+        <View style={innerContentStyle}>{children}</View>
       </View>
     </View>
   )
@@ -92,11 +84,9 @@ export function CardContainer({
   maxWidth?: number
 }) {
   return (
-    <View style={[
-      CommonStyles.cardContainer,
-      { maxWidth, alignSelf: 'center', width: '100%' },
-      style,
-    ]}>
+    <View
+      style={[CommonStyles.cardContainer, { maxWidth, alignSelf: 'center', width: '100%' }, style]}
+    >
       {children}
     </View>
   )
@@ -117,11 +107,9 @@ export function GridContainer({
   maxWidth?: number
 }) {
   return (
-    <View style={[
-      CommonStyles.responsiveGrid,
-      { maxWidth, alignSelf: 'center', width: '100%' },
-      style,
-    ]}>
+    <View
+      style={[CommonStyles.responsiveGrid, { maxWidth, alignSelf: 'center', width: '100%' }, style]}
+    >
       {children}
     </View>
   )

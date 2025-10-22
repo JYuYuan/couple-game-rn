@@ -1,6 +1,12 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
-import { LanguageMode, SettingsState, SoundSettings, ThemeMode, NetworkSettings } from '@/types/settings'
+import {
+  LanguageMode,
+  NetworkSettings,
+  SettingsState,
+  SoundSettings,
+  ThemeMode,
+} from '@/types/settings'
 import { getStorage } from '@/utils/storage'
 import { generateRoomId } from '@/utils'
 

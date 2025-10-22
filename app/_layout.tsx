@@ -12,7 +12,7 @@ import { AppState, Platform } from 'react-native'
 import { ConfirmDialogProvider } from '@/components/ConfirmDialog'
 import { ToastProvider } from '@/components/Toast'
 import { SocketProvider } from '@/contexts/SocketContext'
-import { isLANAvailable, getLANService } from '@/services/lan'
+import { getLANService, isLANAvailable } from '@/services/lan'
 
 // 防止启动屏自动隐藏
 SplashScreen.preventAutoHideAsync()
@@ -80,7 +80,6 @@ export default function RootLayout() {
       clearRoom()
       setAppIsReady(true)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // 监听 App 状态变化，清理 LAN 资源
