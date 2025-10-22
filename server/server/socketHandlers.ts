@@ -96,7 +96,7 @@ export default function registerSocketHandlers(io: SocketIOServer) {
             name: roomInfo.playerName,
             roomId: null,
             isHost: true,
-            avatar: roomInfo.avatar || '', // 头像ID
+            avatarId: roomInfo.avatar || '', // 头像ID
             gender: roomInfo.gender || 'man', // 性别
             ...roomInfo,
           })
@@ -152,7 +152,7 @@ export default function registerSocketHandlers(io: SocketIOServer) {
             playerId,
             name: joinData.playerName || `Player_${playerId.substring(0, 6)}`,
             isHost: false,
-            avatar: joinData.avatar || '', // 头像ID
+            avatarId: joinData.avatar || '', // 头像ID
             gender: joinData.gender || 'man', // 性别
             ...joinData,
           })

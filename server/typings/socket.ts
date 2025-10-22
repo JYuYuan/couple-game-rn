@@ -44,7 +44,7 @@ export interface Player {
   roomId: string | null
   color: string
   isHost: boolean
-  avatar: string
+  avatarId: string
   gender?: 'man' | 'woman'
   isConnected: boolean
   joinedAt: number

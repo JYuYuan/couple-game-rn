@@ -169,7 +169,7 @@ export const OnlineRoomModal: React.FC<OnlineRoomModalProps> = ({
         maxPlayers,
         gameType,
         taskSet: taskSet,
-        avatar: selectedAvatar.id,
+        avatarId: selectedAvatar.id,
         gender: selectedGender,
       }
 
@@ -227,7 +227,7 @@ export const OnlineRoomModal: React.FC<OnlineRoomModalProps> = ({
           hostPort: targetPort,
           roomId: targetRoomId,
           playerName: playerName.trim(),
-          avatar: selectedAvatar.id,
+          avatarId: selectedAvatar.id,
           gender: selectedGender,
         }
 
@@ -254,7 +254,7 @@ export const OnlineRoomModal: React.FC<OnlineRoomModalProps> = ({
         const joinData: JoinRoomData = {
           roomId: targetRoomId,
           playerName: playerName.trim(),
-          avatar: selectedAvatar.id,
+          avatarId: selectedAvatar.id,
           gender: selectedGender,
         }
         await socket.joinRoom(joinData)

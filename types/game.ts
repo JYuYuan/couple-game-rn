@@ -14,6 +14,7 @@ export interface Player {
   score: number
   iconType: number // 添加图标类型，可选以保持向后兼容
   isAI?: boolean
+  avatarId?: string
 }
 
 export interface GameState {

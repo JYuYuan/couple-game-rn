@@ -88,7 +88,7 @@ class LANService {
         isHost: true,
         socketId: this.currentPlayerId,
         isConnected: true,
-        avatar: data.avatar || '', // 头像ID
+        avatarId: data.avatar || '', // 头像ID
         gender: data.gender || 'man', // 性别
         color: this.getRandomColor(), // 随机背景色
       })
@@ -414,7 +414,7 @@ class LANService {
             socketId: data.playerId,
             isConnected: true,
             iconType: this.currentRoom.players.length,
-            avatar: data.data.avatar || '', // 头像ID
+            avatarId: data.data.avatar || '', // 头像ID
             gender: data.data.gender || 'man', // 性别
             color: this.getRandomColor(), // 随机背景色
             ...data,

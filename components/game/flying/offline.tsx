@@ -209,6 +209,7 @@ export default function OfflineGame() {
       category: task.category,
       difficulty: task.difficulty,
       triggerPlayerIds: [triggerPlayerId],
+      isExecutor: true,
     }
 
     setTaskModalData(taskData)

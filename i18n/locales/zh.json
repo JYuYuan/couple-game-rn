@@ -163,18 +163,34 @@
     "taskTypes": {
       "trap": {
         "title": "陷阱挑战",
-        "description": "踩到陷阱！需要完成任务才能继续前进"
+        "description": "踩到陷阱！",
+        "ruleTitle": "规则说明",
+        "ruleExecutor": "受罚者：触发陷阱的玩家",
+        "ruleReward": "完成任务：前进 3-6 格",
+        "rulePenalty": "失败惩罚：后退 3-6 格",
+        "hint": "根据任务内容，由相应的玩家执行动作"
       },
       "star": {
         "title": "幸运任务",
-        "description": "获得幸运机会！完成任务获得额外奖励"
+        "description": "获得幸运机会！",
+        "ruleTitle": "规则说明",
+        "ruleExecutor": "受益者：触发幸运的玩家",
+        "ruleReward": "完成任务：前进 3-6 格",
+        "rulePenalty": "失败惩罚：后退 3-6 格",
+        "hint": "根据任务内容，由相应的玩家执行动作"
       },
       "collision": {
         "title": "碰撞挑战",
-        "description": "发生碰撞！需要通过挑战来决定去留"
+        "description": "发生碰撞！",
+        "ruleTitle": "规则说明",
+        "ruleExecutor": "受罚者：被碰撞的玩家",
+        "ruleReward": "完成任务：保持位置",
+        "rulePenalty": "失败惩罚：回到起点",
+        "hint": "根据任务内容，由相应的玩家执行动作"
       }
     },
     "executor": "执行者",
+    "executors": "执行者们",
     "taskContent": "任务内容",
     "difficulty": {
       "easy": "简单",
@@ -183,9 +199,21 @@
       "extreme": "极限",
       "unknown": "未知"
     },
-    "chooseCompletion": "请选择任务完成情况：",
+    "chooseCompletion": "任务完成了吗？",
     "completed": "完成",
     "notCompleted": "未完成",
+    "confirmComplete": "确认完成任务？",
+    "confirmFailed": "确认任务失败？",
+    "completeMessage": "确定你已经成功完成了这个任务吗？",
+    "failedMessage": "确定任务没有完成吗？这可能会有惩罚。",
+    "submitError": "提交失败，请重试",
+    "processError": "处理失败，请重试",
+    "processing": "处理中...",
+    "retry": "重试",
+    "quickTip": "💡 点击按钮会显示确认对话框",
+    "observerMode": "观察模式",
+    "observerHint": "等待其他玩家完成任务...",
+    "closeObserver": "关闭观察",
     "results": {
       "taskCompleted": "任务完成！",
       "taskFailed": "任务失败！",
@@ -195,11 +223,14 @@
       "collisionFailed": "碰撞失败！",
       "trapReward": "获得奖励：前进 3-6 格",
       "trapPenalty": "受到惩罚：后退 3-6 格",
-      "starReward": "幸运奖励：前进 3-6",
-      "starPenalty": "遗憾惩罚：后退 3-6",
+      "starReward": "幸运奖励：前进 3-6 格",
+      "starPenalty": "遗憾惩罚：后退 3-6 格",
       "collisionStay": "保持位置不变",
       "collisionStart": "回到起点重新开始"
     },
+    "positive": "正面效果",
+    "negative": "负面效果",
+    "affectedPlayers": "受影响玩家：",
     "executing": "正在执行中..."
   },
   "victoryModal": {

@@ -13,11 +13,11 @@ import { GamePlayer } from '@/hooks/use-game-players'
 import { useAudioManager } from '@/hooks/use-audio-manager'
 import { useTranslation } from 'react-i18next'
 import { DiceRollResult, OnlinePlayer, TaskModalData } from '@/types/online'
-import { PlayerIcon } from '@/components/icons'
 import { useSocket } from '@/hooks/use-socket'
 import { useRoomStore, useSettingsStore } from '@/store'
 import { useDeepCompareEffect } from 'ahooks'
 import toast from '@/utils/toast'
+import { PlayerAvatar } from '@/components/PlayerAvatar'
 
 export default function FlyingChessGame() {
   const router = useRouter()
@@ -37,6 +37,9 @@ export default function FlyingChessGame() {
   // 使用 state 管理 currentUserId，避免依赖 room 状态同步
   const [currentUserId, setCurrentUserId] = useState<string | null>(room?.currentUser || null)
 
+  // 从 store 获取 clearRoom 方法
+  const { clearRoom } = useRoomStore()
+
   // 监听返回按钮点击事件
   useEffect(() => {
     const unsubscribe = navigation.addListener('beforeRemove', (e) => {
@@ -47,7 +50,6 @@ export default function FlyingChessGame() {
       isLeavingRef.current = true
 
       // 清除房间状态
-      const { clearRoom } = useRoomStore.getState()
       clearRoom()
 
       // 离开房间
@@ -57,7 +59,7 @@ export default function FlyingChessGame() {
     })
 
     return unsubscribe
-  }, [navigation, room?.id])
+  }, [navigation, room?.id, clearRoom])
 
   // 初始化和同步 currentUserId
   useEffect(() => {
@@ -182,8 +184,7 @@ export default function FlyingChessGame() {
     // 设置离开标记,防止 useEffect 触发导航
     isLeavingRef.current = true
 
-    // 先清除 roomStore 中的房间状态
-    const { clearRoom } = useRoomStore.getState()
+    // 清除房间状态
     clearRoom()
 
     // 发送离开房间请求给服务端
@@ -527,7 +528,6 @@ export default function FlyingChessGame() {
       isLeavingRef.current = true
 
       // 清除房间状态
-      const { clearRoom } = useRoomStore.getState()
       clearRoom()
 
       // 显示提示
@@ -560,7 +560,7 @@ export default function FlyingChessGame() {
       socket.off('game:task_completed', handleTaskCompleted)
       socket.off('room:destroyed', handleRoomDestroyed)
     }
-  }, [socket.isConnected, playerId, room?.id]) // 添加 room?.id 作为依赖，确保房间变化时重新注册
+  }, [socket.isConnected, playerId, room?.id, clearRoom]) // 添加 clearRoom 作为依赖
 
   // 逐步移动玩家的动画函数
   const movePlayerStepByStep = (
@@ -779,7 +779,7 @@ export default function FlyingChessGame() {
 
                   {/* 玩家头像 */}
                   <View style={[styles.playerAvatarContainer, { borderColor: player.color }]}>
-                    <PlayerIcon avatarId={player.avatar} />
+                    <PlayerAvatar avatarId={player.avatarId} color={player.color} />
                   </View>
 
                   {/* 玩家信息 */}

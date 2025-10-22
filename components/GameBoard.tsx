@@ -16,7 +16,7 @@ import { createBoardPath } from '@/utils/board'
 import { PathCell, Player } from '@/types/game'
 import { useColorScheme } from '@/hooks/use-color-scheme'
 import { Colors } from '@/constants/theme'
-import { PlayerIcon } from './icons'
+import { PlayerAvatar } from '@/components/PlayerAvatar'
 
 const BOARD_SIZE = 7
 const { width: screenWidth } = Dimensions.get('window')
@@ -291,7 +291,7 @@ const PlayerPiece: React.FC<PlayerPieceProps> = ({ player, index, total }) => {
           },
         ]}
       >
-        <PlayerIcon avatarId={player.avatar} />
+        <PlayerAvatar avatarId={player.avatarId || ''} color={player.color} />
       </View>
     </Animated.View>
   )
