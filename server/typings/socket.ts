@@ -16,11 +16,15 @@ export interface RoomInfo {
   maxPlayers: number
   gameType: 'fly' | 'wheel' | 'minesweeper'
   taskSet?: TaskSet | null
+  avatar?: string
+  gender?: 'man' | 'woman'
 }
 
 export interface JoinData {
   roomId: string
   playerName: string
+  avatar?: string
+  gender?: 'man' | 'woman'
 }
 
 export interface GameAction {
@@ -41,6 +45,7 @@ export interface Player {
   color: string
   isHost: boolean
   avatar: string
+  gender?: 'man' | 'woman'
   isConnected: boolean
   joinedAt: number
   lastSeen: number

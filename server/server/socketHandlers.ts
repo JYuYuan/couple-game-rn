@@ -334,6 +334,12 @@ export default function registerSocketHandlers(io: SocketIOServer) {
       socket.emit('room:list', rooms)
     })
 
+    // 获取房间列表 (别名)
+    socket.on('room:getRoomList', async () => {
+      const rooms = await roomManager.getAllRooms()
+      socket.emit('room:list', rooms)
+    })
+
     // 获取玩家列表
     socket.on('player:list', async () => {
       const players = await playerManager.getAllPlayers()

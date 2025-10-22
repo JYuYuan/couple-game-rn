@@ -1,6 +1,7 @@
 import { Stack } from 'expo-router'
 import 'react-native-reanimated'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
+import '../global.css'
 import { useCallback, useEffect, useState } from 'react'
 import { useAudioManager } from '@/hooks/use-audio-manager'
 import { useSettingsStore } from '@/store'
