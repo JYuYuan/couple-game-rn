@@ -96,12 +96,16 @@ export default function registerSocketHandlers(io: SocketIOServer) {
             name: roomInfo.playerName,
             roomId: null,
             isHost: true,
+            avatar: roomInfo.avatar || '', // 头像ID
+            gender: roomInfo.gender || 'man', // 性别
             ...roomInfo,
           })
         } else {
           // 更新玩家信息
           player.name = roomInfo.playerName
           player.isHost = true
+          player.avatar = roomInfo.avatar || ''
+          player.gender = roomInfo.gender || 'man'
           await playerManager.updatePlayer(player)
         }
 
@@ -148,12 +152,16 @@ export default function registerSocketHandlers(io: SocketIOServer) {
             playerId,
             name: joinData.playerName || `Player_${playerId.substring(0, 6)}`,
             isHost: false,
+            avatar: joinData.avatar || '', // 头像ID
+            gender: joinData.gender || 'man', // 性别
             ...joinData,
           })
         } else {
           // 更新玩家信息
           player.name = joinData.playerName || player.name
           player.isHost = false
+          player.avatar = joinData.avatar || ''
+          player.gender = joinData.gender || 'man'
           await playerManager.updatePlayer(player)
         }
 

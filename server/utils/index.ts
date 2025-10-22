@@ -1,10 +1,7 @@
 export function getRandomColor() {
-  return (
-    '#' +
-    Math.floor(Math.random() * 0xffffff)
-      .toString(16)
-      .padStart(6, '0')
-  )
+  // 使用预定义的颜色池，与客户端保持一致
+  const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F']
+  return colors[Math.floor(Math.random() * colors.length)]
 }
 
 export function generateRoomId() {

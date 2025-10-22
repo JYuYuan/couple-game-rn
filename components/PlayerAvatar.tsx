@@ -10,7 +10,7 @@ interface PlayerAvatarProps {
 }
 
 export const PlayerAvatar: React.FC<PlayerAvatarProps> = ({
-  avatarId,
+  avatarId = '',
   color,
   size = 40,
   backgroundColor,

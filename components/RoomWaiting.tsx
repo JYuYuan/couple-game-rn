@@ -9,6 +9,7 @@ import { OnlinePlayer } from '@/types/online'
 import * as Clipboard from 'expo-clipboard'
 import { PlayerIcon } from '@/components/icons'
 import { showConfirmDialog } from '@/components/ConfirmDialog'
+import { PlayerAvatar } from '@/components/PlayerAvatar'
 
 interface RoomWaitingProps {
   roomId: string
@@ -137,10 +138,16 @@ export const RoomWaiting: React.FC<RoomWaitingProps> = ({
                   >
                     <View style={styles.lanInfoContent}>
                       <Text style={[styles.lanInfoLabel, { color: colors.homeCardDescription }]}>
-                        IP: <Text style={[styles.lanInfoValue, { color: colors.homeCardTitle }]}>{lanIP}</Text>
+                        IP:{' '}
+                        <Text style={[styles.lanInfoValue, { color: colors.homeCardTitle }]}>
+                          {lanIP}
+                        </Text>
                       </Text>
                       <Text style={[styles.lanInfoLabel, { color: colors.homeCardDescription }]}>
-                        {t('online.lan.port', '端口')}: <Text style={[styles.lanInfoValue, { color: colors.homeCardTitle }]}>{lanPort}</Text>
+                        {t('online.lan.port', '端口')}:{' '}
+                        <Text style={[styles.lanInfoValue, { color: colors.homeCardTitle }]}>
+                          {lanPort}
+                        </Text>
                       </Text>
                     </View>
                     <Ionicons name="copy-outline" size={20} color={colors.settingsAccent} />
@@ -183,7 +190,7 @@ export const RoomWaiting: React.FC<RoomWaitingProps> = ({
                 >
                   {player ? (
                     <>
-                      <PlayerIcon avatarId={player.avatar} />
+                      <PlayerAvatar avatarId={player.avatar} color={player.color} />
                       <View style={styles.playerInfo}>
                         <View style={styles.playerNameRow}>
                           <Text style={[styles.playerName, { color: colors.homeCardTitle }]}>

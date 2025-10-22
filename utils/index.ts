@@ -80,3 +80,12 @@ const getLocalIPWeb = async (): Promise<string | undefined> => {
 export function generateRoomId() {
   return Math.random().toString(36).substring(2, 8).toUpperCase()
 }
+
+export function getRandomColor() {
+  return (
+    '#' +
+    Math.floor(Math.random() * 0xffffff)
+      .toString(16)
+      .padStart(6, '0')
+  )
+}

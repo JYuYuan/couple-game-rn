@@ -7,7 +7,7 @@ import { udpBroadcastService, RoomBroadcast } from './udp-broadcast'
 import { tcpServer } from './tcp-server'
 import { tcpClient } from './tcp-client'
 import type { TCPMessage } from './tcp-server'
-import { getLocalIP } from '@/utils'
+import { getLocalIP, getRandomColor } from '@/utils'
 import roomManager from '../game-managers/room-manager'
 import playerManager from '../game-managers/player-manager'
 import gameInstanceManager from '../game-managers/game-instance-manager'
@@ -89,10 +89,19 @@ class LANService {
         isHost: true,
         socketId: this.currentPlayerId,
         isConnected: true,
+        avatar: data.avatar || '', // 头像ID
+        gender: data.gender || 'man', // 性别
+        color: this.getRandomColor(), // 随机背景色
       })
     } else {
       player.name = data.playerName
       player.isHost = true
+      player.avatar = data.avatar || ''
+      player.gender = data.gender || 'man'
+      // 如果没有颜色或者重新创建房间，重新分配颜色
+      if (!player.color) {
+        player.color = this.getRandomColor()
+      }
       await playerManager.updatePlayer(player)
     }
 
@@ -361,7 +370,10 @@ class LANService {
 
       // 从房间移除玩家
       if (this.currentRoom) {
-        const updatedRoom = await roomManager.removePlayerFromRoom(this.currentRoom.id, data.playerId)
+        const updatedRoom = await roomManager.removePlayerFromRoom(
+          this.currentRoom.id,
+          data.playerId,
+        )
         if (updatedRoom) {
           this.currentRoom = updatedRoom
 
@@ -403,11 +415,21 @@ class LANService {
             socketId: data.playerId,
             isConnected: true,
             iconType: this.currentRoom.players.length,
+            avatar: data.data.avatar || '', // 头像ID
+            gender: data.data.gender || 'man', // 性别
+            color: this.getRandomColor(), // 随机背景色
+            ...data,
           })
         } else {
           player.name = data.data.playerName || player.name
           player.isHost = false
           player.iconType = this.currentRoom.players.length
+          player.avatar = data.data.avatar || ''
+          player.gender = data.data.gender || 'man'
+          // 如果没有颜色，分配一个随机颜色
+          if (!player.color) {
+            player.color = this.getRandomColor()
+          }
           await playerManager.updatePlayer(player)
         }
 
@@ -618,6 +640,14 @@ class LANService {
     this.isHost = false
 
     console.log('✅ LAN 服务清理完成')
+  }
+
+  /**
+   * 获取随机颜色（用于玩家头像背景）
+   */
+  private getRandomColor(): string {
+    const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F']
+    return colors[Math.floor(Math.random() * colors.length)]
   }
 }
 
