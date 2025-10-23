@@ -16,6 +16,8 @@ on:
 permissions:
   contents: write
   packages: write
+  pages: write
+  id-token: write
 
 jobs:
   build-android:
@@ -134,8 +136,62 @@ jobs:
           path: ${{ steps.find_ipa.outputs.ipa_path }}
           retention-days: 30
 
+  build-web:
+    runs-on: ubuntu-latest
+    env:
+      EXPO_NO_DOTENV: 1
+      CI: false
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Show environment info
+        run: ./.github/scripts/show-env-info.sh
+
+      - name: Install dependencies
+        run: ./.github/scripts/install-deps.sh
+
+      - name: Setup Expo
+        run: |
+          if [ -n "${{ secrets.EXPO_TOKEN }}" ]; then
+            npx expo login --non-interactive -u ${{ secrets.EXPO_USERNAME }} || true
+          fi
+
+      - name: Build Web
+        run: ./.github/scripts/build-web.sh
+
+      - name: Upload Web artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-build
+          path: dist/
+          retention-days: 30
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist/
+
+  deploy-pages:
+    needs: build-web
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
   create-release:
-    needs: [build-android, build-ios]
+    needs: [build-android, build-ios, build-web]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
