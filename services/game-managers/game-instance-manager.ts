@@ -5,7 +5,7 @@
 
 import type { BaseRoom } from '@/types/online'
 import roomManager from './room-manager'
-import FlightChessGame from './flight-chess-game'
+import FlightChessGame from './games/flight-chess-game'
 
 // 游戏注册表
 class SimpleGameRegistry {

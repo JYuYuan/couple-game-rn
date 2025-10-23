@@ -3,8 +3,8 @@
  * 复刻 server/games/flying/index.ts
  */
 
-import type { MockSocketIO } from './base-game'
-import BaseGame from './base-game'
+import type { MockSocketIO } from '../base-game'
+import BaseGame from '../base-game'
 import type { BaseRoom, NetworkPlayer, TaskModalData } from '@/types/online'
 import { createBoardPath } from '@/utils/board'
 
@@ -402,7 +402,7 @@ class FlightChessGame extends BaseGame {
     })
 
     // 根据任务类型和完成状态决定位置变化
-    const step = Math.floor(Math.random() * 6) + 1
+    const step = Math.floor(Math.random() * 4) + 3
     let positionChange = completed ? step : -step
 
     if (taskType === 'star') {

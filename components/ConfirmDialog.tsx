@@ -1,7 +1,11 @@
 // ConfirmDialog.tsx
 import React, { useEffect, useState } from 'react'
 import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated'
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated'
 import { BlurView } from 'expo-blur'
 import { LinearGradient } from 'expo-linear-gradient'
 import { Ionicons } from '@expo/vector-icons'
@@ -44,15 +48,15 @@ export function ConfirmDialogProvider() {
 
   useEffect(() => {
     if (state.visible) {
-      backdropOpacity.value = 1
-      modalScale.value = 1
-      modalTranslateY.value = 0
-      modalOpacity.value = 1
+      backdropOpacity.value = withTiming(1, { duration: 200 })
+      modalScale.value = withTiming(1, { duration: 300 })
+      modalTranslateY.value = withTiming(0, { duration: 300 })
+      modalOpacity.value = withTiming(1, { duration: 200 })
     } else {
-      backdropOpacity.value = 0
-      modalScale.value = 0.8
-      modalTranslateY.value = 50
-      modalOpacity.value = 0
+      backdropOpacity.value = withTiming(0, { duration: 150 })
+      modalScale.value = withTiming(0.8, { duration: 200 })
+      modalTranslateY.value = withTiming(50, { duration: 200 })
+      modalOpacity.value = withTiming(0, { duration: 150 })
     }
   }, [state.visible])
 

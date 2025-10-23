@@ -397,7 +397,7 @@ class FlyingGame extends BaseGame {
     })
 
     // 根据任务类型和完成状态决定位置变化
-    const step = Math.floor(Math.random() * 6) + 1
+    const step = Math.floor(Math.random() * 4) + 3
     let positionChange = completed ? step : -step
 
     if (taskType === 'star') {
@@ -449,8 +449,7 @@ class FlyingGame extends BaseGame {
       delete this.room.gameState.currentTask
       this.room.gameState.hasPendingTask = false // 清除待处理任务标志
     }
-    console.log(this.room)
-    // 更新房间状态
+
     await this.updateRoomAndNotify()
 
     // 检查胜利条件

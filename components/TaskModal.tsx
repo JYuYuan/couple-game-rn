@@ -201,30 +201,6 @@ export default function TaskModal({ visible, task, onComplete, onClose }: TaskMo
     [isProcessing, triggerHaptic, onComplete, progressValue, t],
   )
 
-  // 确认对话框
-  const showWebCompatibleConfirmDialog = useCallback(
-    async (completed: boolean) => {
-      const title = completed
-        ? t('taskModal.confirmComplete', '确认完成任务？')
-        : t('taskModal.confirmFailed', '确认任务失败？')
-
-      const message = completed
-        ? t('taskModal.completeMessage', '确定你已经成功完成了这个任务吗？')
-        : t('taskModal.failedMessage', '确定任务没有完成吗？这可能会有惩罚。')
-      const ok = await showConfirmDialog({
-        title: title,
-        message: message,
-        destructive: true,
-        icon: 'info',
-      })
-
-      if (ok) {
-        handleTaskChoice(completed)
-      }
-    },
-    [handleTaskChoice, t],
-  )
-
   // 获取结果信息
   const getResultInfo = () => {
     if (!task || isCompleted === null) return null
@@ -439,7 +415,7 @@ export default function TaskModal({ visible, task, onComplete, onClose }: TaskMo
                             styles.successButton,
                             { opacity: isProcessing ? 0.5 : 1 },
                           ]}
-                          onPress={() => showWebCompatibleConfirmDialog(true)}
+                          onPress={async () => handleTaskChoice(true)}
                           disabled={isProcessing}
                           activeOpacity={0.7}
                         >
@@ -453,7 +429,7 @@ export default function TaskModal({ visible, task, onComplete, onClose }: TaskMo
                             styles.failButton,
                             { opacity: isProcessing ? 0.5 : 1 },
                           ]}
-                          onPress={() => showWebCompatibleConfirmDialog(false)}
+                          onPress={async () => handleTaskChoice(false)}
                           disabled={isProcessing}
                           activeOpacity={0.7}
                         >
@@ -488,8 +464,14 @@ export default function TaskModal({ visible, task, onComplete, onClose }: TaskMo
                         onPress={onClose}
                         activeOpacity={0.7}
                       >
-                        <Ionicons name="eye-off-outline" size={20} color={colors.homeCardDescription} />
-                        <Text style={[styles.observerButtonText, { color: colors.homeCardDescription }]}>
+                        <Ionicons
+                          name="eye-off-outline"
+                          size={20}
+                          color={colors.homeCardDescription}
+                        />
+                        <Text
+                          style={[styles.observerButtonText, { color: colors.homeCardDescription }]}
+                        >
                           {t('taskModal.closeObserver', '关闭观察')}
                         </Text>
                       </TouchableOpacity>
