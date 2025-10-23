@@ -182,8 +182,12 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // 包装的方法
   const connect = useCallback(() => {
-    if (!socketService.getIsConnected()) socketService.connect(playerId)
-  }, [playerId])
+    if (
+      !socketService.getIsConnected() ||
+      networkSettings.socketUrl !== socketService.getServerURL()
+    )
+      socketService.connect(playerId, networkSettings.socketUrl)
+  }, [playerId, networkSettings.socketUrl])
 
   const disconnect = useCallback(() => {
     if (connectionType === 'lan') {
@@ -354,8 +358,8 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
     setConnectionType('online')
     // 重新连接到默认在线服务器
-    socketService.connect(playerId)
-  }, [playerId, connectionType])
+    socketService.connect(playerId, networkSettings.socketUrl)
+  }, [playerId, connectionType, networkSettings.socketUrl])
 
   const switchToLANMode = useCallback(() => {
     console.log('切换到局域网模式')

@@ -1,0 +1,23 @@
+services:
+  # Socket.IO 游戏服务器
+  - type: web
+    name: couple-game-server
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+      # Redis 配置 - 从 Upstash 获取
+      - key: REDIS_URL
+        sync: false  # 需要在 Render Dashboard 手动设置
+      - key: REDIS_HOST
+        sync: false
+      - key: REDIS_PORT
+        sync: false
+      - key: REDIS_PASSWORD
+        sync: false

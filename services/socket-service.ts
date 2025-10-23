@@ -161,6 +161,7 @@ class SocketService {
       this.serverURL = serverURL
     }
 
+    console.log('SocketService Connection Server URL:', this.serverURL)
     // 如果已经有socket实例且已连接，只需要更新playerId
     if (this.socket?.connected) {
       console.log('SocketService: Already connected:', this.socket.id)
