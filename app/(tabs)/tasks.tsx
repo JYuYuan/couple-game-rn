@@ -26,6 +26,7 @@ import i18n from '@/i18n'
 import * as FileSystem from 'expo-file-system/legacy'
 import * as Sharing from 'expo-sharing'
 import { showConfirmDialog } from '@/components/ConfirmDialog'
+import toast from '@/utils/toast'
 
 const TaskSettings: React.FC = () => {
   const insets = useSafeAreaInsets()
@@ -205,7 +206,7 @@ const TaskSettings: React.FC = () => {
 
           // 验证数据格式
           if (!importData.tasks || !Array.isArray(importData.tasks)) {
-            showAlert(
+            toast.error(
               t('common.error', '错误'),
               t('tasks.import.error.invalidFormat', '导入的文件格式不正确'),
             )
@@ -229,16 +230,16 @@ const TaskSettings: React.FC = () => {
             successMessage += `\n${t('tasks.import.categoryCreated', '同时创建了新分类: {{categoryName}}', { categoryName: importData.categoryName || `分类 ${importData.categoryId}` })}`
           }
 
-          showAlert(t('common.success', '成功'), successMessage)
+          toast.success(t('common.success', '成功'), successMessage)
         } catch {
-          showAlert(
+          toast.error(
             t('common.error', '错误'),
             t('tasks.import.error.invalidContent', '导入的文件内容格式不正确'),
           )
         }
       }
     } catch {
-      showAlert(t('common.error', '错误'), t('tasks.import.error.failed', '导入失败'))
+      toast.error(t('common.error', '错误'), t('tasks.import.error.failed', '导入失败'))
     }
   }
 
@@ -278,7 +279,7 @@ const TaskSettings: React.FC = () => {
         if (confirmed) await saveToFile(exportData.name, jsonString)
       }
     } catch {
-      showAlert(t('common.error', '错误'), t('tasks.export.error', '导出失败'))
+      toast.error(t('common.error', '错误'), t('tasks.export.error', '导出失败'))
     }
   }
 
@@ -300,7 +301,7 @@ const TaskSettings: React.FC = () => {
         document.body.removeChild(link)
         URL.revokeObjectURL(url)
 
-        showAlert(
+        toast.success(
           t('common.success', '成功'),
           t('tasks.export.success.downloaded', '文件已下载到您的设备'),
         )
@@ -324,7 +325,7 @@ const TaskSettings: React.FC = () => {
 
           // 检查是否支持分享
           if (!(await Sharing.isAvailableAsync())) {
-            showAlert(
+            toast.success(
               t('common.success', '成功'),
               t('tasks.export.success.saved', '文件已保存到: {{fileName}}', { fileName }),
             )
@@ -334,13 +335,13 @@ const TaskSettings: React.FC = () => {
           // 分享文件
           try {
             await Sharing.shareAsync(fileUri)
-            showAlert(
+            toast.success(
               t('common.success', '成功'),
               t('tasks.export.success.exported', '文件已导出并可以保存到您的设备'),
             )
           } catch (shareError) {
             console.warn('分享失败，但文件已保存:', shareError)
-            showAlert(
+            toast.error(
               t('common.success', '成功'),
               t('tasks.export.success.saved', '文件已保存到: {{fileName}}', { fileName }),
             )
@@ -352,7 +353,7 @@ const TaskSettings: React.FC = () => {
       }
     } catch (error) {
       console.error('保存文件失败:', error)
-      showAlert(t('common.error', '错误'), t('tasks.export.error.saveFailed', '保存文件失败'))
+      toast.error(t('common.error', '错误'), t('tasks.export.error.saveFailed', '保存文件失败'))
     }
   }
 

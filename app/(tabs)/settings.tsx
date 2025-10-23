@@ -24,6 +24,7 @@ import { getLocalIP } from '@/utils'
 import { useRequest } from 'ahooks'
 import * as Clipboard from 'expo-clipboard'
 import { showConfirmDialog } from '@/components/ConfirmDialog'
+import toast from '@/utils/toast'
 
 const Settings: React.FC = () => {
   const insets = useSafeAreaInsets()
@@ -231,28 +232,18 @@ const Settings: React.FC = () => {
                           : fetchIp.data || t('settings.lan.unavailable', '不可用'),
                       onPress: async () => {
                         if (!fetchIp.data) {
-                          await showConfirmDialog({
-                            title: t('settings.lan.error', '获取失败'),
-                            message: t(
-                              'settings.lan.errorMessage',
-                              '无法获取本机 IP 地址，请检查网络连接',
-                            ),
-                            confirmText: t('common.ok', '确定'),
-                            cancelText: false,
-                            icon: 'alert-circle-outline',
-                            iconColor: '#FF6B6B',
-                          })
+                          toast.error(
+                            t('settings.lan.error', '获取失败'),
+                            t('settings.lan.errorMessage', '无法获取本机 IP 地址，请检查网络连接'),
+                          )
                           return
                         }
                         await Clipboard.setStringAsync(fetchIp.data)
-                        await showConfirmDialog({
-                          title: t('common.success', '成功'),
-                          message: t('settings.lan.copied', 'IP地址已复制到剪贴板'),
-                          confirmText: t('common.ok', '确定'),
-                          cancelText: false,
-                          icon: 'checkmark-circle-outline',
-                          iconColor: '#4CAF50',
-                        })
+                        
+                        toast.success(
+                          t('common.success', '成功'),
+                          t('settings.lan.copied', 'IP地址已复制到剪贴板')
+                        )
                       },
                     },
                     {

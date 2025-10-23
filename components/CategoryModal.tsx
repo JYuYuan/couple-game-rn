@@ -14,6 +14,7 @@ import { Colors } from '@/constants/theme'
 import { TaskCategory } from '@/types/tasks'
 import { useTasksStore } from '@/store/tasksStore'
 import { showConfirmDialog } from '@/components/ConfirmDialog'
+import toast from '@/utils/toast'
 
 interface CategoryModalProps {
   visible: boolean
@@ -104,14 +105,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
 
   const handleSave = async () => {
     if (!formData.name.trim()) {
-      await showConfirmDialog({
-        title: '提示',
-        message: '请输入分类名称',
-        confirmText: '确定',
-        cancelText: false,
-        icon: 'alert-circle-outline',
-        iconColor: '#FF6B6B',
-      })
+      toast.error('提示', '请输入分类名称')
       return
     }
 

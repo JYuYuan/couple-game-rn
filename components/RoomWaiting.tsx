@@ -9,6 +9,7 @@ import { OnlinePlayer } from '@/types/online'
 import * as Clipboard from 'expo-clipboard'
 import { showConfirmDialog } from '@/components/ConfirmDialog'
 import { PlayerAvatar } from '@/components/PlayerAvatar'
+import toast from '@/utils/toast'
 
 interface RoomWaitingProps {
   roomId: string
@@ -47,23 +48,9 @@ export const RoomWaiting: React.FC<RoomWaitingProps> = ({
   const copyRoomId = async () => {
     try {
       await Clipboard.setStringAsync(roomId.toUpperCase())
-      await showConfirmDialog({
-        title: t('common.success', '成功'),
-        message: t('online.roomCodeCopied', '房间代码已复制到剪贴板'),
-        confirmText: t('common.ok', '确定'),
-        cancelText: false,
-        icon: 'checkmark-circle-outline',
-        iconColor: '#4CAF50',
-      })
+      toast.success(t('online.roomCodeCopied', '房间代码已复制到剪贴板'))
     } catch {
-      await showConfirmDialog({
-        title: t('common.error', '错误'),
-        message: t('online.copyFailed', '复制失败，请手动复制房间代码'),
-        confirmText: t('common.ok', '确定'),
-        cancelText: false,
-        icon: 'alert-circle-outline',
-        iconColor: '#FF6B6B',
-      })
+      toast.error(t('online.copyFailed', '复制失败，请手动复制房间代码'))
     }
   }
 
@@ -74,23 +61,9 @@ export const RoomWaiting: React.FC<RoomWaitingProps> = ({
     try {
       const lanInfo = `IP: ${lanIP}\n端口: ${lanPort}`
       await Clipboard.setStringAsync(lanInfo)
-      await showConfirmDialog({
-        title: t('common.success', '成功'),
-        message: t('online.lan.infoCopied', '局域网信息已复制到剪贴板'),
-        confirmText: t('common.ok', '确定'),
-        cancelText: false,
-        icon: 'checkmark-circle-outline',
-        iconColor: '#4CAF50',
-      })
+      toast.success(t('online.lan.infoCopied', '局域网信息已复制到剪贴板'))
     } catch {
-      await showConfirmDialog({
-        title: t('common.error', '错误'),
-        message: t('online.copyFailed', '复制失败'),
-        confirmText: t('common.ok', '确定'),
-        cancelText: false,
-        icon: 'alert-circle-outline',
-        iconColor: '#FF6B6B',
-      })
+      toast.error(t('online.copyFailed', '复制失败，请手动复制房间代码'))
     }
   }
 
@@ -189,7 +162,7 @@ export const RoomWaiting: React.FC<RoomWaitingProps> = ({
                 >
                   {player ? (
                     <>
-                      <PlayerAvatar avatarId={player.avatar} color={player.color} />
+                      <PlayerAvatar avatarId={player.avatarId} color={player.color} />
                       <View style={styles.playerInfo}>
                         <View style={styles.playerNameRow}>
                           <Text style={[styles.playerName, { color: colors.homeCardTitle }]}>

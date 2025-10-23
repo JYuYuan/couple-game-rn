@@ -20,6 +20,7 @@ import { TaskSet } from '@/types/tasks'
 import { TaskSetDetailModal } from '@/components/TaskSetDetailModal'
 import { useSocket } from '@/hooks/use-socket'
 import { useSettingsStore } from '@/store'
+import toast from '@/utils/toast'
 
 const routeConfig: Record<string, string> = {
   fly: '/flying-chess',
@@ -259,7 +260,7 @@ export default function GameMode() {
     const handleOnlineGame = () => {
       // 检查当前游戏类型是否支持在线模式
       if (!supportsOnlineMode) {
-        alert(t('gameMode.onlineNotSupported', '该游戏类型暂不支持在线模式'))
+        toast.info(t('gameMode.onlineNotSupported', '该游戏类型暂不支持在线模式'))
         return
       }
 
