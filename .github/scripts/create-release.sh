@@ -60,7 +60,7 @@ echo "获取最新 commit 信息..."
 LATEST_COMMIT=$(git log -1 --pretty=format:"%s" 2>/dev/null || echo "")
 
 if [ -n "$LATEST_COMMIT" ]; then
-    CHANGELOG="新版本发布"
+    CHANGELOG="$LATEST_COMMIT"
     echo "✅ 使用最新 commit: $LATEST_COMMIT"
 else
     CHANGELOG="新版本发布"
@@ -92,7 +92,7 @@ cat > release-notes.md << EOF
 - 构建方式: GitHub Actions 自动构建
 
 ## 📋 更新内容
-$CHANGELOG
+新版本发布
 EOF
 
 # 如果有 commit 详情，添加折叠展开部分
