@@ -1,4 +1,4 @@
-import { Platform } from 'react-native'
+import { Dimensions, Platform } from 'react-native'
 
 export const getLocalIP = async (): Promise<string | undefined> => {
   try {
@@ -88,4 +88,10 @@ export function getRandomColor() {
       .toString(16)
       .padStart(6, '0')
   )
+}
+
+export const getWindow = () => {
+  const result = Dimensions.get('window')
+  if (result.width > 1500) result.width = 480
+  return result
 }

@@ -8,7 +8,7 @@ export interface TaskModalData {
   title: string
   description: string
   type: 'trap' | 'star' | 'collision'
-  executors: Player[]
+  executors: Player[] | GamePlayer[]
   category: string
   difficulty: string
   triggerPlayerIds: number[]

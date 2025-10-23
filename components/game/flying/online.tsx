@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { Stack, useNavigation, useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
@@ -18,6 +18,7 @@ import { useRoomStore, useSettingsStore } from '@/store'
 import { useDeepCompareEffect } from 'ahooks'
 import toast from '@/utils/toast'
 import { PlayerAvatar } from '@/components/PlayerAvatar'
+import { getWindow } from '@/utils'
 
 export default function FlyingChessGame() {
   const router = useRouter()
@@ -155,7 +156,7 @@ export default function FlyingChessGame() {
   }, [players, isMoving])
 
   // 动态计算玩家卡片宽度
-  const { width: screenWidth } = Dimensions.get('window')
+  const { width: screenWidth } = getWindow()
   const maxContainerWidth = Math.min(screenWidth - 32, Layout.maxWidth) // 减去外边距
   const playerCount = animatedPlayers.length || 1
   const availableWidth = maxContainerWidth - 32 // 减去padding

@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react'
-import { Dimensions, Platform, Pressable, StyleSheet, View } from 'react-native'
+import { Platform, Pressable, StyleSheet, View } from 'react-native'
 import { Tabs } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated'
@@ -8,8 +8,9 @@ import { BlurView } from 'expo-blur'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useColorScheme } from '@/hooks/use-color-scheme'
 import { Colors } from '@/constants/theme'
+import { getWindow } from '@/utils'
 
-const { width: screenWidth } = Dimensions.get('window')
+const { width: screenWidth } = getWindow()
 
 const ICONS = ['home', 'list-outline', 'settings-sharp'] // 支持3个标签页
 

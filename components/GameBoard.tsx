@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Dimensions, Platform, StyleSheet, TouchableOpacity, View } from 'react-native'
+import { Platform, StyleSheet, TouchableOpacity, View } from 'react-native'
 import Animated, {
   interpolate,
   runOnJS,
@@ -17,9 +17,10 @@ import { PathCell, Player } from '@/types/game'
 import { useColorScheme } from '@/hooks/use-color-scheme'
 import { Colors } from '@/constants/theme'
 import { PlayerAvatar } from '@/components/PlayerAvatar'
+import { getWindow } from '@/utils'
 
 const BOARD_SIZE = 7
-const { width: screenWidth } = Dimensions.get('window')
+const { width: screenWidth } = getWindow()
 const BOARD_PADDING = 20
 
 // 棋盘最大宽度 - 适配Web端大屏幕

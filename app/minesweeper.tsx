@@ -1,12 +1,13 @@
 import React, { useCallback, useEffect, useState } from 'react'
-import { Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { Stack } from 'expo-router'
 import { LinearGradient } from 'expo-linear-gradient'
 import { Ionicons } from '@expo/vector-icons'
 import { useColorScheme } from '@/hooks/use-color-scheme'
 import { Colors } from '@/constants/theme'
+import { getWindow } from '@/utils'
 
-const { width: screenWidth } = Dimensions.get('window')
+const { width: screenWidth } = getWindow()
 
 // 扫雷游戏难度配置
 const DIFFICULTY_CONFIGS = {

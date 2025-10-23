@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react'
-import { Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { LinearGradient } from 'expo-linear-gradient'
@@ -12,8 +12,9 @@ import { PlayerAvatar } from '@/components/PlayerAvatar'
 import { PlayerIconType } from '@/components/icons'
 import { AvatarGender } from '@/types/settings'
 import { getRandomAvatarByGender } from '@/constants/avatars'
+import { getWindow } from '@/utils'
 
-const { width: screenWidth } = Dimensions.get('window')
+const { width: screenWidth } = getWindow()
 const PLAYER_COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4']
 // 扫雷游戏难度配置
 const DIFFICULTY_CONFIGS = {
