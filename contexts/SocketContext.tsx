@@ -291,8 +291,8 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const joinLANRoom = useCallback(
     async (data: JoinLANRoomData): Promise<LANRoom> => {
       try {
-        console.log('加入局域网房间（纯 Wi-Fi 模式）')
-        console.log('房间ID:', data.roomId)
+        console.log('🔗 [SocketContext] 加入局域网房间（纯 Wi-Fi 模式）')
+        console.log('📋 [SocketContext] 请求数据:', JSON.stringify(data))
 
         // 检查是否支持
         if (!isLANAvailable()) {
@@ -309,32 +309,49 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         // 标记为局域网模式
         setConnectionType('lan')
 
+        // 构造 JoinRoomData（只包含必要字段）
+        const joinData: JoinRoomData = {
+          roomId: data.roomId,
+          playerName: data.playerName,
+          avatar: data.avatar,
+          gender: data.gender,
+        }
+
+        console.log('📤 [SocketContext] 准备加入房间，数据:', JSON.stringify(joinData))
+
         // 如果提供了房主 IP 和端口，直接连接
         if (data.hostIP && data.hostPort) {
-          const room = await lanService.joinRoom(data.hostIP, data.hostPort, data)
+          console.log(`🔌 [SocketContext] 直接连接到: ${data.hostIP}:${data.hostPort}`)
+          const room = await lanService.joinRoom(data.hostIP, data.hostPort, joinData)
           setIsConnected(true)
-          console.log('✅ 加入房间成功')
+          console.log('✅ [SocketContext] 加入房间成功')
           // 更新当前房间状态，触发跳转
           setCurrentRoom(room)
           return room as LANRoom
         }
 
         // 否则，尝试从扫描结果中查找
+        console.log('🔍 [SocketContext] 从扫描结果中查找房间...')
         const discovered = lanService.getDiscoveredRooms()
+        console.log(`📡 [SocketContext] 发现 ${discovered.length} 个房间`)
+
         const targetRoom = discovered.find((r: any) => r.roomId === data.roomId)
 
         if (!targetRoom) {
+          console.error('❌ [SocketContext] 未找到房间:', data.roomId)
           throw new Error('未找到该房间，请确保在同一 Wi-Fi 网络下并开始扫描')
         }
 
-        const room = await lanService.joinRoomByBroadcast(targetRoom, data)
+        console.log('✅ [SocketContext] 找到目标房间:', JSON.stringify(targetRoom))
+        const room = await lanService.joinRoomByBroadcast(targetRoom, joinData)
         setIsConnected(true)
-        console.log('✅ 加入房间成功')
+        console.log('✅ [SocketContext] 加入房间成功')
         // 更新当前房间状态，触发跳转
         setCurrentRoom(room)
         return room as LANRoom
       } catch (error: any) {
-        console.error('加入局域网房间失败:', error)
+        console.error('❌ [SocketContext] 加入局域网房间失败:', error)
+        console.error('❌ [SocketContext] 错误堆栈:', error.stack)
         setConnectionType('online')
         setIsConnected(false)
         throw error

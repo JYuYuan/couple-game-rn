@@ -112,3 +112,10 @@ export const getRandomAvatarByGender = (gender: AvatarGender): AvatarOption => {
   const randomIndex = Math.floor(Math.random() * avatars.length)
   return avatars[randomIndex]
 }
+
+// 根据ID获取头像对象
+export const getAvatarById = (avatarId: string): AvatarOption | null => {
+  // 搜索所有头像
+  const allAvatars = [...manAvatars, ...womanAvatars]
+  return allAvatars.find((a) => a.id === avatarId) || null
+}

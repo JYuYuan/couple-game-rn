@@ -3,6 +3,7 @@ import { createJSONStorage, persist } from 'zustand/middleware'
 import {
   LanguageMode,
   NetworkSettings,
+  PlayerProfile,
   SettingsState,
   SoundSettings,
   ThemeMode,
@@ -24,6 +25,12 @@ const defaultNetworkSettings: NetworkSettings = {
   lanPort: 8080,
 }
 
+const defaultPlayerProfile: PlayerProfile = {
+  playerName: '',
+  avatarId: '',
+  gender: 'man',
+}
+
 type SettingsStoreType = () => SettingsState
 let settingsStoreInstance: SettingsStoreType | null = null
 
@@ -40,6 +47,7 @@ export const useSettingsStore = (() => {
         languageMode: 'zh' as LanguageMode,
         soundSettings: defaultSoundSettings,
         networkSettings: defaultNetworkSettings,
+        playerProfile: defaultPlayerProfile,
         setThemeMode: (themeMode: ThemeMode) => set({ themeMode }),
         setLanguageMode: (languageMode: LanguageMode) => set({ languageMode }),
         setSoundSettings: (settings: Partial<SoundSettings>) =>
@@ -50,12 +58,17 @@ export const useSettingsStore = (() => {
           set((state) => ({
             networkSettings: { ...state.networkSettings, ...settings },
           })),
+        setPlayerProfile: (profile: Partial<PlayerProfile>) =>
+          set((state) => ({
+            playerProfile: { ...state.playerProfile, ...profile },
+          })),
         reset: () =>
           set({
             themeMode: 'system' as ThemeMode,
             languageMode: 'zh' as LanguageMode,
             soundSettings: defaultSoundSettings,
             networkSettings: defaultNetworkSettings,
+            playerProfile: defaultPlayerProfile,
           }),
       }),
       {
@@ -67,6 +80,7 @@ export const useSettingsStore = (() => {
           languageMode: state.languageMode,
           soundSettings: state.soundSettings,
           networkSettings: state.networkSettings,
+          playerProfile: state.playerProfile,
         }),
       },
     ),

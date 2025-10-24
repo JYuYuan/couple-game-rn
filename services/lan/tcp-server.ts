@@ -255,12 +255,14 @@ class TCPServer {
    * 处理客户端消息
    */
   private handleClientMessage(clientId: string, message: TCPMessage): void {
-    console.log(`📨 收到消息 [${clientId}]:`, message.type, message.event)
+    console.log(`📨 收到消息 [${clientId}]:`, JSON.stringify({ type: message.type, event: message.event, playerId: message.playerId }))
 
     // 如果消息包含 playerId,更新客户端映射
     if (message.playerId) {
       const client = this.clients.get(clientId)
       if (client && client.playerId !== message.playerId) {
+        console.log(`🔄 需要更新客户端ID: ${clientId} -> ${message.playerId}`)
+
         // 移除旧的映射
         this.clients.delete(clientId)
         this.messageBuffer.delete(clientId)
@@ -270,12 +272,32 @@ class TCPServer {
         this.clients.set(message.playerId, client)
         this.messageBuffer.set(message.playerId, this.messageBuffer.get(clientId) || '')
 
-        console.log(`🔄 更新客户端ID: ${clientId} -> ${message.playerId}`)
+        console.log(`✅ 客户端ID已更新: ${clientId} -> ${message.playerId}`)
         clientId = message.playerId
       }
     }
 
+    // 特殊处理 client:init 事件 - 确保客户端成功注册
+    if (message.type === 'event' && message.event === 'client:init') {
+      console.log(`✅ 客户端初始化完成: ${message.playerId || clientId}`)
+
+      // 发送确认消息给客户端
+      const targetId = message.playerId || clientId
+      const success = this.sendToClient(targetId, {
+        type: 'event',
+        event: 'server:init_ack',
+        data: { success: true, serverId: this.port, timestamp: Date.now() },
+      })
+
+      console.log(`📤 发送初始化确认到客户端 [${targetId}]: ${success ? '成功' : '失败'}`)
+
+      // 不再继续触发事件，因为 init 是内部事件
+      return
+    }
+
     if (message.type === 'event' && message.event) {
+      console.log(`🔔 触发事件: ${message.event}`)
+
       // 触发事件
       this.emit(message.event, {
         playerId: message.playerId || clientId,

@@ -20,12 +20,16 @@ import { LinearGradient } from 'expo-linear-gradient'
 import { useSettingsStore } from '@/store'
 import { showError } from '@/utils/toast'
 import { AvatarGender } from '@/types/settings'
-import { AvatarOption, getRandomAvatarByGender } from '@/constants/avatars'
+import { AvatarOption, getRandomAvatarByGender, getAvatarById } from '@/constants/avatars'
 import { AvatarPicker } from '@/components/AvatarPicker'
 import { useTasksStore } from '@/store/tasksStore'
 import { GameInfoCard } from '@/components/online/GameInfoCard'
 import { ModeSelector } from '@/components/online/ModeSelector'
 import { useGameTypeText } from '@/components/online/RoomUtils'
+
+type LANTabType = 'scan' | 'manual'
+// 在状态管理部分添加
+type OnlineTabType = 'browse' | 'code'
 
 export default function JoinRoomPage() {
   const router = useRouter()
@@ -34,7 +38,7 @@ export default function JoinRoomPage() {
   const colors = Colors[colorScheme] as any
   const { t } = useTranslation()
   const socket = useSocket()
-  const { networkSettings } = useSettingsStore()
+  const { networkSettings, playerProfile, setPlayerProfile } = useSettingsStore()
   const { taskSets } = useTasksStore()
   const getGameTypeText = useGameTypeText()
 
@@ -51,7 +55,7 @@ export default function JoinRoomPage() {
         ? 'lan'
         : 'online',
   )
-  const [playerName, setPlayerName] = useState('')
+  const [playerName, setPlayerName] = useState(playerProfile.playerName || '')
   const [roomCode, setRoomCode] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [discoveredRooms, setDiscoveredRooms] = useState<LANRoomDiscovery[]>([])
@@ -62,10 +66,14 @@ export default function JoinRoomPage() {
   const [manualLanIP, setManualLanIP] = useState('')
   const [manualLanPort, setManualLanPort] = useState('3306')
   const [manualLanRoomId, setManualLanRoomId] = useState('')
+  const [lanTab, setLanTab] = useState<LANTabType>('scan')
+  const [onlineTab, setOnlineTab] = useState<OnlineTabType>('browse')
 
   // 头像和性别状态
-  const [selectedGender, setSelectedGender] = useState<AvatarGender>('man')
-  const [selectedAvatar, setSelectedAvatar] = useState<AvatarOption | null>(null)
+  const [selectedGender, setSelectedGender] = useState<AvatarGender>(playerProfile.gender || 'man')
+  const [selectedAvatar, setSelectedAvatar] = useState<AvatarOption | null>(
+    playerProfile.avatarId ? getAvatarById(playerProfile.avatarId) : null,
+  )
 
   // 使用 ref 追踪是否已经跳转过
   const hasNavigatedRef = useRef(false)
@@ -84,6 +92,17 @@ export default function JoinRoomPage() {
     }
   }, [])
 
+  // 保存玩家信息到缓存
+  useEffect(() => {
+    if (playerName && selectedAvatar) {
+      setPlayerProfile({
+        playerName: playerName.trim(),
+        avatarId: selectedAvatar.id,
+        gender: selectedGender,
+      })
+    }
+  }, [playerName, selectedAvatar, selectedGender])
+
   // 监听房间更新 - 只在首次加入房间时跳转一次
   useEffect(() => {
     const currentRoom = connectionMode === 'lan' ? socket.currentLANRoom : socket.currentRoom
@@ -96,7 +115,7 @@ export default function JoinRoomPage() {
 
   // 局域网房间扫描
   useEffect(() => {
-    if (connectionMode === 'lan' && isLANSupported && isLANEnabled) {
+    if (connectionMode === 'lan' && isLANSupported && isLANEnabled && lanTab === 'scan') {
       handleStartScan()
     }
     return () => {
@@ -109,7 +128,7 @@ export default function JoinRoomPage() {
         }
       }
     }
-  }, [connectionMode, isLANEnabled])
+  }, [connectionMode, isLANEnabled, lanTab])
 
   // 在线房间列表监听
   useEffect(() => {
@@ -278,7 +297,9 @@ export default function JoinRoomPage() {
     if (connectionMode === 'online') {
       handleRefreshOnlineRooms()
     } else {
-      handleStartScan()
+      if (lanTab === 'scan') {
+        handleStartScan()
+      }
       setTimeout(() => setRefreshing(false), 1000)
     }
   }
@@ -431,7 +452,7 @@ export default function JoinRoomPage() {
               未启用网络功能
             </Text>
             <Text style={[styles.emptyStateDesc, { color: colors.homeCardDescription }]}>
-              请在设置中启用"在线模式"或"局域网模式"
+              请在设置中启用在线模式或局域网模式
             </Text>
             <TouchableOpacity
               style={[styles.settingsButton, { backgroundColor: colors.settingsAccent }]}
@@ -559,211 +580,129 @@ export default function JoinRoomPage() {
             </View>
 
             {/* 在线模式 - 房间代码输入 */}
+            {/* 在线模式 - Tabs */}
             {connectionMode === 'online' && (
               <View style={styles.section}>
-                <Text style={[styles.sectionTitle, { color: colors.homeCardTitle }]}>
-                  房间代码
-                </Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    {
-                      backgroundColor: colors.settingsCardBackground,
-                      borderColor: colors.homeCardBorder,
-                      color: colors.homeCardTitle,
-                    },
-                  ]}
-                  value={roomCode}
-                  onChangeText={setRoomCode}
-                  placeholder="输入6位房间代码"
-                  placeholderTextColor={colors.homeCardDescription}
-                  autoCapitalize="characters"
-                  maxLength={6}
-                />
-                <TouchableOpacity
-                  style={[
-                    styles.joinButton,
-                    { opacity: isLoading || !socket.isConnected ? 0.6 : 1 },
-                  ]}
-                  onPress={() => handleJoinRoom()}
-                  disabled={isLoading || !socket.isConnected}
-                >
-                  <LinearGradient colors={['#4CAF50', '#66BB6A']} style={styles.buttonGradient}>
-                    <Ionicons name="enter" size={20} color="white" />
-                    <Text style={styles.buttonText}>{isLoading ? '加入中...' : '加入房间'}</Text>
-                  </LinearGradient>
-                </TouchableOpacity>
-              </View>
-            )}
-
-            {/* 局域网模式 - 手动输入 */}
-            {connectionMode === 'lan' && (
-              <View style={styles.section}>
-                <Text style={[styles.sectionTitle, { color: colors.homeCardTitle }]}>
-                  手动连接
-                </Text>
-                <View style={styles.manualConnectContainer}>
-                  <View style={styles.manualConnectInputWrapper}>
-                    <Text style={[styles.inputLabel, { color: colors.homeCardDescription }]}>
-                      房间号
-                    </Text>
-                    <TextInput
-                      style={[
-                        styles.input,
-                        {
-                          backgroundColor: colors.settingsCardBackground,
-                          borderColor: colors.homeCardBorder,
-                          color: colors.homeCardTitle,
-                        },
-                      ]}
-                      value={manualLanRoomId}
-                      onChangeText={setManualLanRoomId}
-                      placeholder="请输入房间号"
-                      placeholderTextColor={colors.homeCardDescription}
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                    />
-                  </View>
-
-                  <View style={styles.manualConnectRow}>
-                    <View style={styles.manualConnectInputWrapper}>
-                      <Text style={[styles.inputLabel, { color: colors.homeCardDescription }]}>
-                        IP地址
-                      </Text>
-                      <TextInput
-                        style={[
-                          styles.input,
-                          styles.ipInput,
-                          {
-                            backgroundColor: colors.settingsCardBackground,
-                            borderColor: colors.homeCardBorder,
-                            color: colors.homeCardTitle,
-                          },
-                        ]}
-                        value={manualLanIP}
-                        onChangeText={setManualLanIP}
-                        placeholder="192.168.1.100"
-                        placeholderTextColor={colors.homeCardDescription}
-                        autoCapitalize="none"
-                        autoCorrect={false}
-                        keyboardType="decimal-pad"
-                      />
-                    </View>
-                    <View style={styles.manualConnectInputWrapper}>
-                      <Text style={[styles.inputLabel, { color: colors.homeCardDescription }]}>
-                        端口
-                      </Text>
-                      <TextInput
-                        style={[
-                          styles.input,
-                          styles.portInput,
-                          {
-                            backgroundColor: colors.settingsCardBackground,
-                            borderColor: colors.homeCardBorder,
-                            color: colors.homeCardTitle,
-                          },
-                        ]}
-                        value={manualLanPort}
-                        onChangeText={setManualLanPort}
-                        placeholder="3306"
-                        placeholderTextColor={colors.homeCardDescription}
-                        keyboardType="number-pad"
-                      />
-                    </View>
-                  </View>
+                {/* Tabs */}
+                <View style={styles.tabsContainer}>
                   <TouchableOpacity
-                    style={[styles.joinButton, { opacity: isLoading ? 0.6 : 1 }]}
-                    onPress={() => handleJoinRoom()}
-                    disabled={isLoading}
-                  >
-                    <LinearGradient colors={['#4CAF50', '#66BB6A']} style={styles.buttonGradient}>
-                      <Ionicons name="enter" size={20} color="white" />
-                      <Text style={styles.buttonText}>
-                        {isLoading ? '连接中...' : '连接并加入'}
-                      </Text>
-                    </LinearGradient>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            )}
-
-            {/* 可用房间列表 */}
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <Text style={[styles.sectionTitle, { color: colors.homeCardTitle }]}>
-                  {connectionMode === 'online' ? '可用房间' : '局域网房间'}
-                </Text>
-                {(connectionMode === 'online' || isLANSupported) && (
-                  <TouchableOpacity
-                    onPress={
-                      connectionMode === 'online'
-                        ? handleRefreshOnlineRooms
-                        : isScanning
-                          ? handleStopScan
-                          : handleStartScan
-                    }
                     style={[
-                      styles.refreshButton,
+                      styles.tab,
+                      onlineTab === 'browse' && styles.tabActive,
                       {
                         backgroundColor:
-                          connectionMode === 'lan' && isScanning
-                            ? '#FF6B6B'
-                            : colors.settingsAccent,
+                          onlineTab === 'browse'
+                            ? colors.settingsAccent + '20'
+                            : colors.settingsCardBackground,
+                        borderColor:
+                          onlineTab === 'browse' ? colors.settingsAccent : colors.homeCardBorder,
                       },
                     ]}
-                    disabled={connectionMode === 'online' && !socket.isConnected}
+                    onPress={() => setOnlineTab('browse')}
                   >
                     <Ionicons
-                      name={
-                        connectionMode === 'online' ? 'refresh' : isScanning ? 'stop' : 'search'
+                      name="list"
+                      size={18}
+                      color={
+                        onlineTab === 'browse' ? colors.settingsAccent : colors.homeCardDescription
                       }
-                      size={16}
-                      color="white"
                     />
-                    <Text style={styles.refreshButtonText}>
-                      {connectionMode === 'online' ? '刷新' : isScanning ? '停止' : '扫描'}
+                    <Text
+                      style={[
+                        styles.tabText,
+                        {
+                          color:
+                            onlineTab === 'browse'
+                              ? colors.settingsAccent
+                              : colors.homeCardDescription,
+                        },
+                      ]}
+                    >
+                      浏览房间
                     </Text>
                   </TouchableOpacity>
-                )}
-              </View>
 
-              {connectionMode === 'lan' && !isLANSupported && (
-                <View style={[styles.warningCard, { marginBottom: 12 }]}>
-                  <Ionicons name="information-circle" size={24} color="#FF9500" />
-                  <View style={styles.warningContent}>
-                    <Text style={styles.warningTitle}>自动扫描不可用</Text>
-                    <Text style={styles.warningDesc}>
-                      Web 浏览器不支持 UDP 广播，无法自动扫描局域网房间。
-                      {'\n'}请使用上方的"手动连接"功能输入：
-                      {'\n'}• 房间号（房主提供）
-                      {'\n'}• IP 地址（房主设备的局域网 IP）
-                      {'\n'}• 端口（默认 3306）
+                  <TouchableOpacity
+                    style={[
+                      styles.tab,
+                      onlineTab === 'code' && styles.tabActive,
+                      {
+                        backgroundColor:
+                          onlineTab === 'code'
+                            ? colors.settingsAccent + '20'
+                            : colors.settingsCardBackground,
+                        borderColor:
+                          onlineTab === 'code' ? colors.settingsAccent : colors.homeCardBorder,
+                      },
+                    ]}
+                    onPress={() => setOnlineTab('code')}
+                  >
+                    <Ionicons
+                      name="keypad"
+                      size={18}
+                      color={
+                        onlineTab === 'code' ? colors.settingsAccent : colors.homeCardDescription
+                      }
+                    />
+                    <Text
+                      style={[
+                        styles.tabText,
+                        {
+                          color:
+                            onlineTab === 'code'
+                              ? colors.settingsAccent
+                              : colors.homeCardDescription,
+                        },
+                      ]}
+                    >
+                      输入代码
                     </Text>
-                  </View>
+                  </TouchableOpacity>
                 </View>
-              )}
 
-              {(isLoadingOnlineRooms || isScanning) && (
-                <View
-                  style={[
-                    styles.loadingContainer,
-                    { backgroundColor: colors.settingsCardBackground },
-                  ]}
-                >
-                  <Ionicons name="search" size={20} color={colors.settingsAccent} />
-                  <Text style={[styles.loadingText, { color: colors.homeCardDescription }]}>
-                    {connectionMode === 'online' ? '正在加载房间列表...' : '正在扫描局域网...'}
-                  </Text>
-                </View>
-              )}
+                {/* 浏览房间内容 */}
+                {onlineTab === 'browse' && (
+                  <View style={styles.tabContent}>
+                    <View style={styles.sectionHeader}>
+                      <Text style={[styles.sectionSubtitle, { color: colors.homeCardDescription }]}>
+                        浏览所有可加入的在线房间
+                      </Text>
+                      <TouchableOpacity
+                        onPress={handleRefreshOnlineRooms}
+                        style={[
+                          styles.refreshButton,
+                          {
+                            backgroundColor: colors.settingsAccent,
+                            opacity: !socket.isConnected ? 0.5 : 1,
+                          },
+                        ]}
+                        disabled={!socket.isConnected}
+                      >
+                        <Ionicons name="refresh" size={16} color="white" />
+                        <Text style={styles.refreshButtonText}>刷新</Text>
+                      </TouchableOpacity>
+                    </View>
 
-              <View style={styles.roomsList}>
-                {connectionMode === 'online'
-                  ? onlineRooms.filter((room) => room.gameStatus === 'waiting').length > 0
-                    ? onlineRooms
-                        .filter((room) => room.gameStatus === 'waiting')
-                        .map(renderOnlineRoomItem)
-                    : !isLoadingOnlineRooms && (
+                    {isLoadingOnlineRooms && (
+                      <View
+                        style={[
+                          styles.loadingContainer,
+                          { backgroundColor: colors.settingsCardBackground },
+                        ]}
+                      >
+                        <Ionicons name="search" size={20} color={colors.settingsAccent} />
+                        <Text style={[styles.loadingText, { color: colors.homeCardDescription }]}>
+                          正在加载房间列表...
+                        </Text>
+                      </View>
+                    )}
+
+                    <View style={styles.roomsList}>
+                      {onlineRooms.filter((room) => room.gameStatus === 'waiting').length > 0 ? (
+                        onlineRooms
+                          .filter((room) => room.gameStatus === 'waiting')
+                          .map(renderOnlineRoomItem)
+                      ) : !isLoadingOnlineRooms ? (
                         <View
                           style={[
                             styles.emptyRooms,
@@ -781,14 +720,199 @@ export default function JoinRoomPage() {
                           <Text
                             style={[styles.emptyRoomsDesc, { color: colors.homeCardDescription }]}
                           >
-                            您可以创建一个新房间或输入房间代码加入
+                            您可以创建一个新房间或使用输入代码功能加入私密房间
                           </Text>
                         </View>
-                      )
-                  : discoveredRooms.length > 0
-                    ? discoveredRooms.map(renderLANRoomItem)
-                    : !isScanning &&
-                      !isLANSupported && (
+                      ) : null}
+                    </View>
+                  </View>
+                )}
+
+                {/* 输入代码内容 */}
+                {onlineTab === 'code' && (
+                  <View style={styles.tabContent}>
+                    <Text style={[styles.sectionSubtitle, { color: colors.homeCardDescription }]}>
+                      输入6位房间代码快速加入
+                    </Text>
+
+                    <View style={styles.codeInputContainer}>
+                      <View style={styles.codeInputWrapper}>
+                        <Text style={[styles.inputLabel, { color: colors.homeCardDescription }]}>
+                          房间代码
+                        </Text>
+                        <TextInput
+                          style={[
+                            styles.input,
+                            {
+                              backgroundColor: colors.settingsCardBackground,
+                              borderColor: colors.homeCardBorder,
+                              color: colors.homeCardTitle,
+                            },
+                          ]}
+                          value={roomCode}
+                          onChangeText={setRoomCode}
+                          placeholder="输入6位房间代码"
+                          placeholderTextColor={colors.homeCardDescription}
+                          autoCapitalize="characters"
+                          maxLength={6}
+                        />
+                      </View>
+
+                      <TouchableOpacity
+                        style={[
+                          styles.joinButton,
+                          { opacity: isLoading || !socket.isConnected ? 0.6 : 1 },
+                        ]}
+                        onPress={() => handleJoinRoom()}
+                        disabled={isLoading || !socket.isConnected}
+                      >
+                        <LinearGradient
+                          colors={['#4CAF50', '#66BB6A']}
+                          style={styles.buttonGradient}
+                        >
+                          <Ionicons name="enter" size={20} color="white" />
+                          <Text style={styles.buttonText}>
+                            {isLoading ? '加入中...' : '加入房间'}
+                          </Text>
+                        </LinearGradient>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                )}
+              </View>
+            )}
+
+            {/* 局域网模式 - Tabs */}
+            {connectionMode === 'lan' && (
+              <View style={styles.section}>
+                {/* Tabs */}
+                <View style={styles.tabsContainer}>
+                  <TouchableOpacity
+                    style={[
+                      styles.tab,
+                      lanTab === 'scan' && styles.tabActive,
+                      {
+                        backgroundColor:
+                          lanTab === 'scan'
+                            ? colors.settingsAccent + '20'
+                            : colors.settingsCardBackground,
+                        borderColor:
+                          lanTab === 'scan' ? colors.settingsAccent : colors.homeCardBorder,
+                      },
+                    ]}
+                    onPress={() => setLanTab('scan')}
+                  >
+                    <Ionicons
+                      name="search"
+                      size={18}
+                      color={lanTab === 'scan' ? colors.settingsAccent : colors.homeCardDescription}
+                    />
+                    <Text
+                      style={[
+                        styles.tabText,
+                        {
+                          color:
+                            lanTab === 'scan' ? colors.settingsAccent : colors.homeCardDescription,
+                        },
+                      ]}
+                    >
+                      扫描房间
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.tab,
+                      lanTab === 'manual' && styles.tabActive,
+                      {
+                        backgroundColor:
+                          lanTab === 'manual'
+                            ? colors.settingsAccent + '20'
+                            : colors.settingsCardBackground,
+                        borderColor:
+                          lanTab === 'manual' ? colors.settingsAccent : colors.homeCardBorder,
+                      },
+                    ]}
+                    onPress={() => setLanTab('manual')}
+                  >
+                    <Ionicons
+                      name="create"
+                      size={18}
+                      color={
+                        lanTab === 'manual' ? colors.settingsAccent : colors.homeCardDescription
+                      }
+                    />
+                    <Text
+                      style={[
+                        styles.tabText,
+                        {
+                          color:
+                            lanTab === 'manual'
+                              ? colors.settingsAccent
+                              : colors.homeCardDescription,
+                        },
+                      ]}
+                    >
+                      手动连接
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* 扫描房间内容 */}
+                {lanTab === 'scan' && (
+                  <View style={styles.tabContent}>
+                    <View style={styles.sectionHeader}>
+                      <Text style={[styles.sectionSubtitle, { color: colors.homeCardDescription }]}>
+                        自动扫描局域网中的房间
+                      </Text>
+                      {isLANSupported && (
+                        <TouchableOpacity
+                          onPress={isScanning ? handleStopScan : handleStartScan}
+                          style={[
+                            styles.scanButton,
+                            {
+                              backgroundColor: isScanning ? '#FF6B6B' : colors.settingsAccent,
+                            },
+                          ]}
+                        >
+                          <Ionicons name={isScanning ? 'stop' : 'search'} size={16} color="white" />
+                          <Text style={styles.scanButtonText}>
+                            {isScanning ? '停止扫描' : '开始扫描'}
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+
+                    {!isLANSupported && (
+                      <View style={styles.warningCard}>
+                        <Ionicons name="information-circle" size={24} color="#FF9500" />
+                        <View style={styles.warningContent}>
+                          <Text style={styles.warningTitle}>扫描不可用</Text>
+                          <Text style={styles.warningDesc}>
+                            Web 浏览器不支持 UDP 广播，无法自动扫描局域网房间。请使用手动连接功能。
+                          </Text>
+                        </View>
+                      </View>
+                    )}
+
+                    {isScanning && (
+                      <View
+                        style={[
+                          styles.loadingContainer,
+                          { backgroundColor: colors.settingsCardBackground },
+                        ]}
+                      >
+                        <Ionicons name="search" size={20} color={colors.settingsAccent} />
+                        <Text style={[styles.loadingText, { color: colors.homeCardDescription }]}>
+                          正在扫描局域网...
+                        </Text>
+                      </View>
+                    )}
+
+                    <View style={styles.roomsList}>
+                      {discoveredRooms.length > 0 ? (
+                        discoveredRooms.map(renderLANRoomItem)
+                      ) : !isScanning && isLANSupported ? (
                         <View
                           style={[
                             styles.emptyRooms,
@@ -796,35 +920,184 @@ export default function JoinRoomPage() {
                           ]}
                         >
                           <Ionicons
-                            name="desktop-outline"
+                            name="wifi-outline"
                             size={48}
                             color={colors.homeCardDescription}
                           />
                           <Text style={[styles.emptyRoomsTitle, { color: colors.homeCardTitle }]}>
-                            Web 端无法自动扫描
+                            未发现局域网房间
                           </Text>
                           <Text
                             style={[styles.emptyRoomsDesc, { color: colors.homeCardDescription }]}
                           >
-                            请使用移动设备创建房间，然后在此处手动输入房间号、IP 地址和端口连接
+                            请确保您与其他玩家在同一WiFi网络下，点击开始扫描按钮扫描房间
                           </Text>
                         </View>
-                      )}
-                {!isScanning && isLANSupported && discoveredRooms.length === 0 && (
-                  <View
-                    style={[styles.emptyRooms, { backgroundColor: colors.settingsCardBackground }]}
-                  >
-                    <Ionicons name="wifi-outline" size={48} color={colors.homeCardDescription} />
-                    <Text style={[styles.emptyRoomsTitle, { color: colors.homeCardTitle }]}>
-                      未发现局域网房间
+                      ) : null}
+                    </View>
+                  </View>
+                )}
+
+                {/* 手动连接内容 */}
+                {lanTab === 'manual' && (
+                  <View style={styles.tabContent}>
+                    <Text style={[styles.sectionSubtitle, { color: colors.homeCardDescription }]}>
+                      手动输入房间信息连接
                     </Text>
-                    <Text style={[styles.emptyRoomsDesc, { color: colors.homeCardDescription }]}>
-                      请确保您与其他玩家在同一WiFi网络下，或使用手动连接
-                    </Text>
+
+                    <View style={styles.manualConnectContainer}>
+                      <View style={styles.manualConnectInputWrapper}>
+                        <Text style={[styles.inputLabel, { color: colors.homeCardDescription }]}>
+                          房间号
+                        </Text>
+                        <TextInput
+                          style={[
+                            styles.input,
+                            {
+                              backgroundColor: colors.settingsCardBackground,
+                              borderColor: colors.homeCardBorder,
+                              color: colors.homeCardTitle,
+                            },
+                          ]}
+                          value={manualLanRoomId}
+                          onChangeText={setManualLanRoomId}
+                          placeholder="请输入房间号"
+                          placeholderTextColor={colors.homeCardDescription}
+                          autoCapitalize="none"
+                          autoCorrect={false}
+                        />
+                      </View>
+
+                      <View style={styles.manualConnectRow}>
+                        <View style={[styles.manualConnectInputWrapper, { flex: 2 }]}>
+                          <Text style={[styles.inputLabel, { color: colors.homeCardDescription }]}>
+                            IP地址
+                          </Text>
+                          <TextInput
+                            style={[
+                              styles.input,
+                              {
+                                backgroundColor: colors.settingsCardBackground,
+                                borderColor: colors.homeCardBorder,
+                                color: colors.homeCardTitle,
+                              },
+                            ]}
+                            value={manualLanIP}
+                            onChangeText={setManualLanIP}
+                            placeholder="192.168.1.100"
+                            placeholderTextColor={colors.homeCardDescription}
+                            autoCapitalize="none"
+                            autoCorrect={false}
+                            keyboardType="decimal-pad"
+                          />
+                        </View>
+                        <View style={[styles.manualConnectInputWrapper, { flex: 1 }]}>
+                          <Text style={[styles.inputLabel, { color: colors.homeCardDescription }]}>
+                            端口
+                          </Text>
+                          <TextInput
+                            style={[
+                              styles.input,
+                              {
+                                backgroundColor: colors.settingsCardBackground,
+                                borderColor: colors.homeCardBorder,
+                                color: colors.homeCardTitle,
+                              },
+                            ]}
+                            value={manualLanPort}
+                            onChangeText={setManualLanPort}
+                            placeholder="3306"
+                            placeholderTextColor={colors.homeCardDescription}
+                            keyboardType="number-pad"
+                          />
+                        </View>
+                      </View>
+
+                      <TouchableOpacity
+                        style={[styles.joinButton, { opacity: isLoading ? 0.6 : 1 }]}
+                        onPress={() => handleJoinRoom()}
+                        disabled={isLoading}
+                      >
+                        <LinearGradient
+                          colors={['#4CAF50', '#66BB6A']}
+                          style={styles.buttonGradient}
+                        >
+                          <Ionicons name="enter" size={20} color="white" />
+                          <Text style={styles.buttonText}>
+                            {isLoading ? '连接中...' : '连接并加入'}
+                          </Text>
+                        </LinearGradient>
+                      </TouchableOpacity>
+                    </View>
                   </View>
                 )}
               </View>
-            </View>
+            )}
+
+            {/* 在线模式 - 可用房间列表 */}
+            {connectionMode === 'online' && (
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <Text style={[styles.sectionTitle, { color: colors.homeCardTitle }]}>
+                    可用房间
+                  </Text>
+                  <TouchableOpacity
+                    onPress={handleRefreshOnlineRooms}
+                    style={[
+                      styles.refreshButton,
+                      {
+                        backgroundColor: colors.settingsAccent,
+                      },
+                    ]}
+                    disabled={!socket.isConnected}
+                  >
+                    <Ionicons name="refresh" size={16} color="white" />
+                    <Text style={styles.refreshButtonText}>刷新</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {isLoadingOnlineRooms && (
+                  <View
+                    style={[
+                      styles.loadingContainer,
+                      { backgroundColor: colors.settingsCardBackground },
+                    ]}
+                  >
+                    <Ionicons name="search" size={20} color={colors.settingsAccent} />
+                    <Text style={[styles.loadingText, { color: colors.homeCardDescription }]}>
+                      正在加载房间列表...
+                    </Text>
+                  </View>
+                )}
+
+                <View style={styles.roomsList}>
+                  {onlineRooms.filter((room) => room.gameStatus === 'waiting').length > 0 ? (
+                    onlineRooms
+                      .filter((room) => room.gameStatus === 'waiting')
+                      .map(renderOnlineRoomItem)
+                  ) : !isLoadingOnlineRooms ? (
+                    <View
+                      style={[
+                        styles.emptyRooms,
+                        { backgroundColor: colors.settingsCardBackground },
+                      ]}
+                    >
+                      <Ionicons
+                        name="cloud-offline-outline"
+                        size={48}
+                        color={colors.homeCardDescription}
+                      />
+                      <Text style={[styles.emptyRoomsTitle, { color: colors.homeCardTitle }]}>
+                        暂无可用房间
+                      </Text>
+                      <Text style={[styles.emptyRoomsDesc, { color: colors.homeCardDescription }]}>
+                        您可以创建一个新房间或输入房间代码加入
+                      </Text>
+                    </View>
+                  ) : null}
+                </View>
+              </View>
+            )}
           </View>
         </ScrollView>
       </View>
@@ -876,13 +1149,44 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 12,
   },
+  sectionSubtitle: {
+    fontSize: 14,
+    marginBottom: 12,
+    lineHeight: 20,
+  },
   inputLabel: {
     fontSize: 13,
     fontWeight: '500',
     marginBottom: 6,
   },
+  tabsContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 16,
+  },
+  tab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 2,
+    gap: 6,
+  },
+  tabActive: {
+    borderWidth: 2,
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  tabContent: {
+    marginTop: 8,
+  },
   manualConnectContainer: {
     gap: 12,
+    marginTop: 12,
   },
   manualConnectRow: {
     flexDirection: 'row',
@@ -891,18 +1195,25 @@ const styles = StyleSheet.create({
   manualConnectInputWrapper: {
     flex: 1,
   },
-  ipInput: {
-    flex: 2,
-  },
-  portInput: {
-    flex: 1,
-  },
   input: {
     borderWidth: 1,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
+  },
+  scanButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 6,
+  },
+  scanButtonText: {
+    color: 'white',
+    fontSize: 13,
+    fontWeight: '600',
   },
   refreshButton: {
     flexDirection: 'row',
@@ -1085,5 +1396,12 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
+  },
+  codeInputContainer: {
+    gap: 12,
+    marginTop: 12,
+  },
+  codeInputWrapper: {
+    flex: 1,
   },
 })

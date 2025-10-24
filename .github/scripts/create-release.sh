@@ -60,7 +60,7 @@ echo "获取最新 commit 信息..."
 LATEST_COMMIT=$(git log -1 --pretty=format:"%s" 2>/dev/null || echo "")
 
 if [ -n "$LATEST_COMMIT" ]; then
-    CHANGELOG="$LATEST_COMMIT"
+    CHANGELOG="$(printf "%s" "$LATEST_COMMIT")"
     echo "✅ 使用最新 commit: $LATEST_COMMIT"
 else
     CHANGELOG="新版本发布"

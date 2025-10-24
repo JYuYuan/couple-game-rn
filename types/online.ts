@@ -124,7 +124,7 @@ export interface CreateRoomData {
   maxPlayers: number
   gameType: 'fly' | 'wheel' | 'minesweeper'
   taskSet?: TaskSet | null
-  avatar?: string // 头像ID
+  avatarId?: string // 头像ID
   gender?: 'man' | 'woman' // 性别
 }
 

@@ -95,7 +95,7 @@ class LANService {
     } else {
       player.name = data.playerName
       player.isHost = true
-      player.avatar = data.avatar || ''
+      player.avatarId = data.avatar || ''
       player.gender = data.gender || 'man'
       // 如果没有颜色或者重新创建房间，重新分配颜色
       if (!player.color) {
@@ -128,6 +128,7 @@ class LANService {
     this.setupTCPServerEvents()
 
     // 开始 UDP 广播
+    console.log('📡 [LANService] 准备开始 UDP 广播...')
     const broadcastData: RoomBroadcast = {
       roomId: room.id,
       roomName: room.name,
@@ -139,6 +140,8 @@ class LANService {
       gameType: room.gameType,
       timestamp: Date.now(),
     }
+
+    console.log('📋 [LANService] 广播数据:', JSON.stringify(broadcastData))
     udpBroadcastService.startBroadcasting(broadcastData)
 
     console.log('✅ 局域网房间创建成功')
@@ -166,37 +169,54 @@ class LANService {
    * 加入局域网房间(作为客户端)
    */
   async joinRoom(hostIP: string, hostPort: number, data: JoinRoomData): Promise<BaseRoom> {
-    console.log(`🔗 加入局域网房间: ${hostIP}:${hostPort}`)
+    console.log(`🔗 [LANService] 开始加入局域网房间: ${hostIP}:${hostPort}`)
+    console.log(
+      `📋 [LANService] 玩家信息:`,
+      JSON.stringify({
+        playerId: this.currentPlayerId,
+        playerName: data.playerName,
+        avatar: data.avatar,
+        gender: data.gender,
+      }),
+    )
 
     // 确保已初始化
     if (!this.localIP) {
+      console.log('⚙️ [LANService] 初始化本地IP...')
       await this.initialize(this.currentPlayerId)
     }
 
     // 标记为非房主
     this.isHost = false
 
-    // 设置 TCP Client 事件监听
+    // 设置 TCP Client 事件监听（在连接前设置）
+    console.log('🎧 [LANService] 设置 TCP Client 事件监听器...')
     this.setupTCPClientEvents()
 
     // 连接到房主的 TCP 服务器
+    console.log(`🔌 [LANService] 连接到房主 TCP 服务器...`)
     await tcpClient.connect(hostIP, hostPort, this.currentPlayerId)
-    console.log('✅ 连接到房主成功')
+    console.log('✅ [LANService] TCP 连接成功')
 
     // 发送加入房间请求
+    console.log('📤 [LANService] 发送 room:join 请求...')
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
+        console.error('⏱️ [LANService] 加入房间超时 (10秒)')
         reject(new Error('加入房间超时'))
       }, 10000)
 
+      console.log('📤 [LANService] 调用 tcpClient.sendEvent...')
       tcpClient.sendEvent('room:join', data, (response: any) => {
+        console.log('📨 [LANService] 收到 room:join 响应:', JSON.stringify(response))
         clearTimeout(timeout)
 
         if (response.error) {
+          console.error('❌ [LANService] 加入房间失败:', response.error)
           reject(new Error(response.error))
         } else {
           this.currentRoom = response
-          console.log('✅ 加入房间成功:', response)
+          console.log('✅ [LANService] 加入房间成功，房间ID:', response.id)
 
           // 返回包含网络信息的 LANRoom 对象
           const lanRoom = {
@@ -397,15 +417,27 @@ class LANService {
     // 加入房间
     tcpServer.on('room:join', async (data: any) => {
       try {
-        console.log('📨 处理加入房间请求:', data.playerId)
+        console.log('📨 [TCPServer] 收到 room:join 请求')
+        console.log(
+          '📋 [TCPServer] 请求数据:',
+          JSON.stringify({
+            playerId: data.playerId,
+            requestId: data.requestId,
+            playerName: data.data?.playerName,
+          }),
+        )
 
         if (!this.currentRoom) {
+          console.error('❌ [TCPServer] 房间不存在')
           throw new Error('房间不存在')
         }
+
+        console.log('✅ [TCPServer] 当前房间:', this.currentRoom.id)
 
         // 创建玩家
         let player = await playerManager.getPlayer(data.playerId)
         if (!player) {
+          console.log('��� [TCPServer] 创建新玩家:', data.playerId)
           player = await playerManager.addPlayer(data.playerId, {
             playerId: data.playerId,
             name: data.data.playerName || `Player_${data.playerId.substring(0, 6)}`,
@@ -419,24 +451,31 @@ class LANService {
             color: this.getRandomColor(), // 随机背景色
             ...data,
           })
+          console.log('✅ [TCPServer] 玩家创建成功')
         } else {
+          console.log('🔄 [TCPServer] 更新现有玩家:', data.playerId)
           player.name = data.data.playerName || player.name
           player.isHost = false
           player.iconType = this.currentRoom.players.length
-          player.avatar = data.data.avatar || ''
+          player.avatarId = data.data.avatar || ''
           player.gender = data.data.gender || 'man'
           // 如果没有颜色，分配一个随机颜色
           if (!player.color) {
             player.color = this.getRandomColor()
           }
           await playerManager.updatePlayer(player)
+          console.log('✅ [TCPServer] 玩家更新成功')
         }
 
         // 加入房间
+        console.log('🚪 [TCPServer] 将玩家加入房间...')
         const updatedRoom = await roomManager.addPlayerToRoom(this.currentRoom.id, player)
         if (!updatedRoom) {
+          console.error('❌ [TCPServer] 房间已满')
           throw new Error('房间已满')
         }
+
+        console.log('✅ [TCPServer] 玩家已加入房间，当前玩家数:', updatedRoom.players.length)
 
         player.roomId = updatedRoom.id
         await playerManager.updatePlayer(player)
@@ -444,13 +483,24 @@ class LANService {
         this.currentRoom = updatedRoom
 
         // 发送响应
-        tcpServer.sendToClient(data.playerId, {
+        console.log('📤 [TCPServer] 发送响应到客户端:', data.playerId)
+        console.log(
+          '📋 [TCPServer] 响应数据: requestId=',
+          data.requestId,
+          ', roomId=',
+          updatedRoom.id,
+        )
+
+        const success = tcpServer.sendToClient(data.playerId, {
           type: 'response',
           requestId: data.requestId,
           data: updatedRoom,
         })
 
+        console.log(success ? '✅ [TCPServer] 响应发送成功' : '❌ [TCPServer] 响应发送失败')
+
         // 广播房间更新
+        console.log('📡 [TCPServer] 广播房间更新...')
         tcpServer.broadcast({
           type: 'broadcast',
           event: 'room:update',
@@ -465,7 +515,9 @@ class LANService {
         // 触发本地事件
         this.emit('room:update', updatedRoom)
       } catch (error: any) {
-        console.error('加入房间失败:', error)
+        console.error('❌ [TCPServer] 加入房间失败:', error.message)
+        console.log('📤 [TCPServer] 发送错误响应到客户端:', data.playerId)
+
         tcpServer.sendToClient(data.playerId, {
           type: 'response',
           requestId: data.requestId,

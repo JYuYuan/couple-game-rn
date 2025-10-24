@@ -42,8 +42,12 @@ class UDPBroadcastService {
     }
 
     this.onRoomDiscoveredCallback = onRoomDiscovered || null
+
+    console.log('🎧 创建 UDP Socket 用于监听广播...')
+
     this.socket = dgram.createSocket({
       type: 'udp4',
+      reuseAddr: true, // 允许地址重用 - 重要！
     })
 
     // 监听广播消息
@@ -88,30 +92,30 @@ class UDPBroadcastService {
       // 如果是端口占用，尝试关闭并重新绑定
       if (error.code === 'EADDRINUSE') {
         console.warn(`⚠️ UDP 端口 ${BROADCAST_PORT} 被占用，尝试重用...`)
-        // UDP 可以设置 reuseAddr 允许多个监听器
       }
     })
 
-    // 绑定到广播端口，启用地址重用
+    // 绑定到广播端口
     try {
       this.socket.bind(
         {
           port: BROADCAST_PORT,
-          address: '0.0.0.0',
+          address: '0.0.0.0', // 监听所有网络接口
         },
         () => {
-          console.log(`🎧 开始监听 UDP 广播 (端口: ${BROADCAST_PORT})`)
-          // 设置广播和地址重用
+          console.log(`✅ 开始监听 UDP 广播 (端口: ${BROADCAST_PORT}, 地址: 0.0.0.0)`)
+
+          // 设置 socket 选项
           try {
-            this.socket?.setBroadcast(true)
-            this.socket?.setReuseAddress?.(true) // 允许端口重用
+            this.socket?.setBroadcast(true) // 启用广播
+            console.log('✅ UDP 广播已启用')
           } catch (e) {
-            console.warn('设置 socket 选项失败:', e)
+            console.warn('⚠️ 设置广播选项失败:', e)
           }
         },
       )
     } catch (error: any) {
-      console.error('绑定 UDP 端口失败:', error)
+      console.error('❌ 绑定 UDP 端口失败:', error)
       throw error
     }
   }
@@ -143,21 +147,29 @@ class UDPBroadcastService {
 
     this.roomInfo = roomInfo
 
+    console.log('📡 创建 UDP Socket 用于广播房间信息...')
+
     // 创建广播 socket
     if (!this.socket) {
       this.socket = dgram.createSocket({
         type: 'udp4',
+        reuseAddr: true, // 允许地址重用
       })
 
       this.socket.on('error', (error: any) => {
-        console.error('UDP 广播 Socket 错误:', error)
+        console.error('❌ UDP 广播 Socket 错误:', error)
       })
 
-      // 绑定到任意端口
+      // 绑定到任意端口（让系统自动分配）
       this.socket.bind(() => {
+        console.log('✅ UDP 广播 socket 绑定成功')
         // 启用广播
-        this.socket?.setBroadcast(true)
-        console.log('📡 UDP 广播 socket 已创建')
+        try {
+          this.socket?.setBroadcast(true)
+          console.log('✅ UDP 广播模式已启用')
+        } catch (e) {
+          console.warn('⚠️ 设置广播模式失败:', e)
+        }
       })
     }
 
@@ -169,7 +181,7 @@ class UDPBroadcastService {
     // 立即广播一次
     setTimeout(() => this.broadcast(), 500)
 
-    console.log(`📡 开始广播房间: ${roomInfo.roomName}`)
+    console.log(`📡 开始广播房间: ${roomInfo.roomName} (${roomInfo.hostIP}:${roomInfo.tcpPort})`)
   }
 
   /**
@@ -194,6 +206,7 @@ class UDPBroadcastService {
    */
   private broadcast(): void {
     if (!this.socket || !this.roomInfo) {
+      console.warn('⚠️ 无法广播: socket或roomInfo不存在')
       return
     }
 
@@ -213,14 +226,16 @@ class UDPBroadcastService {
         '255.255.255.255',
         (error: any) => {
           if (error) {
-            console.error('UDP 广播发送失败:', error)
+            console.error('❌ UDP 广播发送失败:', error)
           } else {
-            console.log(`📡 广播房间信息: ${this.roomInfo?.roomName}`)
+            console.log(
+              `📡 广播成功: ${this.roomInfo?.roomName} -> 255.255.255.255:${BROADCAST_PORT} (${buffer.length} bytes)`,
+            )
           }
         },
       )
     } catch (error) {
-      console.error('广播消息失败:', error)
+      console.error('❌ 广播消息异常:', error)
     }
   }
 

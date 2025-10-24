@@ -715,8 +715,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     padding: Layout.padding.md,
-    paddingBottom: 100,
-    width: '100%',
+    paddingBottom: 20,
   },
   taskSetCard: {
     marginBottom: 16,

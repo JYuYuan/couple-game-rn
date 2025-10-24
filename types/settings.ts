@@ -18,16 +18,24 @@ export interface NetworkSettings {
   lanPort: number // 局域网TCP端口
 }
 
+export interface PlayerProfile {
+  playerName: string // 玩家名称
+  avatarId: string // 头像ID
+  gender: AvatarGender // 性别
+}
+
 export interface SettingsState {
   playerId: string
   themeMode: ThemeMode
   languageMode: LanguageMode
   soundSettings: SoundSettings
   networkSettings: NetworkSettings
+  playerProfile: PlayerProfile
   setThemeMode: (mode: ThemeMode) => void
   setLanguageMode: (mode: LanguageMode) => void
   setSoundSettings: (settings: Partial<SoundSettings>) => void
   setNetworkSettings: (settings: Partial<NetworkSettings>) => void
+  setPlayerProfile: (profile: Partial<PlayerProfile>) => void
   reset: () => void
 }
 
@@ -36,4 +44,5 @@ export interface SettingsStorage {
   languageMode: LanguageMode
   soundSettings: SoundSettings
   networkSettings: NetworkSettings
+  playerProfile: PlayerProfile
 }

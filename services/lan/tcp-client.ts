@@ -15,11 +15,15 @@ class TCPClient {
   private eventListeners: Map<string, Set<Function>> = new Map()
   private messageBuffer: string = '' // 用于处理粘包
   private reconnectAttempts: number = 0
-  private maxReconnectAttempts: number = 5
+  private maxReconnectAttempts: number = 3 // 减少重连次数
   private reconnectInterval: ReturnType<typeof setTimeout> | null = null
   private hostIP: string = ''
   private hostPort: number = 0
   private playerId: string = ''
+  private shouldReconnect: boolean = true // 控制是否重连
+  private isManualDisconnect: boolean = false // 标记手动断开
+  private pendingResolve: ((value: void) => void) | null = null // 保存 Promise resolve
+  private pendingReject: ((reason?: any) => void) | null = null // 保存 Promise reject
 
   /**
    * 连接到房主的 TCP 服务器
@@ -32,11 +36,26 @@ class TCPClient {
         return
       }
 
+      // 清理之前未完成的连接
+      if (this.socket) {
+        console.log('🧹 清理旧的socket连接')
+        try {
+          this.socket.destroy()
+        } catch (e) {
+          console.warn('清理旧socket失败:', e)
+        }
+        this.socket = null
+      }
+
       this.hostIP = hostIP
       this.hostPort = port
       this.playerId = playerId
+      this.shouldReconnect = true // 允许重连
+      this.isManualDisconnect = false // 非手动断开
+      this.pendingResolve = resolve
+      this.pendingReject = reject
 
-      console.log(`🔌 连接到房主 TCP 服务器: ${hostIP}:${port}`)
+      console.log(`🔌 [${playerId.substring(0, 8)}] 连接到房主 TCP 服务器: ${hostIP}:${port}`)
 
       // 创建 TCP 客户端
       this.socket = TcpSocket.createConnection(
@@ -45,11 +64,12 @@ class TCPClient {
           port: port,
         },
         () => {
-          console.log('✅ TCP 连接成功')
+          console.log(`✅ [${this.playerId.substring(0, 8)}] TCP Socket 连接建立`)
           this.isConnected = true
           this.reconnectAttempts = 0
 
           // 发送初始化消息,告知服务器我们的 playerId
+          console.log(`📤 [${this.playerId.substring(0, 8)}] 发送 client:init 消息`)
           this.send({
             type: 'event',
             event: 'client:init',
@@ -58,7 +78,13 @@ class TCPClient {
           })
 
           this.emit('connected', {})
-          resolve()
+
+          // 连接成功,解决 Promise
+          if (this.pendingResolve) {
+            this.pendingResolve()
+            this.pendingResolve = null
+            this.pendingReject = null
+          }
         },
       )
 
@@ -69,26 +95,32 @@ class TCPClient {
 
       // 监听关闭
       this.socket.on('close', (error?: any) => {
-        console.log('👋 TCP 连接关闭', error ? `错误: ${error}` : '')
+        console.log(`👋 [${this.playerId.substring(0, 8)}] TCP Socket 关闭`, error ? `错误: ${JSON.stringify(error)}` : '')
         this.handleDisconnect()
       })
 
       // 监听错误
       this.socket.on('error', (error: any) => {
-        console.error('❌ TCP 连接错误:', error)
+        console.error(`❌ [${this.playerId.substring(0, 8)}] TCP 连接错误:`, error)
         this.isConnected = false
         this.emit('error', { error })
 
-        if (!this.isConnected) {
-          // 连接失败
-          reject(error)
+        // 连接失败,拒绝 Promise
+        if (!this.isConnected && this.pendingReject) {
+          this.pendingReject(error)
+          this.pendingResolve = null
+          this.pendingReject = null
         }
       })
 
       // 超时处理
       setTimeout(() => {
-        if (!this.isConnected) {
-          reject(new Error('连接超时'))
+        if (!this.isConnected && this.pendingReject) {
+          const timeoutError = new Error('连接超时')
+          console.error(`⏱️ [${this.playerId.substring(0, 8)}] 连接超时`)
+          this.pendingReject(timeoutError)
+          this.pendingResolve = null
+          this.pendingReject = null
         }
       }, 12000)
     })
@@ -98,7 +130,10 @@ class TCPClient {
    * 断开连接
    */
   disconnect(): void {
-    console.log('🛑 断开 TCP 连接')
+    console.log(`🛑 [${this.playerId.substring(0, 8)}] 主动断开 TCP 连接`)
+
+    this.isManualDisconnect = true // 标记为手动断开
+    this.shouldReconnect = false // 禁止重连
 
     if (this.reconnectInterval) {
       clearTimeout(this.reconnectInterval)
@@ -106,13 +141,19 @@ class TCPClient {
     }
 
     if (this.socket) {
-      this.socket.destroy()
+      try {
+        this.socket.destroy()
+      } catch (e) {
+        console.warn('销毁socket失败:', e)
+      }
       this.socket = null
     }
 
     this.isConnected = false
     this.messageBuffer = ''
     this.reconnectAttempts = 0
+    this.pendingResolve = null
+    this.pendingReject = null
 
     this.emit('disconnected', {})
   }
@@ -152,7 +193,7 @@ class TCPClient {
    * 处理服务器消息
    */
   private handleServerMessage(message: TCPMessage): void {
-    console.log(`📨 收到服务器消息:`, message.type, message.event)
+    console.log(`📨 [${this.playerId.substring(0, 8)}] 收到服务器消息:`, JSON.stringify({ type: message.type, event: message.event }))
 
     if (message.type === 'broadcast' && message.event) {
       // 广播消息
@@ -161,7 +202,8 @@ class TCPClient {
       // 响应消息
       this.emit(`response:${message.requestId}`, message.data)
     } else if (message.type === 'event' && message.event) {
-      // 事件消息
+      // 事件消息（包括 server:init_ack）
+      console.log(`🔔 [${this.playerId.substring(0, 8)}] 触发事件: ${message.event}`)
       this.emit(message.event, message.data)
     }
   }
@@ -170,22 +212,30 @@ class TCPClient {
    * 处理断开连接
    */
   private handleDisconnect(): void {
+    const wasConnected = this.isConnected
     this.isConnected = false
+
+    console.log(`⚠️ [${this.playerId.substring(0, 8)}] 连接断开 (手动=${this.isManualDisconnect}, 允许重连=${this.shouldReconnect}, 尝试次数=${this.reconnectAttempts}/${this.maxReconnectAttempts})`)
+
     this.emit('disconnected', {})
 
-    // 尝试重连
-    if (this.reconnectAttempts < this.maxReconnectAttempts) {
+    // 只在非手动断开、允许重连且未超过最大次数时才重连
+    if (!this.isManualDisconnect && this.shouldReconnect && this.reconnectAttempts < this.maxReconnectAttempts && wasConnected) {
       this.reconnectAttempts++
-      console.log(`🔄 尝试重连 (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`)
+      console.log(`🔄 [${this.playerId.substring(0, 8)}] 准备重连 (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`)
 
       this.reconnectInterval = setTimeout(() => {
+        console.log(`🔄 [${this.playerId.substring(0, 8)}] 开始第 ${this.reconnectAttempts} 次重连...`)
         this.connect(this.hostIP, this.hostPort, this.playerId).catch((error) => {
-          console.error('重连失败:', error)
+          console.error(`❌ [${this.playerId.substring(0, 8)}] 第 ${this.reconnectAttempts} 次重连失败:`, error)
         })
-      }, 2000 * this.reconnectAttempts) // 递增延迟
-    } else {
-      console.error('❌ 重连失败,已达到最大重连次数')
+      }, 3000) // 固定3秒延迟
+    } else if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+      console.error(`❌ [${this.playerId.substring(0, 8)}] 重连失败,已达到最大重连次数`)
+      this.shouldReconnect = false
       this.emit('reconnect_failed', {})
+    } else {
+      console.log(`ℹ️ [${this.playerId.substring(0, 8)}] 不进行重连 (手动=${this.isManualDisconnect})`)
     }
   }
 
