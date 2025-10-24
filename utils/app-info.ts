@@ -11,7 +11,7 @@ export const getAppInfo = (): AppInfo => {
   const buildDate = `${new Date().getFullYear()}.${String(new Date().getMonth() + 1).padStart(2, '0')}.${String(new Date().getDate()).padStart(2, '0')}`
 
   return {
-    version: packageInfo.version || appConfig.expo.version || '1.0.0',
+    version: appConfig.expo.version || '1.0.0',
     buildDate,
   }
 }
@@ -27,7 +27,7 @@ export const checkForUpdates = async (): Promise<{
 
     // 从 GitHub 获取最新版本信息
     const response = await fetch(
-      'https://raw.githubusercontent.com/JYuYuan/couple-game-rn/refs/heads/main/package.json',
+      'https://raw.githubusercontent.com/JYuYuan/couple-game-rn/refs/heads/main/app.json',
     )
 
     if (!response.ok) {
@@ -35,7 +35,7 @@ export const checkForUpdates = async (): Promise<{
     }
 
     const remotePackageInfo = await response.json()
-    const latestVersion = remotePackageInfo.version
+    const latestVersion = remotePackageInfo.expo.version
 
     // 比较版本号
     const hasUpdate = compareVersions(currentVersion, latestVersion) < 0
