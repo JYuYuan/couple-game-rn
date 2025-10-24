@@ -541,7 +541,16 @@ export default function OnlineRoomPage() {
       <Stack.Screen
         options={{
           title: '在线游戏',
-          headerBackTitle: '返回',
+          headerShown: true,
+          headerStyle: {
+            backgroundColor: colors.homeBackground,
+          },
+          headerTintColor: colors.homeTitle,
+          headerTitleStyle: {
+            fontWeight: '600',
+            fontSize: 18,
+          },
+          headerBackTitle: t('common.back', '返回'),
         }}
       />
       <View style={[styles.container, { backgroundColor: colors.homeBackground }]}>
