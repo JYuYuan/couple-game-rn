@@ -88,11 +88,11 @@ export default function GameMode() {
   const getPageTitle = () => {
     switch (gameType) {
       case 'fly':
-        return t('gameMode.flyingChess', '飞行棋-任务选择')
+        return t('gameMode.flyingChess', '飞行棋')
       case 'wheel':
-        return t('gameMode.wheel', '大转盘-任务选择')
+        return t('gameMode.wheel', '大转盘')
       case 'minesweeper':
-        return t('gameMode.minesweeper', '扫雷对战-任务选择')
+        return t('gameMode.minesweeper', '扫雷对战')
       default:
         return t('gameMode.default', '任务选择')
     }
@@ -107,14 +107,20 @@ export default function GameMode() {
   // 分类选择组件
   const CategorySelector = () => {
     return (
-      <Animated.View style={[styles.categoryContainer, fadeStyle]}>
+      <Animated.View
+        style={[
+          styles.categoryContainer,
+          { backgroundColor: colors.homeBackground },
+          fadeStyle,
+        ]}
+      >
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.categoryScrollContent}
           bounces={false}
           decelerationRate="fast"
-          nestedScrollEnabled={false}
+          nestedScrollEnabled={true}
         >
           <TouchableOpacity
             style={[
@@ -257,36 +263,38 @@ export default function GameMode() {
       })
     }
 
-    const handleOnlineGame = () => {
+    const handleCreateRoom = () => {
       // 检查当前游戏类型是否支持在线模式
       if (!supportsOnlineMode) {
         toast.info(t('gameMode.onlineNotSupported', '该游戏类型暂不支持在线模式'))
         return
       }
 
-      // 检查是否已经在房间中
-      if (socket.currentRoom) {
-        console.log('Already in room, directly entering game:', socket.currentRoom.id)
-        // 如果已经在房间中，直接进入游戏
-        router.push({
-          pathname: routeConfig[gameType] as any,
-          params: {
-            taskSetId: taskSet.id,
-            onlineMode: 'true',
-            roomId: socket.currentRoom.id,
-          },
-        })
-      } else {
-        console.log('No active room, navigating to online room page')
-        // 跳转到在线房间页面
-        router.push({
-          pathname: '/online-room',
-          params: {
-            gameType: gameType,
-            taskSetId: taskSet.id,
-          },
-        })
+      // 直接跳转到创建房间页面
+      router.push({
+        pathname: '/create-room',
+        params: {
+          gameType: gameType,
+          taskSetId: taskSet.id,
+        },
+      })
+    }
+
+    const handleJoinRoom = () => {
+      // 检查当前游戏类型是否支持在线模式
+      if (!supportsOnlineMode) {
+        toast.info(t('gameMode.onlineNotSupported', '该游戏类型暂不支持在线模式'))
+        return
       }
+
+      // 跳转到加入房间页面
+      router.push({
+        pathname: '/join-room',
+        params: {
+          gameType: gameType,
+          taskSetId: taskSet.id,
+        },
+      })
     }
 
     return (
@@ -376,11 +384,11 @@ export default function GameMode() {
               </LinearGradient>
             </TouchableOpacity>
 
-            {/* 在线模式 - 仅在网络模式或局域网模式启用时显示 */}
+            {/* 创建房间 - 仅在网络模式或局域网模式启用时显示 */}
             {isNetworkEnabled && (
               <TouchableOpacity
                 style={[styles.gameModeButton, !supportsOnlineMode && styles.disabledButton]}
-                onPress={handleOnlineGame}
+                onPress={handleCreateRoom}
                 disabled={!supportsOnlineMode}
               >
                 <LinearGradient
@@ -390,7 +398,7 @@ export default function GameMode() {
                   end={{ x: 1, y: 1 }}
                 >
                   <Ionicons
-                    name="people"
+                    name="add-circle"
                     size={16}
                     color={supportsOnlineMode ? 'white' : '#E0E0E0'}
                   />
@@ -398,7 +406,7 @@ export default function GameMode() {
                     style={[styles.gameModeButtonText, !supportsOnlineMode && { color: '#E0E0E0' }]}
                   >
                     {supportsOnlineMode
-                      ? t('gameMode.onlineMode', '在线模式')
+                      ? t('gameMode.createRoom', '创建房间')
                       : t('gameMode.onlineComingSoon', '在线模式 (敬请期待)')}
                   </Text>
                 </LinearGradient>
@@ -459,6 +467,24 @@ export default function GameMode() {
     }
   }
 
+  // 加入房间处理函数
+  const handleJoinRoomFromHeader = () => {
+    // 检查是否支持在线模式
+    if (!supportsOnlineMode) {
+      toast.info(t('gameMode.onlineNotSupported', '该游戏类型暂不支持在线模式'))
+      return
+    }
+
+    // 跳转到加入房间页面
+    router.push({
+      pathname: '/join-room',
+      params: {
+        gameType: gameType,
+        taskSetId: '', // 从标题栏进入，不指定任务集
+      },
+    })
+  }
+
   return (
     <>
       <Stack.Screen
@@ -474,6 +500,33 @@ export default function GameMode() {
             fontSize: 18,
           },
           headerBackTitle: t('common.back', '返回'),
+          headerRight: () =>
+            isNetworkEnabled && supportsOnlineMode ? (
+              <TouchableOpacity
+                onPress={handleJoinRoomFromHeader}
+                style={{
+                  marginRight: 16,
+                  paddingVertical: 6,
+                  paddingHorizontal: 12,
+                  borderRadius: 8,
+                  backgroundColor: colors.settingsAccent + '20',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
+                <Ionicons name="enter" size={18} color={colors.settingsAccent} />
+                <Text
+                  style={{
+                    color: colors.settingsAccent,
+                    fontSize: 14,
+                    fontWeight: '600',
+                  }}
+                >
+                  {t('gameMode.joinRoom', '加入房间')}
+                </Text>
+              </TouchableOpacity>
+            ) : null,
         }}
       />
       <View style={[styles.container, { backgroundColor: colors.homeBackground }]}>
@@ -506,9 +559,6 @@ export default function GameMode() {
           </Animated.View>
         </View>
 
-        {/* 分类选择器 */}
-        <CategorySelector />
-
         {/* 任务集列表 */}
         <ScrollView
           style={styles.content}
@@ -517,7 +567,10 @@ export default function GameMode() {
           bounces={true}
           alwaysBounceVertical={true}
           keyboardShouldPersistTaps="handled"
+          stickyHeaderIndices={[0]}
         >
+          {/* 分类选择器 - 作为粘性头部 */}
+          <CategorySelector />
           {filteredTaskSets.length > 0 ? (
             filteredTaskSets.map((taskSet, index) => (
               <TaskSetCard key={taskSet.id} taskSet={taskSet} index={index} />
@@ -629,9 +682,8 @@ const styles = StyleSheet.create({
   },
   categoryContainer: {
     paddingTop: 20,
-    marginBottom: 20,
+    paddingBottom: 10,
     paddingHorizontal: 20,
-    maxHeight: 60, // 限制分类选择器的最大高度
   },
   categoryScrollContent: {
     paddingRight: 20,

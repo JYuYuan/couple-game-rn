@@ -421,9 +421,9 @@
     }
   },
   "gameMode": {
-    "flyingChess": "飞行棋-任务选择",
-    "wheel": "大转盘-任务选择",
-    "minesweeper": "扫雷对战-任务选择",
+    "flyingChess": "飞行棋",
+    "wheel": "大转盘",
+    "minesweeper": "扫雷对战",
     "default": "任务选择",
     "all": "全部",
     "empty": {
