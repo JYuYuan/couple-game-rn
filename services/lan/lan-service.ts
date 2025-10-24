@@ -88,14 +88,14 @@ class LANService {
         isHost: true,
         socketId: this.currentPlayerId,
         isConnected: true,
-        avatarId: data.avatar || '', // 头像ID
+        avatarId: data.avatarId || '', // 头像ID
         gender: data.gender || 'man', // 性别
         color: this.getRandomColor(), // 随机背景色
       })
     } else {
       player.name = data.playerName
       player.isHost = true
-      player.avatarId = data.avatar || ''
+      player.avatarId = data.avatarId || ''
       player.gender = data.gender || 'man'
       // 如果没有颜色或者重新创建房间，重新分配颜色
       if (!player.color) {
@@ -142,7 +142,15 @@ class LANService {
     }
 
     console.log('📋 [LANService] 广播数据:', JSON.stringify(broadcastData))
-    udpBroadcastService.startBroadcasting(broadcastData)
+
+    try {
+      await udpBroadcastService.startBroadcasting(broadcastData)
+      console.log('✅ [LANService] UDP 广播已启动')
+    } catch (error: any) {
+      console.error('❌ [LANService] 启动 UDP 广播失败:', error)
+      console.error('💡 房间已创建，但其他设备可能无法发现此房间')
+      // 不抛出错误，因为房间已经创建，只是广播失败
+    }
 
     console.log('✅ 局域网房间创建成功')
     console.log('📱 房间ID:', room.id)
