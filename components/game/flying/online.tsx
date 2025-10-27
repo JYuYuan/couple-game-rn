@@ -135,6 +135,8 @@ export default function FlyingChessGame() {
   const [animatedPlayers, setAnimatedPlayers] = useState<OnlinePlayer[]>(players as OnlinePlayer[])
   // 使用 ref 保存最新的 animatedPlayers,避免 handleDiceRoll 闭包问题
   const animatedPlayersRef = useRef<OnlinePlayer[]>(animatedPlayers)
+  // 添加动画锁，防止动画期间的状态同步
+  const isAnimatingRef = useRef(false)
 
   // 同步 ref
   useEffect(() => {
@@ -144,15 +146,27 @@ export default function FlyingChessGame() {
   // 同步服务端玩家位置到本地动画状态 - 只在非移动状态时同步
   // 使用延时避免动画完成瞬间的闪烁
   useDeepCompareEffect(() => {
-    if (players && players.length > 0 && !isMoving) {
-      // 延时 100ms 确保动画完成后的状态更新已经应用
-      const timer = setTimeout(() => {
-        setAnimatedPlayers(players as OnlinePlayer[])
-      }, 100)
-
-      return () => clearTimeout(timer)
+    // 如果正在动画中，跳过同步
+    if (isAnimatingRef.current || isMoving) {
+      return
     }
-  }, [players, isMoving])
+
+    if (players && players.length > 0) {
+      // 检查是否真的需要更新（避免不必要的重渲染）
+      const needsUpdate = players.some((serverPlayer, index) => {
+        const localPlayer = animatedPlayers[index]
+        return !localPlayer ||
+          localPlayer.id !== serverPlayer.id ||
+          localPlayer.position !== serverPlayer.position ||
+          localPlayer.name !== serverPlayer.name
+      })
+
+      if (needsUpdate) {
+        console.log('🔄 同步服务端玩家状态到本地动画状态')
+        setAnimatedPlayers(players as OnlinePlayer[])
+      }
+    }
+  }, [players, isMoving]) // 移除 animatedPlayers 依赖，避免循环更新
 
   // 动态计算玩家卡片宽度
   const { width: screenWidth } = getWindow()
@@ -160,12 +174,20 @@ export default function FlyingChessGame() {
   const playerCount = animatedPlayers.length || 1
   const availableWidth = maxContainerWidth - 32 // 减去padding
   const cardSpacing = Layout.spacing.sm * (playerCount - 1) // 卡片间距
-  const calculatedCardWidth = Math.max(90, (availableWidth - cardSpacing) / playerCount) // 最小90px
+  
+  // 修复两个玩家时的宽度计算问题
+  let calculatedCardWidth: number
+  if (playerCount <= 2) {
+    // 两个玩家时，使用更保守的宽度计算，确保不会超出
+    calculatedCardWidth = Math.min(140, (availableWidth - cardSpacing) / playerCount - 10) // 额外减去10px作为缓冲
+  } else if (playerCount <= 4) {
+    calculatedCardWidth = Math.max(90, (availableWidth - cardSpacing) / playerCount)
+  } else {
+    calculatedCardWidth = 90 // 4人以上固定90px
+  }
 
-  const playerCardWidth =
-    playerCount <= 4
-      ? calculatedCardWidth // 4人以下平分宽度
-      : 90 // 4人以上固定90px，启用横向滚动
+  const playerCardWidth = Math.max(90, calculatedCardWidth) // 确保最小宽度为90px
+
   // 本地骰子状态 - 通过 game:dice 事件更新
   const [currentDiceValue, setCurrentDiceValue] = useState<number | null>(null)
 
@@ -260,7 +282,8 @@ export default function FlyingChessGame() {
 
             console.log(`🎯 开始移动动画: ${data.playerId} 从 ${currentPos} 移动到 ${targetPos}`)
 
-            // 设置移动状态
+            // 设置动画锁和移动状态
+            isAnimatingRef.current = true
             setIsMoving(true)
 
             // 播放移动音效
@@ -282,9 +305,10 @@ export default function FlyingChessGame() {
                 playerId: data.playerId,
               })
 
-              // 延迟重置移动状态，给服务端足够时间推送更新
+              // 延迟重置移动状态和动画锁，给服务端足够时间推送更新
               setTimeout(() => {
                 setIsMoving(false)
+                isAnimatingRef.current = false
               }, 200)
             })
           }
@@ -464,10 +488,17 @@ export default function FlyingChessGame() {
     }) => {
       console.log('📍 收到位置更新事件:', data)
 
+      // 如果正在动画中，跳过这次更新（避免冲突）
+      if (isAnimatingRef.current) {
+        console.log('⏸️ 正在动画中，跳过位置更新')
+        return
+      }
+
       // 播放移动音效
       audioManager.playSoundEffect('step')
 
-      // 设置移动状态
+      // 设置动画锁和移动状态
+      isAnimatingRef.current = true
       setIsMoving(true)
 
       // 执行移动动画
@@ -483,9 +514,10 @@ export default function FlyingChessGame() {
           `✅ 位置更新动画完成: ${data.playerId} 从 ${data.fromPosition} 移动到 ${data.toPosition}，原因: ${data.reason}`,
         )
 
-        // 延迟重置移动状态，给服务端足够时间推送更新
+        // 延迟重置移动状态和动画锁，给服务端足够时间推送更新
         setTimeout(() => {
           setIsMoving(false)
+          isAnimatingRef.current = false
         }, 200)
       })
     }
@@ -581,11 +613,15 @@ export default function FlyingChessGame() {
       currentStep++
       const nextPosition = isForward ? from + currentStep : from - currentStep
 
+      // 使用函数式更新，避免状态竞争
       setAnimatedPlayers((prevPlayers) =>
         prevPlayers.map((p) => (p.id === playerId ? { ...p, position: nextPosition } : p)),
       )
 
-      audioManager.playSoundEffect('step')
+      // 减少音效播放频率，避免过多音效
+      if (currentStep % 2 === 0) {
+        audioManager.playSoundEffect('step')
+      }
 
       setTimeout(moveOneStep, 300) // 每一步的动画间隔
     }
@@ -727,16 +763,7 @@ export default function FlyingChessGame() {
               <Text style={[styles.sectionTitle, { color: colors.homeCardTitle }]}>
                 {t('flyingChess.playersStatus', '玩家状态')}
               </Text>
-              <TouchableOpacity
-                style={[styles.leaveRoomButton, { borderColor: colors.homeCardBorder }]}
-                onPress={handleLeaveRoom}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="exit-outline" size={18} color="#FF6B6B" />
-                <Text style={[styles.leaveRoomButtonText, { color: '#FF6B6B' }]}>
-                  {t('online.leaveRoom', '离开房间')}
-                </Text>
-              </TouchableOpacity>
+
             </View>
             <ScrollView
               horizontal
@@ -820,6 +847,31 @@ export default function FlyingChessGame() {
                 </View>
               ))}
             </ScrollView>
+            <TouchableOpacity
+              style={[styles.leaveRoomButton, {
+                backgroundColor: colors.homeCardBackground,
+                borderColor: '#FF6B6B',
+                shadowColor: '#FF6B6B',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.15,
+                shadowRadius: 4,
+                elevation: 3,
+              }]}
+              onPress={handleLeaveRoom}
+              activeOpacity={0.8}
+            >
+              <LinearGradient
+                colors={['#FF6B6B', '#FF5252']}
+                style={styles.leaveRoomGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+              >
+                <Ionicons name="exit-outline" size={16} color="white" />
+                <Text style={[styles.leaveRoomButtonText, { color: 'white' }]}>
+                  {t('online.leaveRoom', '离开房间')}
+                </Text>
+              </LinearGradient>
+            </TouchableOpacity>
           </View>
 
           {/* 游戏棋盘 */}
@@ -971,8 +1023,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
-    borderWidth: 1,
     gap: 4,
+    overflow: 'hidden',
+  },
+  leaveRoomGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    gap: 4,
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
   },
   leaveRoomButtonText: {
     fontSize: 13,
