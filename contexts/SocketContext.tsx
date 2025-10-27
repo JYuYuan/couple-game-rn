@@ -188,30 +188,16 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   }, [playerId, setCurrentRoom])
 
-  // 监听 LAN Service 的事件
-  useEffect(() => {
-    console.log('🐛 [SocketContext] useEffect 执行')
-    console.log('🐛 [SocketContext] connectionType:', connectionType)
-    console.log('🐛 [SocketContext] playerId:', playerId)
-
-    if (connectionType !== 'lan') {
-      console.log('⚠️ [SocketContext] connectionType 不是 lan，跳过监听')
-      return
+  // 设置 LAN 事件监听器的辅助函数
+  const setupLANEventListeners = useCallback(() => {
+    if (!isLANModulesLoaded()) {
+      console.log('⚠️ [SocketContext] LAN 模块未加载，无法注册事件监听器')
+      return null
     }
 
-    // 只在模块已加载时监听
     try {
-      console.log('🐛 [SocketContext] 尝试获取 LANService')
-
-      // 检查模块是否已加载
-      if (!isLANModulesLoaded()) {
-        console.log('⚠️ [SocketContext] LAN 模块未加载，跳过事件监听')
-        console.log('💡 [SocketContext] 事件监听器将在创建/加入房间时注册')
-        return
-      }
-
       const lanService = getLANService()
-      console.log('🐛 [SocketContext] LANService 获取成功:', !!lanService)
+      console.log('🐛 [SocketContext] LANService 获取成功，注册事件监听器')
 
       const handleLANRoomUpdate = (room: any) => {
         console.log('🐛 [SocketContext] LAN Room updated 事件触发!')
@@ -220,30 +206,15 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           gameStatus: room?.gameStatus,
           playersCount: room?.players?.length,
         })
-        console.log(
-          '🐛 [SocketContext] 玩家列表:',
-          room?.players?.map((p: any) => p.name).join(', '),
-        )
-        console.log('🐛 [SocketContext] 当前 playerId:', playerId)
 
         if (room) {
-          // 创建一个新的对象，确保 Zustand 检测到变化
           const updatedRoom = {
             ...room,
             isHost: room.hostId === playerId,
-            players: [...room.players], // 创建新的 players 数组
+            players: [...room.players],
           }
-
-          console.log('🐛 [SocketContext] 准备调用 setCurrentRoom')
-          console.log('🐛 [SocketContext] 新房间状态:', {
-            id: updatedRoom.id,
-            gameStatus: updatedRoom.gameStatus,
-            playersCount: updatedRoom.players.length,
-          })
           setCurrentRoom(updatedRoom)
           console.log('🐛 [SocketContext] setCurrentRoom 完成')
-        } else {
-          console.log('⚠️ [SocketContext] room 为空!')
         }
       }
 
@@ -261,22 +232,34 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       lanService.on('connected', handleLANConnected)
       lanService.on('disconnected', handleLANDisconnected)
 
-      console.log('🐛 [SocketContext] 事件监听器已注册')
+      console.log('🐛 [SocketContext] LAN 事件监听器已注册')
       console.log(
         '🐛 [SocketContext] room:update 监听器数量:',
         (lanService as any).eventListeners?.get('room:update')?.size || 0,
       )
 
       return () => {
-        console.log('🐛 [SocketContext] 清理事件监听器')
+        console.log('🐛 [SocketContext] 清理 LAN 事件监听器')
         lanService.off('room:update', handleLANRoomUpdate)
         lanService.off('connected', handleLANConnected)
         lanService.off('disconnected', handleLANDisconnected)
       }
     } catch (error) {
       console.warn('LAN 事件监听失败:', error)
+      return null
     }
-  }, [connectionType, playerId, setCurrentRoom])
+  }, [playerId, setCurrentRoom])
+
+  // 监听 LAN Service 的事件 - 只在 LAN 模式且模块已加载时
+  useEffect(() => {
+    if (connectionType !== 'lan') {
+      return
+    }
+
+    // 设置事件监听器
+    const cleanup = setupLANEventListeners()
+    return cleanup || undefined
+  }, [connectionType, setupLANEventListeners])
 
   // 包装的方法
   const connect = useCallback(() => {
@@ -363,6 +346,13 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         // 标记为局域网模式
         setConnectionType('lan')
         setIsConnected(true)
+
+        // 在模块加载完成后设置事件监听器
+        const cleanup = setupLANEventListeners()
+        if (cleanup) {
+          // 将清理函数保存，以便在组件卸载时调用
+          // 注意：这里可能需要更好的清理机制
+        }
 
         // 创建局域网房间，使用配置的端口
         const room = await lanService.createRoom(data, networkSettings.lanPort)
