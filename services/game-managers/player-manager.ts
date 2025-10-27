@@ -14,9 +14,10 @@ interface PlayerData {
   socketId?: string
   isConnected?: boolean
   color?: string
-  iconType?: number
   position?: number
   score?: number
+  avatarId?: string
+  gender?: 'man' | 'woman'
   [key: string]: any
 }
 
@@ -38,12 +39,13 @@ class PlayerManager {
       position: playerData.position ?? 0,
       score: playerData.score ?? 0,
       color: playerData.color || this.getDefaultColor(),
-      iconType: playerData.iconType ?? 0,
       completedTasks: [],
       achievements: [],
       joinedAt: now,
       lastSeen: now,
       lastActivity: now,
+      avatarId: playerData.avatarId || '',
+      gender: playerData.gender || 'man',
     }
 
     this.players.set(playerId, player)

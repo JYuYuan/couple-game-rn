@@ -1,4 +1,3 @@
-import packageInfo from '../package.json'
 import appConfig from '../app.json'
 
 export interface AppInfo {

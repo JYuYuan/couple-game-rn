@@ -6,13 +6,24 @@ export interface PathCell {
   direction: 'right' | 'down' | 'left' | 'up' | null
 }
 
+// 使用统一的 Player 类型定义
 export interface Player {
-  id: number
+  id: string
+  socketId: string
   name: string
+  roomId: string | null
   color: string
+  isHost: boolean
+  avatarId: string
+  gender?: 'man' | 'woman'
+  isConnected: boolean
+  joinedAt: number
+  lastSeen: number
   position: number
   score: number
-  iconType: number // 添加图标类型，可选以保持向后兼容
+  playerId: string // 兼容性字段
+  completedTasks: string[]
+  achievements: string[]
   isAI?: boolean
 }
 

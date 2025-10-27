@@ -121,7 +121,7 @@ export default function CreateRoomPage() {
         maxPlayers,
         gameType,
         taskSet: taskSet,
-        avatar: selectedAvatar.id,
+        avatarId: selectedAvatar.id,
         gender: selectedGender,
       }
 
@@ -157,7 +157,7 @@ export default function CreateRoomPage() {
               未启用网络功能
             </Text>
             <Text style={[styles.emptyStateDesc, { color: colors.homeCardDescription }]}>
-              请在设置中启用"在线模式"或"局域网模式"
+              请在设置中启用&ldquo;在线模式&rdquo;或&ldquo;局域网模式&rdquo;
             </Text>
             <TouchableOpacity
               style={[styles.settingsButton, { backgroundColor: colors.settingsAccent }]}

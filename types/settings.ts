@@ -38,11 +38,3 @@ export interface SettingsState {
   setPlayerProfile: (profile: Partial<PlayerProfile>) => void
   reset: () => void
 }
-
-export interface SettingsStorage {
-  themeMode: ThemeMode
-  languageMode: LanguageMode
-  soundSettings: SoundSettings
-  networkSettings: NetworkSettings
-  playerProfile: PlayerProfile
-}

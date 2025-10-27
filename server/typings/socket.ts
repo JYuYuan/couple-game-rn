@@ -8,6 +8,8 @@ export type SocketIOSocket = Socket
 export interface PlayerInfo {
   name: string
   isHost?: boolean
+  avatarId?: string
+  gender?: 'man' | 'woman'
 }
 
 export interface RoomInfo {
@@ -49,9 +51,12 @@ export interface Player {
   isConnected: boolean
   joinedAt: number
   lastSeen: number
-  position: number // 统一为必需字段
-  score: number // 统一为必需字段
-  playerId?: string // 为了兼容性添加
+  position: number
+  score: number
+  playerId: string // 兼容性字段
+  completedTasks: string[]
+  achievements: string[]
+  isAI?: boolean
 }
 
 export interface Room {

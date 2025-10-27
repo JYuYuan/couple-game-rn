@@ -1,6 +1,25 @@
-import { GamePlayer } from '@/hooks/use-game-players'
 import { TaskSet } from '@/types/tasks'
-import { PathCell, Player } from '@/types/game'
+import { PathCell } from '@/types/game'
+import {
+  NetworkPlayer,
+  OnlinePlayer,
+  LocalPlayer as GamePlayer,
+  PlayerMoveData,
+  DiceRollData,
+  DiceRollResult,
+  GameVictoryData,
+} from '@/types/player'
+
+// 重新导出类型以供其他模块使用
+export {
+  NetworkPlayer,
+  OnlinePlayer,
+  GamePlayer,
+  PlayerMoveData,
+  DiceRollData,
+  DiceRollResult,
+  GameVictoryData,
+}
 
 // 服务端TaskModalData接口（从服务端同步）
 export interface TaskModalData {
@@ -8,7 +27,7 @@ export interface TaskModalData {
   title: string
   description: string
   type: 'trap' | 'star' | 'collision'
-  executors: Player[] | GamePlayer[]
+  executors: GamePlayer[]
   category: string
   difficulty: string
   triggerPlayerIds: number[]
@@ -37,29 +56,6 @@ export interface GameState {
   }
 
   [key: string]: any
-}
-
-// 网络游戏玩家接口（扩展基础 GamePlayer，使用 string 类型的 ID）
-export interface NetworkPlayer extends Omit<GamePlayer, 'id'> {
-  id: string // 网络模式使用 string ID
-  roomId: string | null // 所在房间ID
-  playerId: string // 玩家唯一标识符
-  isHost: boolean
-  isConnected: boolean
-  joinedAt: number // 统一使用时间戳
-  lastSeen: number // 统一使用时间戳
-  lastActivity?: number // 最后活跃时间
-  socketId?: string // 在线模式的 socket ID
-  avatarId: string // 头像ID
-  gender?: 'man' | 'woman' // 性别
-  color: string
-}
-
-// 在线玩家接口
-export interface OnlinePlayer extends NetworkPlayer {
-  socketId: string // 在线模式必须有 socketId
-  joinedAt: number // 统一使用时间戳
-  lastSeen: number // 统一使用时间戳
 }
 
 // 房间状态
@@ -132,7 +128,7 @@ export interface CreateRoomData {
 export interface JoinRoomData {
   roomId: string
   playerName: string
-  avatar?: string // 头像ID
+  avatarId?: string // 头像ID
   gender?: 'man' | 'woman' // 性别
 }
 
@@ -145,30 +141,6 @@ export interface LeaveRoomData {
 // 游戏开始数据
 export interface GameStartData {
   roomId: string
-}
-
-// 投掷骰子数据
-export interface DiceRollData {
-  roomId: string
-  playerId: string
-  diceValue?: number // 客户端发送请求时不需要diceValue，服务端返回时才有
-}
-
-// 投掷骰子回调结果类型
-export interface DiceRollResult {
-  success: boolean
-  diceValue?: number
-  playerId: string
-  error?: string
-}
-
-// 玩家移动数据
-export interface PlayerMoveData {
-  roomId: string
-  playerId: string
-  fromPosition: number
-  toPosition: number
-  steps: number
 }
 
 // 任务触发数据
@@ -193,13 +165,6 @@ export interface TaskCompleteData {
   playerId: string
   completed: boolean
   rewardSteps?: number
-}
-
-// 游戏胜利数据
-export interface GameVictoryData {
-  roomId: string
-  winnerId: string
-  winnerName: string
 }
 
 // Socket错误

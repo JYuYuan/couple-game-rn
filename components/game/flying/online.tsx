@@ -43,7 +43,7 @@ export default function FlyingChessGame() {
 
   // 监听返回按钮点击事件
   useEffect(() => {
-    const unsubscribe = navigation.addListener('beforeRemove', (e) => {
+    const unsubscribe = navigation.addListener('beforeRemove', (_e) => {
       // 如果正在离开页面，清除房间状态
       console.log('🚪 检测到返回操作，清除房间状态')
 
@@ -372,8 +372,19 @@ export default function FlyingChessGame() {
       }
       lastTaskIdRef.current = taskId
 
-      // 查找执行者信息
-      const executorPlayers = players?.filter((p) => data.executorPlayerIds.includes(p.id)) || []
+      // 查找执行者信息，转换为 LocalPlayer 类型
+      const executorPlayers = players?.filter((p) => data.executorPlayerIds.includes(p.id)).map((p, index) => ({
+        id: index,
+        name: p.name,
+        avatarId: p.avatarId,
+        gender: p.gender,
+        color: p.color || '#FF6B6B',
+        position: p.position || 0,
+        score: p.score || 0,
+        completedTasks: p.completedTasks || [],
+        achievements: p.achievements || [],
+        isAI: p.isAI || false,
+      })) || []
       console.log('👥 找到的执行者:', executorPlayers)
 
       // 检查当前玩家是否是执行者
@@ -410,7 +421,6 @@ export default function FlyingChessGame() {
           name: winnerPlayer.name,
           color: winnerPlayer.color,
           position: winnerPlayer.position,
-          iconType: winnerPlayer.iconType,
         } as GamePlayer
         showVictory(gameWinner)
       }
@@ -779,8 +789,8 @@ export default function FlyingChessGame() {
                   )}
 
                   {/* 玩家头像 */}
-                  <View style={[styles.playerAvatarContainer, { borderColor: player.color }]}>
-                    <PlayerAvatar avatarId={player.avatarId} color={player.color} />
+                  <View style={[styles.playerAvatarContainer, { borderColor: player.color || '#FF6B6B' }]}>
+                    <PlayerAvatar avatarId={player.avatarId} color={player.color || '#FF6B6B'} />
                   </View>
 
                   {/* 玩家信息 */}
@@ -797,7 +807,7 @@ export default function FlyingChessGame() {
 
                     <Text style={[styles.playerPosition, { color: colors.homeCardDescription }]}>
                       {t('flyingChess.position', '位置: {{position}}', {
-                        position: player.position + 1,
+                        position: (player.position ?? 0) + 1,
                       })}
                     </Text>
                   </View>
@@ -823,7 +833,18 @@ export default function FlyingChessGame() {
           {/* 游戏棋盘 */}
           <View style={[styles.boardSection, { backgroundColor: colors.homeCardBackground }]}>
             <GameBoard
-              players={animatedPlayers.map((p) => ({ ...p, id: p.id }))} // 转换ID类型为number
+              players={animatedPlayers.map((p, index) => ({
+                id: index, // 使用索引作为 number 类型的 id
+                name: p.name,
+                avatarId: p.avatarId,
+                gender: p.gender,
+                color: p.color || '#FF6B6B',
+                position: p.position || 0,
+                score: p.score || 0,
+                completedTasks: p.completedTasks || [],
+                achievements: p.achievements || [],
+                isAI: p.isAI || false,
+              }))}
               currentPlayer={currentPlayerIndex >= 0 ? currentPlayerIndex : 0}
               boardData={boardPath}
             />
@@ -832,7 +853,10 @@ export default function FlyingChessGame() {
 
         {/* 任务弹窗 */}
         <TaskModal
-          players={players || []}
+          players={(players || []).map(player => ({
+            ...player,
+            color: player.color || '#FF6B6B'
+          }))}
           visible={showTaskModal}
           task={taskModalData}
           onComplete={handleTaskComplete}

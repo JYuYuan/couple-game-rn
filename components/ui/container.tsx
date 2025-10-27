@@ -11,8 +11,13 @@ interface ContainerProps {
   padding?: keyof typeof Layout.padding
 }
 
-interface ScrollableContainerProps extends ContainerProps, ScrollViewProps {
+interface ScrollableContainerProps extends Omit<ScrollViewProps, 'children' | 'style'> {
   scrollable: true
+  children: React.ReactNode
+  style?: ViewStyle
+  centerContent?: boolean
+  maxWidth?: number
+  padding?: keyof typeof Layout.padding
 }
 
 interface NonScrollableContainerProps extends ContainerProps {

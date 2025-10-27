@@ -69,12 +69,12 @@ class GameInstanceManager {
    * 更新游戏实例状态
    */
   async updateGameInstance(roomId: string, _game: any): Promise<void> {
-    // 由于状态都在 room 中，我们只需要更新活跃时间
-    const gameDataStr = await redis.hget(this.hashKey, roomId)
-    if (gameDataStr) {
-      const gameData = JSON.parse(gameDataStr)
-      gameData.lastActivity = Date.now()
+    // 更新游戏实例的最后活动时间
+    const gameData = { roomId, lastActivity: Date.now() }
+    try {
       await redis.hset(this.hashKey, roomId, JSON.stringify(gameData))
+    } catch (error) {
+      console.warn('Failed to update game instance in Redis:', error)
     }
   }
 

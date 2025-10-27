@@ -7,7 +7,6 @@ import { Colors } from '@/constants/theme'
 import { useTranslation } from 'react-i18next'
 import { OnlinePlayer } from '@/types/online'
 import * as Clipboard from 'expo-clipboard'
-import { showConfirmDialog } from '@/components/ConfirmDialog'
 import { PlayerAvatar } from '@/components/PlayerAvatar'
 import toast from '@/utils/toast'
 
@@ -162,7 +161,7 @@ export const RoomWaiting: React.FC<RoomWaitingProps> = ({
                 >
                   {player ? (
                     <>
-                      <PlayerAvatar avatarId={player.avatarId} color={player.color} />
+                      <PlayerAvatar avatarId={player.avatarId} color={player.color || '#FF6B6B'} />
                       <View style={styles.playerInfo}>
                         <View style={styles.playerNameRow}>
                           <Text style={[styles.playerName, { color: colors.homeCardTitle }]}>

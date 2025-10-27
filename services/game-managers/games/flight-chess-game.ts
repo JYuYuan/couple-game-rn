@@ -197,17 +197,31 @@ class FlightChessGame extends BaseGame {
     }
 
     // 确定执行者
-    let executorPlayers: NetworkPlayer[] = []
+    let executorNetworkPlayers: NetworkPlayer[] = []
     if (taskType === 'star' || taskType === 'collision') {
       // 星星任务和碰撞任务由对手执行
-      executorPlayers = this.room.players.filter((p: NetworkPlayer) => p.id !== playerId)
+      executorNetworkPlayers = this.room.players.filter((p: NetworkPlayer) => p.id !== playerId)
     } else {
       // 陷阱任务由触发者执行
       const triggerPlayer = this.room.players.find((p: NetworkPlayer) => p.id === playerId)
       if (triggerPlayer) {
-        executorPlayers = [triggerPlayer]
+        executorNetworkPlayers = [triggerPlayer]
       }
     }
+
+    // 将 NetworkPlayer 转换为 GamePlayer
+    const executorPlayers = executorNetworkPlayers.map(networkPlayer => ({
+      id: parseInt(networkPlayer.id), // 转换 string 为 number
+      name: networkPlayer.name || '',
+      color: networkPlayer.color || '#FF6B6B',
+      position: networkPlayer.position || 0,
+      score: networkPlayer.score || 0,
+      avatarId: networkPlayer.avatarId || '',
+      gender: networkPlayer.gender || 'man',
+      isAI: networkPlayer.isAI || false,
+      completedTasks: networkPlayer.completedTasks || [],
+      achievements: networkPlayer.achievements || []
+    }))
 
     // 构造 TaskModalData
     const currentTask: TaskModalData = {
@@ -231,7 +245,7 @@ class FlightChessGame extends BaseGame {
     console.log(`📤 发送任务事件到房间 ${this.room.id}:`, {
       task: selectedTask,
       taskType,
-      executorPlayerIds: executorPlayers.map((p) => p.id),
+      executorPlayerIds: executorNetworkPlayers.map((p) => p.id),
       triggerPlayerIds: [playerId],
     })
 
@@ -244,7 +258,7 @@ class FlightChessGame extends BaseGame {
         difficulty: taskSet?.difficulty || 'medium',
       },
       taskType,
-      executorPlayerIds: executorPlayers.map((p) => p.id),
+      executorPlayerIds: executorNetworkPlayers.map((p) => p.id),
       triggerPlayerIds: [playerId],
     })
 

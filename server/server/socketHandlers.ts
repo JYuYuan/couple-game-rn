@@ -104,7 +104,7 @@ export default function registerSocketHandlers(io: SocketIOServer) {
           // 更新玩家信息
           player.name = roomInfo.playerName
           player.isHost = true
-          player.avatar = roomInfo.avatar || ''
+          player.avatarId = roomInfo.avatar || ''
           player.gender = roomInfo.gender || 'man'
           await playerManager.updatePlayer(player)
         }
@@ -160,7 +160,7 @@ export default function registerSocketHandlers(io: SocketIOServer) {
           // 更新玩家信息
           player.name = joinData.playerName || player.name
           player.isHost = false
-          player.avatar = joinData.avatar || ''
+          player.avatarId = joinData.avatar || ''
           player.gender = joinData.gender || 'man'
           await playerManager.updatePlayer(player)
         }

@@ -136,9 +136,9 @@ const styles = StyleSheet.create({
 
 // 辅助函数，提供类似Alert.alert的API
 export const showCustomAlert = (
-  title: string,
-  message?: string,
-  buttons?: AlertButton[],
+  _title: string,
+  _message?: string,
+  _buttons?: AlertButton[],
 ): Promise<void> => {
   return new Promise((resolve) => {
     // 这里我们需要通过全局状态或Context来显示对话框

@@ -172,6 +172,7 @@ export class RoomDiscoveryService {
         currentPlayers: this.currentRoom.players.length,
         gameType: this.currentRoom.gameType,
         requiresPassword: false,
+        tcpPort: this.currentRoom.networkInfo.port || 8080, // 使用 port 属性
         timestamp: Date.now(),
       }
 

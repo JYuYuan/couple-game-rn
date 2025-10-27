@@ -9,13 +9,12 @@ import { useGameTasks } from '@/hooks/use-game-tasks'
 import MineTaskModal, { MineTaskData } from '@/components/MineTaskModal'
 import VictoryModal from '@/components/VictoryModal'
 import { PlayerAvatar } from '@/components/PlayerAvatar'
-import { PlayerIconType } from '@/components/icons'
+import { PLAYER_COLORS } from '@/types/player'
 import { AvatarGender } from '@/types/settings'
 import { getRandomAvatarByGender } from '@/constants/avatars'
 import { getWindow } from '@/utils'
 
 const { width: screenWidth } = getWindow()
-const PLAYER_COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4']
 // 扫雷游戏难度配置
 const DIFFICULTY_CONFIGS = {
   easy: { rows: 9, cols: 9, mines: 10, name: '简单' },
@@ -37,7 +36,6 @@ interface Player {
   id: number
   name: string
   color: string
-  iconType: PlayerIconType
   cellsRevealed: number // 获得的格子数
   minesHit: number
   avatarId: string
@@ -76,7 +74,6 @@ export default function MinesweeperBattle() {
         id: index + 1,
         name: t(`minesweeper.players.player${index + 1}`, `玩家${index + 1}`),
         color: PLAYER_COLORS[index],
-        iconType: 'airplane',
         cellsRevealed: 0,
         minesHit: 0,
         avatarId: randomAvatar.id,
@@ -284,7 +281,7 @@ export default function MinesweeperBattle() {
   }
 
   // 处理任务完成结果
-  const handleTaskComplete = (completed: boolean) => {
+  const handleTaskComplete = (_completed: boolean) => {
     if (!taskModalData) return
 
     // 更新玩家踩雷数据

@@ -67,7 +67,7 @@ class UDPBroadcastService {
         })
 
         // 验证消息格式
-        if (roomData.roomId && roomData.hostIP && roomData.tcpPort) {
+        if (this.isValidRoomBroadcast(roomData)) {
           // 更新或添加房间
           const isNewRoom = !this.discoveredRooms.has(roomData.roomId)
           this.discoveredRooms.set(roomData.roomId, roomData)
@@ -84,13 +84,13 @@ class UDPBroadcastService {
             clearTimeout(oldTimeout)
           }
 
-          // 设置新的超时定时器(5秒没有收到广播就移除房间)
+          // 设置新的超时定时器(8秒没有收到广播就移除房间，给网络波动留出缓冲时间)
           const timeout: ReturnType<typeof setTimeout> = setTimeout(() => {
             this.discoveredRooms.delete(roomData.roomId)
             this.roomTimeouts.delete(roomData.roomId)
-            console.log(`⏱️ 房间超时移除: ${roomData.roomName} (5秒未收到广播)`)
+            console.log(`⏱️ 房间超时移除: ${roomData.roomName} (8秒未收到广播)`)
             this.notifyRoomsUpdate()
-          }, 5000)
+          }, 8000) // 增加到8秒，提高稳定性
 
           this.roomTimeouts.set(roomData.roomId, timeout)
 
@@ -100,8 +100,8 @@ class UDPBroadcastService {
           console.warn('⚠️ 收到的广播消息格式不完整:', roomData)
         }
       } catch (error) {
-        console.error('❌ 解析 UDP 广播消息失败:', error)
-        console.error('原始数据:', data.toString())
+        console.error('❌ 解析广播消息失败:', error)
+        console.error('原始消息:', typeof data === 'string' ? data : data.toString('utf8'))
       }
     })
 
@@ -126,6 +126,13 @@ class UDPBroadcastService {
         console.error('❌ 网络不可达')
         console.error('💡 建议: 检查设备是否连接到 WiFi 网络')
       }
+
+      // 尝试重新启动监听器
+      setTimeout(() => {
+        console.log('🔄 尝试重新启动UDP监听器...')
+        this.stopListening()
+        this.startListening(this.onRoomDiscoveredCallback || undefined)
+      }, 3000)
     })
 
     // 绑定到广播端口
@@ -144,6 +151,16 @@ class UDPBroadcastService {
           // 设置 socket 选项
           try {
             this.socket?.setBroadcast(true) // 启用广播
+            
+            // 尝试设置多播选项以提高兼容性
+            try {
+              this.socket?.setMulticastLoopback(true)
+              this.socket?.setMulticastTTL(255)
+              console.log('✅ 多播选项设置成功')
+            } catch (e: any) {
+              console.warn('⚠️ 设置多播选项失败 (可忽略):', e?.message)
+            }
+            
             console.log('✅ UDP 广播接收已启用')
             console.log('📡 正在等待房间广播...')
           } catch (e: any) {
@@ -267,6 +284,20 @@ class UDPBroadcastService {
           socket.setBroadcast(true)
           console.log('✅ UDP 广播模式已启用')
 
+          // 设置其他socket选项以提高兼容性
+          try {
+            // 在某些Android设备上可能需要这些设置
+            if (socket.setTTL) {
+              socket.setTTL(64) // 设置TTL
+            }
+            if (socket.setMulticastTTL) {
+              socket.setMulticastTTL(64) // 设置组播TTL
+            }
+            console.log('✅ UDP socket选项设置完成')
+          } catch (optionError) {
+            console.warn('⚠️ 设置UDP socket选项失败，但不影响基本功能:', optionError)
+          }
+
           // socket 完全准备好
           this.socket = socket
           if (!isResolved) {
@@ -357,39 +388,60 @@ class UDPBroadcastService {
       const message = JSON.stringify(this.roomInfo)
       const buffer = Buffer.from(message, 'utf8')
 
-      // 发送到广播地址
-      this.socket.send(
-        buffer,
-        0,
-        buffer.length,
-        BROADCAST_PORT,
-        '255.255.255.255',
-        (error: any) => {
-          if (error) {
-            this.broadcastFailureCount++
-            console.error(
-              `❌ UDP 广播发送失败 (${this.broadcastFailureCount}/${this.maxBroadcastFailures}):`,
-              error,
-            )
+      // 发送到广播地址 - 尝试多个广播地址以提高兼容性
+      const broadcastAddresses = ['255.255.255.255', '192.168.255.255', '10.255.255.255', '172.31.255.255']
+      let successCount = 0
+      let errorCount = 0
 
-            // 达到最大失败次数，标记socket不健康
-            if (this.broadcastFailureCount >= this.maxBroadcastFailures) {
-              console.error('❌ 广播失败次数过多，标记 socket 为不健康')
-              this.isSocketHealthy = false
-              this.broadcastFailureCount = 0 // 重置计数器
-            }
-          } else {
-            // 成功后重置失败计数
-            if (this.broadcastFailureCount > 0) {
-              console.log('✅ 广播恢复正常')
-              this.broadcastFailureCount = 0
-            }
-            console.log(
-              `📡 广播成功: ${this.roomInfo?.roomName} -> 255.255.255.255:${BROADCAST_PORT} (${buffer.length} bytes)`,
+      for (const address of broadcastAddresses) {
+        try {
+          await new Promise<void>((resolve, reject) => {
+            this.socket.send(
+              buffer,
+              0,
+              buffer.length,
+              BROADCAST_PORT,
+              address,
+              (error: any) => {
+                if (error) {
+                  console.warn(`⚠️ 广播到 ${address} 失败:`, error.message)
+                  errorCount++
+                  reject(error)
+                } else {
+                  console.log(`📡 广播成功: ${this.roomInfo?.roomName} -> ${address}:${BROADCAST_PORT}`)
+                  successCount++
+                  resolve()
+                }
+              },
             )
-          }
-        },
-      )
+          })
+        } catch (error) {
+          // 单个地址失败不影响其他地址
+          continue
+        }
+      }
+
+      // 评估广播结果
+      if (successCount > 0) {
+        // 至少有一个地址成功，重置失败计数
+        if (this.broadcastFailureCount > 0) {
+          console.log(`✅ 广播恢复正常 (成功: ${successCount}, 失败: ${errorCount})`)
+          this.broadcastFailureCount = 0
+        }
+      } else {
+        // 所有地址都失败
+        this.broadcastFailureCount++
+        console.error(
+          `❌ 所有广播地址都失败 (${this.broadcastFailureCount}/${this.maxBroadcastFailures})`,
+        )
+
+        // 达到最大失败次数，标记socket不健康
+        if (this.broadcastFailureCount >= this.maxBroadcastFailures) {
+          console.error('❌ 广播失败次数过多，标记 socket 为不健康')
+          this.isSocketHealthy = false
+          this.broadcastFailureCount = 0 // 重置计数器
+        }
+      }
     } catch (error) {
       this.broadcastFailureCount++
       console.error(`❌ 广播消息异常 (${this.broadcastFailureCount}/${this.maxBroadcastFailures}):`, error)
@@ -469,6 +521,24 @@ class UDPBroadcastService {
     this.stopListening()
     this.broadcastFailureCount = 0
     this.isSocketHealthy = true
+  }
+
+  /**
+   * 验证房间广播数据格式
+   */
+  private isValidRoomBroadcast(data: any): data is RoomBroadcast {
+    return (
+      data &&
+      typeof data.roomId === 'string' &&
+      typeof data.roomName === 'string' &&
+      typeof data.hostName === 'string' &&
+      typeof data.hostIP === 'string' &&
+      typeof data.tcpPort === 'number' &&
+      typeof data.maxPlayers === 'number' &&
+      typeof data.currentPlayers === 'number' &&
+      typeof data.gameType === 'string' &&
+      typeof data.timestamp === 'number'
+    )
   }
 
   /**

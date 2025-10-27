@@ -3,8 +3,6 @@ import { Image, StyleSheet, View } from 'react-native'
 import { AVATARS } from '@/constants/avatars'
 import { AvatarGender } from '@/types/settings'
 
-export type PlayerIconType = 'airplane' | 'helicopter' | 'rocket' | 'ufo'
-
 interface PlayerIconProps {
   avatarId?: string
   gender?: AvatarGender

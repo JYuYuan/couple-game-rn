@@ -15,7 +15,6 @@ import { Colors } from '@/constants/theme'
 import { TaskSet } from '@/types/tasks'
 import { useTasksStore } from '@/store/tasksStore'
 import * as Clipboard from 'expo-clipboard'
-import { showConfirmDialog } from '@/components/ConfirmDialog'
 import toast from '@/utils/toast'
 
 interface TaskSetModalProps {

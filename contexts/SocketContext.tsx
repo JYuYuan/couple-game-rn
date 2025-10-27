@@ -313,7 +313,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         const joinData: JoinRoomData = {
           roomId: data.roomId,
           playerName: data.playerName,
-          avatar: data.avatar,
+          avatarId: data.avatarId,
           gender: data.gender,
         }
 

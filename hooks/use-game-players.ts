@@ -1,23 +1,12 @@
 import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { LocalPlayer as GamePlayer, PLAYER_COLORS } from '@/types/player'
 import { AvatarGender } from '@/types/settings'
 import { getRandomAvatarByGender } from '@/constants/avatars'
 import { showConfirmDialog } from '@/components/ConfirmDialog'
 
-export interface GamePlayer {
-  id: number
-  name: string
-  color: string
-  position: number
-  score: number
-  iconType: number // 改为SVG图标类型
-  completedTasks: string[]
-  achievements: string[]
-  avatarId?: string
-  gender?: AvatarGender
-}
-
-const PLAYER_COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4']
+// 重新导出 GamePlayer 类型以保持向后兼容
+export type { LocalPlayer as GamePlayer } from '@/types/player'
 
 export const useGamePlayers = (initialPlayerCount: number = 2, boardSize: number = 48) => {
   const { t } = useTranslation()
@@ -46,11 +35,11 @@ export const useGamePlayers = (initialPlayerCount: number = 2, boardSize: number
         color: PLAYER_COLORS[index],
         position: 0,
         score: 0,
-        iconType: index,
         completedTasks: [],
         achievements: [],
         avatarId: randomAvatar.id,
         gender: gender,
+        isAI: false, // 添加缺失的 isAI 属性
       }
     })
   })

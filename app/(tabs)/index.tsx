@@ -13,7 +13,7 @@ import Animated, {
 } from 'react-native-reanimated'
 import { LinearGradient } from 'expo-linear-gradient'
 import { BlurView } from 'expo-blur'
-import { AntDesign, Ionicons, MaterialIcons } from '@expo/vector-icons'
+import { Ionicons, MaterialIcons } from '@expo/vector-icons'
 import { useColorScheme } from '@/hooks/use-color-scheme'
 import { Colors } from '@/constants/theme'
 import { useSocket } from '@/hooks/use-socket'
@@ -55,7 +55,6 @@ export default function Home() {
       subtitle: t('home.flyingChess.subtitle', '策略对战'),
       description: t('home.flyingChess.description', '体验策略与运气的完美结合'),
       icon: 'airplane',
-      iconType: 'Ionicons',
       href: '/game-mode?type=fly',
       gradient: ['#5E5CE6', '#BF5AF2'],
       accentColor: '#5E5CE6',
@@ -67,7 +66,6 @@ export default function Home() {
       subtitle: t('home.luckyWheel.subtitle', '趣味互动'),
       description: t('home.luckyWheel.description', '专为情侣设计的互动任务'),
       icon: 'heart',
-      iconType: 'Ionicons',
       href: '/game-mode?type=wheel',
       gradient: ['#FF6482', '#FF9F40'],
       accentColor: '#FF6482',
@@ -79,7 +77,6 @@ export default function Home() {
       subtitle: t('home.minesweeper.subtitle', '双人对决'),
       description: t('home.minesweeper.description', '踩雷执行任务，积分决胜负'),
       icon: 'nuclear',
-      iconType: 'Ionicons',
       href: '/game-mode?type=minesweeper',
       gradient: ['#34D399', '#10B981'],
       accentColor: '#10B981',
@@ -112,12 +109,7 @@ export default function Home() {
       opacity.value = withTiming(1)
     }
 
-    const IconComponent =
-      game.iconType === 'Ionicons'
-        ? Ionicons
-        : game.iconType === 'AntDesign'
-          ? AntDesign
-          : MaterialIcons
+    const IconComponent = Ionicons
 
     return (
       <Animated.View style={[animatedStyle, { marginBottom: 20 }]}>

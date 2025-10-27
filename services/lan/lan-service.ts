@@ -177,70 +177,82 @@ class LANService {
    * 加入局域网房间(作为客户端)
    */
   async joinRoom(hostIP: string, hostPort: number, data: JoinRoomData): Promise<BaseRoom> {
-    console.log(`🔗 [LANService] 开始加入局域网房间: ${hostIP}:${hostPort}`)
-    console.log(
-      `📋 [LANService] 玩家信息:`,
-      JSON.stringify({
-        playerId: this.currentPlayerId,
-        playerName: data.playerName,
-        avatar: data.avatar,
-        gender: data.gender,
-      }),
-    )
+    try {
+      console.log(`🔗 [LANService] 开始加入局域网房间: ${hostIP}:${hostPort}`)
+      console.log(
+        `📋 [LANService] 玩家信息:`,
+        JSON.stringify({
+          playerId: this.currentPlayerId,
+          playerName: data.playerName,
+          avatarId: data.avatarId,
+          gender: data.gender,
+        }),
+      )
 
-    // 确保已初始化
-    if (!this.localIP) {
-      console.log('⚙️ [LANService] 初始化本地IP...')
-      await this.initialize(this.currentPlayerId)
-    }
+      // 确保已初始化
+      if (!this.localIP) {
+        console.log('⚙️ [LANService] 初始化本地IP...')
+        await this.initialize(this.currentPlayerId)
+      }
 
-    // 标记为非房主
-    this.isHost = false
+      // 标记为非房主
+      this.isHost = false
 
-    // 设置 TCP Client 事件监听（在连接前设置）
-    console.log('🎧 [LANService] 设置 TCP Client 事件监听器...')
-    this.setupTCPClientEvents()
+      // 设置 TCP Client 事件监听（在连接前设置）
+      console.log('🎧 [LANService] 设置 TCP Client 事件监听器...')
+      this.setupTCPClientEvents()
 
-    // 连接到房主的 TCP 服务器
-    console.log(`🔌 [LANService] 连接到房主 TCP 服务器...`)
-    await tcpClient.connect(hostIP, hostPort, this.currentPlayerId)
-    console.log('✅ [LANService] TCP 连接成功')
+      // 连接到房主的 TCP 服务器
+      console.log(`🔌 [LANService] 连接到房主 TCP 服务器...`)
+      await tcpClient.connect(hostIP, hostPort, this.currentPlayerId)
+      console.log('✅ [LANService] TCP 连接成功')
 
-    // 发送加入房间请求
-    console.log('📤 [LANService] 发送 room:join 请求...')
-    return new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        console.error('⏱️ [LANService] 加入房间超时 (10秒)')
-        reject(new Error('加入房间超时'))
-      }, 10000)
+      // 发送加入房间请求
+      console.log('📤 [LANService] 发送 room:join 请求...')
+      return new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          console.error('⏱️ [LANService] 加入房间超时 (30秒)')
+          reject(new Error('加入房间超时，请检查网络连接或重试'))
+        }, 30000) // 增加到30秒以适应较慢的网络环境
 
-      console.log('📤 [LANService] 调用 tcpClient.sendEvent...')
-      tcpClient.sendEvent('room:join', data, (response: any) => {
-        console.log('📨 [LANService] 收到 room:join 响应:', JSON.stringify(response))
-        clearTimeout(timeout)
+        console.log('📤 [LANService] 调用 tcpClient.sendEvent...')
+        tcpClient.sendEvent('room:join', data, (response: any) => {
+          console.log('📨 [LANService] 收到 room:join 响应:', JSON.stringify(response))
+          clearTimeout(timeout)
 
-        if (response.error) {
-          console.error('❌ [LANService] 加入房间失败:', response.error)
-          reject(new Error(response.error))
-        } else {
-          this.currentRoom = response
-          console.log('✅ [LANService] 加入房间成功，房间ID:', response.id)
+          if (response.error) {
+            console.error('❌ [LANService] 加入房间失败:', response.error)
+            reject(new Error(response.error))
+          } else {
+            this.currentRoom = response
+            console.log('✅ [LANService] 加入房间成功，房间ID:', response.id)
 
-          // 返回包含网络信息的 LANRoom 对象
-          const lanRoom = {
-            ...response,
-            connectionType: 'lan' as const,
-            networkInfo: {
+            // 返回包含网络信息的 LANRoom 对象
+            const lanRoom = {
+              ...response,
+              connectionType: 'lan' as const,
+              networkInfo: {
+                hostIP: hostIP,
+                port: hostPort,
+              },
               hostIP: hostIP,
-              port: hostPort,
-            },
-            hostIP: hostIP,
-            tcpPort: hostPort,
+              tcpPort: hostPort,
+            }
+            resolve(lanRoom)
           }
-          resolve(lanRoom)
-        }
+        })
       })
-    })
+    } catch (error: any) {
+      console.error('❌ [LANService] 连接失败:', error.message)
+      // 提供更详细的错误信息
+      if (error.message.includes('ECONNREFUSED')) {
+        throw new Error('无法连接到房主设备，请确认房主已创建房间且网络连接正常')
+      } else if (error.message.includes('ETIMEDOUT')) {
+        throw new Error('连接超时，请检查网络连接或重试')
+      } else {
+        throw error
+      }
+    }
   }
 
   /**
@@ -453,7 +465,6 @@ class LANService {
             isHost: false,
             socketId: data.playerId,
             isConnected: true,
-            iconType: this.currentRoom.players.length,
             avatarId: data.data.avatar || '', // 头像ID
             gender: data.data.gender || 'man', // 性别
             color: this.getRandomColor(), // 随机背景色
@@ -464,7 +475,6 @@ class LANService {
           console.log('🔄 [TCPServer] 更新现有玩家:', data.playerId)
           player.name = data.data.playerName || player.name
           player.isHost = false
-          player.iconType = this.currentRoom.players.length
           player.avatarId = data.data.avatar || ''
           player.gender = data.data.gender || 'man'
           // 如果没有颜色，分配一个随机颜色

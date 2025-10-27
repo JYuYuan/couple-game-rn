@@ -245,7 +245,7 @@ export default function JoinRoomPage() {
         const joinData: JoinRoomData = {
           roomId: targetRoomId,
           playerName: playerName.trim(),
-          avatar: selectedAvatar.id,
+          avatarId: selectedAvatar.id,
           gender: selectedGender,
         }
         await socket.joinRoom(joinData)

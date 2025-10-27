@@ -1,3 +1,5 @@
+import { LocalPlayer } from '@/types/player'
+
 export interface PathCell {
   id: number
   x: number
@@ -6,16 +8,8 @@ export interface PathCell {
   direction: 'right' | 'down' | 'left' | 'up' | null
 }
 
-export interface Player {
-  id: any
-  name: string
-  color: string
-  position: number
-  score: number
-  iconType: number // 添加图标类型，可选以保持向后兼容
-  isAI?: boolean
-  avatarId: string
-}
+// 重新导出 LocalPlayer 作为 Player，保持向后兼容
+export type Player = LocalPlayer
 
 export interface GameState {
   status: 'idle' | 'playing' | 'paused' | 'ended'

@@ -100,10 +100,9 @@ class GameInstanceManager {
    * 更新游戏实例状态
    */
   async updateGameInstance(roomId: string, _game: any): Promise<void> {
-    const gameData = this.games.get(roomId)
-    if (gameData) {
-      gameData.lastActivity = Date.now()
-      this.games.set(roomId, gameData)
+    // 更新游戏实例的最后活动时间
+    if (this.games.has(roomId)) {
+      this.games.get(roomId)!.lastActivity = Date.now()
     }
   }
 

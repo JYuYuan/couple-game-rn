@@ -1,23 +1,12 @@
 import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { PlayerIconType } from '@/components/icons'
+import { PlayerIcon } from '@/components/icons'
 import { getRandomAvatarByGender } from '@/constants/avatars'
 import { AvatarGender } from '@/types/settings'
+import { LocalPlayer, PLAYER_COLORS } from '@/types/player'
 
-export interface WheelPlayer {
-  id: number
-  name: string
-  color: string
-  score: number
-  iconType: PlayerIconType // 改为SVG图标类型
-  avatarId?: string // 头像ID
-  gender?: AvatarGender // 性别
-  completedTasks: string[]
-  achievements: string[]
+export interface WheelPlayer extends Omit<LocalPlayer, 'iconType'> {
 }
-
-const PLAYER_COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4']
-const PLAYER_ICON_TYPES: PlayerIconType[] = ['airplane', 'helicopter', 'rocket', 'ufo']
 
 // 转盘奖励配置 - 所有区域都触发任务
 export const WHEEL_REWARDS = [
@@ -101,12 +90,13 @@ export const useWheelGame = () => {
         id: index + 1,
         name: playerNames[index],
         color: PLAYER_COLORS[index],
+        position: 0, // 添加缺少的 position 属性
         score: 0,
-        iconType: PLAYER_ICON_TYPES[index],
         avatarId: randomAvatar.id,
         gender: gender,
         completedTasks: [],
         achievements: [],
+        isAI: false, // 添加缺少的 isAI 属性
       }
     })
   })

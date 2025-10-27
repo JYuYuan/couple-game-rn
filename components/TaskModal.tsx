@@ -19,7 +19,6 @@ import { Ionicons } from '@expo/vector-icons'
 import { useColorScheme } from '@/hooks/use-color-scheme'
 import { Colors } from '@/constants/theme'
 import { useTranslation } from 'react-i18next'
-import { showConfirmDialog } from '@/components/ConfirmDialog'
 import { TaskModalData } from '@/types/online'
 import { PlayerAvatar } from '@/components/PlayerAvatar'
 
@@ -32,7 +31,6 @@ interface TaskModalProps {
     id: any
     name: string
     color: string
-    iconType: number
     [key: string]: any
   }[]
   onComplete: (completed: boolean) => void

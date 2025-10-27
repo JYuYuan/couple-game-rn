@@ -7,6 +7,8 @@ interface HelicopterIconProps {
 }
 
 export const HelicopterIcon: React.FC<HelicopterIconProps> = ({ size = 24, color = '#FF6482' }) => {
+  // 暂时不使用size和color参数，但保留以备将来使用
+  const _ = { size, color }
   return (
     <Svg width={30} height={30} viewBox="0 0 24 24" fill="none">
       <G>
@@ -90,7 +92,7 @@ export const HelicopterIcon: React.FC<HelicopterIconProps> = ({ size = 24, color
           strokeLinecap="round"
         />
 
-        {/* 淡淡腮红 */}
+        {/* 淡淡的腮红 */}
         <Ellipse cx="7.5" cy="13.5" rx="1.2" ry="0.8" fill="#FFB6C1" opacity="0.6" />
         <Ellipse cx="16.5" cy="13.5" rx="1.2" ry="0.8" fill="#FFB6C1" opacity="0.6" />
 

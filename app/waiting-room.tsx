@@ -30,7 +30,7 @@ export default function WaitingRoomPage() {
 
   // 监听返回按钮点击事件
   useEffect(() => {
-    const unsubscribe = navigation.addListener('beforeRemove', (e) => {
+    const unsubscribe = navigation.addListener('beforeRemove', (_e) => {
       // 如果正在离开页面，清除房间状态
       console.log('🚪 等待室检测到返回操作，清除房间状态')
 

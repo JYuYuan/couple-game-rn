@@ -34,11 +34,6 @@ const TaskSettings: React.FC = () => {
   const colorScheme = useColorScheme() ?? 'light'
   const colors = Colors[colorScheme] as any
 
-  // 跨平台alert函数
-  const showAlert = (title: string, message?: string) => {
-    showConfirmDialog({ title, message })
-  }
-
   const {
     categories,
     taskSets,

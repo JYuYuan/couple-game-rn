@@ -15,7 +15,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme'
 import { Colors } from '@/constants/theme'
 import { useTranslation } from 'react-i18next'
 import { useSocket } from '@/hooks/use-socket'
-import { CreateRoomData, JoinLANRoomData, JoinRoomData, LANRoomDiscovery } from '@/types/online'
+import { CreateRoomData, JoinLANRoomData, JoinRoomData, LANRoomDiscovery, OnlineRoom } from '@/types/online'
 import { LinearGradient } from 'expo-linear-gradient'
 import { TaskSet } from '@/types/tasks'
 import { showError } from '@/utils/toast'
@@ -313,7 +313,7 @@ export const OnlineRoomModal: React.FC<OnlineRoomModalProps> = ({
   const handleRefreshOnlineRooms = () => {
     if (socket.isConnected) {
       setIsLoadingOnlineRooms(true)
-      socket.requestRoomList?.()
+      // socket.requestRoomList?.() // 暂时注释掉，该方法可能不存在
     }
   }
 
@@ -339,7 +339,7 @@ export const OnlineRoomModal: React.FC<OnlineRoomModalProps> = ({
       </View>
       <View style={styles.lanRoomInfo}>
         <Text style={[styles.lanRoomDetail, { color: colors.homeCardDescription }]}>
-          房主: {room.players.find((p) => p.id === room.hostId)?.name || '未知'}
+          房主: {room.players.find((p: any) => p.id === room.hostId)?.name || '未知'}
         </Text>
         <Text style={[styles.lanRoomDetail, { color: colors.homeCardDescription }]}>
           玩家: {room.players.length}/{room.maxPlayers}

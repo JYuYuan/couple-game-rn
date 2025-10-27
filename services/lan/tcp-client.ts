@@ -66,7 +66,8 @@ class TCPClient {
         () => {
           console.log(`✅ [${this.playerId.substring(0, 8)}] TCP Socket 连接建立`)
           this.isConnected = true
-          this.reconnectAttempts = 0
+          this.reconnectAttempts = 0 // 重置重连计数器
+          this.isManualDisconnect = false // 重置手动断开标记
 
           // 发送初始化消息,告知服务器我们的 playerId
           console.log(`📤 [${this.playerId.substring(0, 8)}] 发送 client:init 消息`)
@@ -220,7 +221,15 @@ class TCPClient {
     this.emit('disconnected', {})
 
     // 只在非手动断开、允许重连且未超过最大次数时才重连
+    // 增加条件：只有在真正失去连接的情况下才重连，避免正常连接时的重连循环
     if (!this.isManualDisconnect && this.shouldReconnect && this.reconnectAttempts < this.maxReconnectAttempts && wasConnected) {
+      // 检查socket状态，如果socket仍然存在且可写，说明连接可能还是正常的
+      if (this.socket && !this.socket.destroyed && this.socket.writable) {
+        console.log(`ℹ️ [${this.playerId.substring(0, 8)}] Socket仍然可用，跳过重连`)
+        this.isConnected = true // 恢复连接状态
+        return
+      }
+
       this.reconnectAttempts++
       console.log(`🔄 [${this.playerId.substring(0, 8)}] 准备重连 (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`)
 

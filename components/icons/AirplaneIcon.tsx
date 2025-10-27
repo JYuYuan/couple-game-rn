@@ -7,6 +7,8 @@ interface AirplaneIconProps {
 }
 
 export const AirplaneIcon: React.FC<AirplaneIconProps> = ({ size = 24, color = '#5E5CE6' }) => {
+  // 暂时不使用size和color参数，但保留以备将来使用
+  const _ = { size, color }
   return (
     <Svg width={30} height={30} viewBox="0 0 24 24" fill="none">
       <G>
