@@ -322,6 +322,8 @@ class LANService {
    * 开始游戏
    */
   async startGame(data: GameStartData): Promise<void> {
+    console.log('🎮 [LANService] 开始游戏请求, roomId:', data.roomId)
+
     if (!this.isHost) {
       throw new Error('只有房主可以开始游戏')
     }
@@ -335,11 +337,13 @@ class LANService {
       throw new Error('房间不存在')
     }
 
+    console.log('📋 [LANService] 房间玩家数:', room.players.length)
     if (room.players.length < 2) {
       throw new Error('至少需要2个玩家才能开始游戏')
     }
 
     // 创建游戏实例
+    console.log('🎮 [LANService] 创建游戏实例...')
     const mockIO = this.createMockIO()
     const game = await gameInstanceManager.createGameInstance(room, mockIO)
 
@@ -347,7 +351,12 @@ class LANService {
       throw new Error('游戏创建失败')
     }
 
-    game.onStart()
+    console.log('🚀 [LANService] 调用 game.onStart()...')
+    await game.onStart() // 添加 await 等待游戏开始完成
+    console.log('✅ [LANService] 游戏已开始，状态已更新')
+
+    // 更新本地房间引用
+    this.currentRoom = room
   }
 
   /**
@@ -355,14 +364,30 @@ class LANService {
    */
   async handleGameAction(data: DiceRollData | TaskCompleteData): Promise<any> {
     const roomId = (data as any).roomId
+    console.log('🎮 [LANService] handleGameAction 调用, roomId:', roomId, 'isHost:', this.isHost)
 
     if (this.isHost) {
       // 房主直接处理
+      console.log('🎯 [LANService] 房主处理游戏动作...')
       const mockIO = this.createMockIO()
+
+      console.log('🔍 [LANService] 获取游戏实例...')
       const game = await gameInstanceManager.getGameInstance(roomId, mockIO)
 
+      console.log('🐛 [LANService] 游戏实例:', game)
+      console.log('🐛 [LANService] 游戏实例类型:', game?.constructor?.name)
+      console.log('🐛 [LANService] 是否有 onPlayerAction:', typeof game?.onPlayerAction === 'function')
+
       if (!game) {
+        console.error('❌ [LANService] 游戏实例不存在!')
         throw new Error('游戏不存在')
+      }
+
+      if (typeof game.onPlayerAction !== 'function') {
+        console.error('❌ [LANService] 游戏实例没有 onPlayerAction 方法!')
+        console.error('🐛 [LANService] 游戏对象的所有属性:', Object.keys(game))
+        console.error('🐛 [LANService] 游戏对象的原型:', Object.getPrototypeOf(game))
+        throw new Error('游戏实例无效：缺少 onPlayerAction 方法')
       }
 
       let callbackResult: any = null
@@ -370,12 +395,16 @@ class LANService {
         callbackResult = result
       }
 
+      console.log('🎯 [LANService] 调用 game.onPlayerAction...')
       await game.onPlayerAction(mockIO, this.currentPlayerId, data, callback)
+      console.log('✅ [LANService] onPlayerAction 执行完成, 结果:', callbackResult)
+
       await gameInstanceManager.updateGameInstance(roomId, game)
 
       return callbackResult
     } else {
       // 客户端发送到服务器
+      console.log('📤 [LANService] 客户端发送游戏动作到服务器...')
       return new Promise((resolve, reject) => {
         const timeout = setTimeout(() => {
           reject(new Error('游戏动作超时'))
@@ -433,6 +462,7 @@ class LANService {
         }
       }
     })
+    console.log('🐛 [DEBUG] 检查 room:join 事件监听器是否存在')
 
     // 加入房间
     tcpServer.on('room:join', async (data: any) => {
@@ -457,7 +487,7 @@ class LANService {
         // 创建玩家
         let player = await playerManager.getPlayer(data.playerId)
         if (!player) {
-          console.log('��� [TCPServer] 创建新玩家:', data.playerId)
+          console.log('[TCPServer] 创建新玩家:', data.playerId)
           player = await playerManager.addPlayer(data.playerId, {
             playerId: data.playerId,
             name: data.data.playerName || `Player_${data.playerId.substring(0, 6)}`,
@@ -465,7 +495,7 @@ class LANService {
             isHost: false,
             socketId: data.playerId,
             isConnected: true,
-            avatarId: data.data.avatar || '', // 头像ID
+            avatarId: data.data.avatarId || '', // 头像ID
             gender: data.data.gender || 'man', // 性别
             color: this.getRandomColor(), // 随机背景色
             ...data,
@@ -475,7 +505,7 @@ class LANService {
           console.log('🔄 [TCPServer] 更新现有玩家:', data.playerId)
           player.name = data.data.playerName || player.name
           player.isHost = false
-          player.avatarId = data.data.avatar || ''
+          player.avatarId = data.data.avatarId || ''
           player.gender = data.data.gender || 'man'
           // 如果没有颜色，分配一个随机颜色
           if (!player.color) {
@@ -519,11 +549,13 @@ class LANService {
 
         // 广播房间更新
         console.log('📡 [TCPServer] 广播房间更新...')
+        console.log('🐛 [DEBUG] 当前连接的客户端数:', tcpServer.getClientCount())
         tcpServer.broadcast({
           type: 'broadcast',
           event: 'room:update',
           data: updatedRoom,
         })
+        console.log('🐛 [DEBUG] 广播已发送')
 
         // 更新 UDP 广播
         udpBroadcastService.updateRoomInfo({
@@ -531,7 +563,12 @@ class LANService {
         })
 
         // 触发本地事件
+        console.log('🐛 [DEBUG] 准备触发 room:update 事件')
+        console.log('🐛 [DEBUG] 监听器数量:', this.eventListeners.get('room:update')?.size || 0)
+        console.log('🐛 [DEBUG] 更新后的房间玩家数:', updatedRoom.players.length)
+        console.log('🐛 [DEBUG] 玩家列表:', updatedRoom.players.map((p: any) => p.name).join(', '))
         this.emit('room:update', updatedRoom)
+        console.log('🐛 [DEBUG] room:update 事件已触发')
       } catch (error: any) {
         console.error('❌ [TCPServer] 加入房间失败:', error.message)
         console.log('📤 [TCPServer] 发送错误响应到客户端:', data.playerId)
@@ -607,7 +644,10 @@ class LANService {
     return {
       to: (roomId: string) => ({
         emit: (event: string, data: any) => {
+          console.log(`📡 [MockIO] to(${roomId}).emit(${event})`)
+
           // 广播给所有客户端
+          console.log(`📤 [MockIO] 广播到所有客户端...`)
           tcpServer.broadcast({
             type: 'broadcast',
             event,
@@ -615,10 +655,14 @@ class LANService {
           })
 
           // 触发本地事件(房主自己)
+          console.log(`🔔 [MockIO] 触发本地事件: ${event}`)
           this.emit(event, data)
+          console.log(`✅ [MockIO] 本地事件触发完成`)
         },
       }),
       emit: (event: string, data: any) => {
+        console.log(`📡 [MockIO] emit(${event})`)
+
         // 全局广播
         tcpServer.broadcast({
           type: 'broadcast',
@@ -636,10 +680,12 @@ class LANService {
    * 注册事件监听器
    */
   on(event: string, callback: Function): void {
+    console.log(`🐛 [LANService] 注册事件监听器: ${event}`)
     if (!this.eventListeners.has(event)) {
       this.eventListeners.set(event, new Set())
     }
     this.eventListeners.get(event)!.add(callback)
+    console.log(`🐛 [LANService] ${event} 监听器数量:`, this.eventListeners.get(event)!.size)
   }
 
   /**
@@ -656,15 +702,22 @@ class LANService {
    * 触发本地事件
    */
   private emit(event: string, data: any): void {
+    console.log(`🔔 [LANService] emit 事件: ${event}`)
+    console.log(`🐛 [LANService] 监听器数量: ${this.eventListeners.get(event)?.size || 0}`)
+
     const listeners = this.eventListeners.get(event)
     if (listeners) {
+      console.log(`📢 [LANService] 开始触发 ${event} 事件，监听器数量: ${listeners.size}`)
       listeners.forEach((callback) => {
         try {
           callback(data)
+          console.log(`✅ [LANService] ${event} 监听器执行成功`)
         } catch (error) {
           console.error(`事件处理器错误 [${event}]:`, error)
         }
       })
+    } else {
+      console.warn(`⚠️ [LANService] 没有找到 ${event} 的监听器`)
     }
   }
 

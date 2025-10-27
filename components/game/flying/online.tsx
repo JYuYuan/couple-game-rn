@@ -147,7 +147,6 @@ export default function FlyingChessGame() {
     if (players && players.length > 0 && !isMoving) {
       // 延时 100ms 确保动画完成后的状态更新已经应用
       const timer = setTimeout(() => {
-        console.log('同步服务端玩家位置到本地动画状态', players)
         setAnimatedPlayers(players as OnlinePlayer[])
       }, 100)
 
@@ -311,25 +310,10 @@ export default function FlyingChessGame() {
     try {
       // 发送投骰子请求给服务端，使用回调接收结果
       console.log('🎲 发送投骰子请求到服务端')
-
-      socket.rollDice(
-        {
-          roomId: room?.id,
-          playerId: playerId,
-        },
-        (result: DiceRollResult) => {
-          console.log('🎲 收到服务端回调结果:', result)
-
-          if (!result.success || !result.diceValue) {
-            // 请求失败
-            console.error('投骰子失败:', result.error)
-            audioManager.playSoundEffect('step')
-            // 重置骰子动画
-            diceRotation.value = withTiming(0, { duration: 200 })
-            setIsRolling(false)
-          }
-        },
-      )
+      socket.rollDice({
+        roomId: room?.id,
+        playerId: playerId,
+      })
     } catch (error) {
       console.error('投掷骰子请求失败:', error)
       audioManager.playSoundEffect('step')
@@ -373,18 +357,21 @@ export default function FlyingChessGame() {
       lastTaskIdRef.current = taskId
 
       // 查找执行者信息，转换为 LocalPlayer 类型
-      const executorPlayers = players?.filter((p) => data.executorPlayerIds.includes(p.id)).map((p, index) => ({
-        id: index,
-        name: p.name,
-        avatarId: p.avatarId,
-        gender: p.gender,
-        color: p.color || '#FF6B6B',
-        position: p.position || 0,
-        score: p.score || 0,
-        completedTasks: p.completedTasks || [],
-        achievements: p.achievements || [],
-        isAI: p.isAI || false,
-      })) || []
+      const executorPlayers =
+        players
+          ?.filter((p) => data.executorPlayerIds.includes(p.id))
+          .map((p, index) => ({
+            id: index,
+            name: p.name,
+            avatarId: p.avatarId,
+            gender: p.gender,
+            color: p.color || '#FF6B6B',
+            position: p.position || 0,
+            score: p.score || 0,
+            completedTasks: p.completedTasks || [],
+            achievements: p.achievements || [],
+            isAI: p.isAI || false,
+          })) || []
       console.log('👥 找到的执行者:', executorPlayers)
 
       // 检查当前玩家是否是执行者
@@ -789,7 +776,12 @@ export default function FlyingChessGame() {
                   )}
 
                   {/* 玩家头像 */}
-                  <View style={[styles.playerAvatarContainer, { borderColor: player.color || '#FF6B6B' }]}>
+                  <View
+                    style={[
+                      styles.playerAvatarContainer,
+                      { borderColor: player.color || '#FF6B6B' },
+                    ]}
+                  >
                     <PlayerAvatar avatarId={player.avatarId} color={player.color || '#FF6B6B'} />
                   </View>
 
@@ -853,9 +845,9 @@ export default function FlyingChessGame() {
 
         {/* 任务弹窗 */}
         <TaskModal
-          players={(players || []).map(player => ({
+          players={(players || []).map((player) => ({
             ...player,
-            color: player.color || '#FF6B6B'
+            color: player.color || '#FF6B6B',
           }))}
           visible={showTaskModal}
           task={taskModalData}

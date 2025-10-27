@@ -115,14 +115,25 @@ export default abstract class BaseGame {
    * 更新房间并通知所有玩家
    */
   protected async updateRoomAndNotify(): Promise<void> {
+    console.log(`🔄 [BaseGame] updateRoomAndNotify 开始, roomId: ${this.room.id}`)
+
     // 同步游戏状态
     this.syncGameState()
 
     // 更新房间到存储
+    console.log(`💾 [BaseGame] 更新房间到存储...`)
     await roomManager.updateRoom(this.room)
+    console.log(`✅ [BaseGame] 房间已更新到存储`)
 
     // 通知所有玩家
+    console.log(`📡 [BaseGame] 准备发送 room:update 事件...`)
+    console.log(`🐛 [BaseGame] 房间状态:`, {
+      id: this.room.id,
+      gameStatus: this.room.gameStatus,
+      playersCount: this.room.players.length,
+    })
     this.socket.to(this.room.id).emit('room:update', this.room)
+    console.log(`✅ [BaseGame] room:update 事件已发送`)
 
     console.log(`✅ 房间状态已更新并通知: ${this.room.id}`)
   }

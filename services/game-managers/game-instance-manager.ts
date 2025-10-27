@@ -17,12 +17,28 @@ class SimpleGameRegistry {
   }
 
   createGame(type: string, room: BaseRoom, io: any): any {
+    console.log('🎮 [GameRegistry] createGame 调用, type:', type)
+
     const GameClass = this.games.get(type)
     if (!GameClass) {
       console.error(`❌ 游戏类型未注册: ${type}`)
+      console.error('🐛 [GameRegistry] 已注册的游戏类型:', Array.from(this.games.keys()))
       return null
     }
-    return new GameClass(room, io)
+
+    console.log('✅ [GameRegistry] 找到游戏类:', GameClass.name)
+    console.log('🏗️ [GameRegistry] 创建游戏实例...')
+
+    try {
+      const gameInstance = new GameClass(room, io)
+      console.log('✅ [GameRegistry] 游戏实例创建成功')
+      console.log('🐛 [GameRegistry] 实例类型:', gameInstance?.constructor?.name)
+      console.log('🐛 [GameRegistry] 实例有 onPlayerAction:', typeof gameInstance?.onPlayerAction === 'function')
+      return gameInstance
+    } catch (error) {
+      console.error('❌ [GameRegistry] 创建游戏实例失败:', error)
+      return null
+    }
   }
 }
 
@@ -47,10 +63,19 @@ class GameInstanceManager {
    * 创建游戏实例
    */
   async createGameInstance(room: BaseRoom, io: any): Promise<any> {
+    console.log('🏗️ [GameInstanceManager] createGameInstance 调用')
+    console.log('🐛 [GameInstanceManager] room.id:', room.id)
+    console.log('🐛 [GameInstanceManager] room.gameType:', room.gameType)
+
     const game = gameRegistry.createGame(room.gameType, room, io)
     if (!game) {
+      console.error(`❌ 不支持的游戏类型: ${room.gameType}`)
       throw new Error(`不支持的游戏类型: ${room.gameType}`)
     }
+
+    console.log('✅ [GameInstanceManager] 游戏实例创建成功')
+    console.log('🐛 [GameInstanceManager] 游戏类型:', game?.constructor?.name)
+    console.log('🐛 [GameInstanceManager] 游戏有 onPlayerAction:', typeof game?.onPlayerAction === 'function')
 
     this.games.set(room.id, {
       roomId: room.id,
@@ -60,6 +85,7 @@ class GameInstanceManager {
     })
 
     this.localCache.set(room.id, game)
+    console.log('💾 [GameInstanceManager] 游戏实例已缓存到 localCache')
     console.log(`🎮 游戏实例已创建: 房间=${room.id}, 类型=${room.gameType}`)
 
     return game
@@ -69,28 +95,50 @@ class GameInstanceManager {
    * 获取游戏实例
    */
   async getGameInstance(roomId: string, io?: any): Promise<any> {
+    console.log('🔍 [GameInstanceManager] getGameInstance 调用, roomId:', roomId)
+
     // 先从本地缓存查找
     if (this.localCache.has(roomId)) {
-      return this.localCache.get(roomId)
+      const cachedGame = this.localCache.get(roomId)
+      console.log('✅ [GameInstanceManager] 从缓存获取游戏实例')
+      console.log('🐛 [GameInstanceManager] 缓存的游戏类型:', cachedGame?.constructor?.name)
+      console.log('🐛 [GameInstanceManager] 缓存的游戏有 onPlayerAction:', typeof cachedGame?.onPlayerAction === 'function')
+      return cachedGame
     }
+
+    console.log('⚠️ [GameInstanceManager] 缓存中没有游戏实例，尝试重建...')
 
     // 检查游戏是否存在
     const gameData = this.games.get(roomId)
     if (!gameData) {
+      console.error('❌ [GameInstanceManager] 游戏数据不存在')
       return null
     }
+
+    console.log('✅ [GameInstanceManager] 找到游戏数据:', gameData)
 
     // 从 roomManager 获取最新的 room 数据
     const room = await roomManager.getRoom(roomId)
     if (!room) {
+      console.error('❌ [GameInstanceManager] 房间不存在，删除游戏数据')
       this.games.delete(roomId)
       return null
     }
 
+    console.log('✅ [GameInstanceManager] 找到房间数据, gameType:', room.gameType)
+
     // 重建游戏实例
+    console.log('🔄 [GameInstanceManager] 开始重建游戏实例...')
     const game = this.recreateGameInstance(room, io)
+
     if (game) {
+      console.log('✅ [GameInstanceManager] 游戏实例重建成功')
+      console.log('🐛 [GameInstanceManager] 重建的游戏类型:', game?.constructor?.name)
+      console.log('🐛 [GameInstanceManager] 重建的游戏有 onPlayerAction:', typeof game?.onPlayerAction === 'function')
       this.localCache.set(roomId, game)
+      console.log('💾 [GameInstanceManager] 游戏实例已缓存')
+    } else {
+      console.error('❌ [GameInstanceManager] 游戏实例重建失败')
     }
 
     return game
@@ -143,13 +191,26 @@ class GameInstanceManager {
    * 从 room 数据重建游戏实例
    */
   private recreateGameInstance(room: BaseRoom, io?: any): any {
+    console.log('🔄 [GameInstanceManager] recreateGameInstance 调用')
+    console.log('🐛 [GameInstanceManager] room.gameType:', room.gameType)
+    console.log('🐛 [GameInstanceManager] io 是否存在:', !!io)
+
     if (!io) {
       console.warn('⚠️ 无法重建游戏实例: 缺少 io 参数')
       return null
     }
 
+    console.log('🎮 [GameInstanceManager] 调用 gameRegistry.createGame...')
     const game = gameRegistry.createGame(room.gameType, room, io)
-    console.log(`🔄 游戏实例已重建: 房间=${room.id}, 类型=${room.gameType}`)
+
+    if (game) {
+      console.log(`✅ 游戏实例已重建: 房间=${room.id}, 类型=${room.gameType}`)
+      console.log('🐛 [GameInstanceManager] 重建后游戏类型:', game?.constructor?.name)
+      console.log('🐛 [GameInstanceManager] 重建后游戏有 onPlayerAction:', typeof game?.onPlayerAction === 'function')
+    } else {
+      console.error('❌ [GameInstanceManager] gameRegistry.createGame 返回 null')
+    }
+
     return game
   }
 

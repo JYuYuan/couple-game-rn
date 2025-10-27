@@ -73,7 +73,9 @@ class UDPBroadcastService {
           this.discoveredRooms.set(roomData.roomId, roomData)
 
           if (isNewRoom) {
-            console.log(`✨ 发现新房间: ${roomData.roomName} (${roomData.hostIP}:${roomData.tcpPort})`)
+            console.log(
+              `✨ 发现新房间: ${roomData.roomName} (${roomData.hostIP}:${roomData.tcpPort})`,
+            )
           } else {
             console.log(`🔄 更新房间信息: ${roomData.roomName}`)
           }
@@ -151,7 +153,7 @@ class UDPBroadcastService {
           // 设置 socket 选项
           try {
             this.socket?.setBroadcast(true) // 启用广播
-            
+
             // 尝试设置多播选项以提高兼容性
             try {
               this.socket?.setMulticastLoopback(true)
@@ -160,7 +162,7 @@ class UDPBroadcastService {
             } catch (e: any) {
               console.warn('⚠️ 设置多播选项失败 (可忽略):', e?.message)
             }
-            
+
             console.log('✅ UDP 广播接收已启用')
             console.log('📡 正在等待房间广播...')
           } catch (e: any) {
@@ -389,31 +391,28 @@ class UDPBroadcastService {
       const buffer = Buffer.from(message, 'utf8')
 
       // 发送到广播地址 - 尝试多个广播地址以提高兼容性
-      const broadcastAddresses = ['255.255.255.255', '192.168.255.255', '10.255.255.255', '172.31.255.255']
+      const broadcastAddresses = [
+        '255.255.255.255',
+        '192.168.255.255',
+        '10.255.255.255',
+        '172.31.255.255',
+      ]
       let successCount = 0
       let errorCount = 0
 
       for (const address of broadcastAddresses) {
         try {
           await new Promise<void>((resolve, reject) => {
-            this.socket.send(
-              buffer,
-              0,
-              buffer.length,
-              BROADCAST_PORT,
-              address,
-              (error: any) => {
-                if (error) {
-                  console.warn(`⚠️ 广播到 ${address} 失败:`, error.message)
-                  errorCount++
-                  reject(error)
-                } else {
-                  console.log(`📡 广播成功: ${this.roomInfo?.roomName} -> ${address}:${BROADCAST_PORT}`)
-                  successCount++
-                  resolve()
-                }
-              },
-            )
+            this.socket.send(buffer, 0, buffer.length, BROADCAST_PORT, address, (error: any) => {
+              if (error) {
+                console.warn(`⚠️ 广播到 ${address} 失败:`, error.message)
+                errorCount++
+                reject(error)
+              } else {
+                successCount++
+                resolve()
+              }
+            })
           })
         } catch (error) {
           // 单个地址失败不影响其他地址
@@ -444,7 +443,10 @@ class UDPBroadcastService {
       }
     } catch (error) {
       this.broadcastFailureCount++
-      console.error(`❌ 广播消息异常 (${this.broadcastFailureCount}/${this.maxBroadcastFailures}):`, error)
+      console.error(
+        `❌ 广播消息异常 (${this.broadcastFailureCount}/${this.maxBroadcastFailures}):`,
+        error,
+      )
 
       if (this.broadcastFailureCount >= this.maxBroadcastFailures) {
         console.error('❌ 广播失败次数过多，标记 socket 为不健康')

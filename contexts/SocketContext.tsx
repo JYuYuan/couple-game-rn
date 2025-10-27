@@ -13,7 +13,13 @@ import {
 } from '@/types/online'
 import { useSettingsStore } from '@/store'
 import { useRoomStore } from '@/store/roomStore'
-import { getLANService, isLANAvailable, loadLANModules, type RoomBroadcast } from '@/services/lan'
+import {
+  getLANService,
+  isLANAvailable,
+  loadLANModules,
+  isLANModulesLoaded,
+  type RoomBroadcast,
+} from '@/services/lan'
 
 interface SocketContextValue {
   // 连接状态
@@ -74,10 +80,52 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [connectionError, setConnectionError] = useState(socketService.getConnectionError())
   const { currentRoom, setCurrentRoom } = useRoomStore()
 
-  // 连接类型状态
-  const [connectionType, setConnectionType] = useState<ConnectionType>('online')
+  // 连接类型状态 - 根据网络设置智能初始化
+  const getInitialConnectionType = (): ConnectionType => {
+    const { enabled, lanMode } = networkSettings
+
+    // 1. 如果只开启了局域网
+    if (lanMode && !enabled) {
+      console.log('🔧 [SocketContext] 初始化: 仅局域网模式')
+      return 'lan'
+    }
+
+    // 2. 如果只开启了在线（或都没开启）
+    if (!lanMode || enabled) {
+      console.log('🔧 [SocketContext] 初始化: 在线模式')
+      return 'online'
+    }
+
+    // 默认在线
+    return 'online'
+  }
+
+  const [connectionType, setConnectionType] = useState<ConnectionType>(getInitialConnectionType())
   const [webrtcConnections] = useState<Map<string, WebRTCConnectionState>>(new Map())
   const [discoveredRooms, setDiscoveredRooms] = useState<RoomBroadcast[]>([])
+
+  // 监听网络设置变化，自动调整连接类型
+  useEffect(() => {
+    const { enabled, lanMode } = networkSettings
+
+    console.log('🔧 [SocketContext] 网络设置变化:', {
+      enabled,
+      lanMode,
+      currentConnectionType: connectionType,
+    })
+
+    // 如果当前是在线模式，但只开启了局域网，切换到局域网
+    if (connectionType === 'online' && lanMode && !enabled && !currentRoom) {
+      console.log('🔄 [SocketContext] 自动切换到局域网模式')
+      setConnectionType('lan')
+    }
+
+    // 如果当前是局域网模式，但只开启了在线，切换到在线
+    if (connectionType === 'lan' && !lanMode && enabled && !currentRoom) {
+      console.log('🔄 [SocketContext] 自动切换到在线模式')
+      setConnectionType('online')
+    }
+  }, [networkSettings.enabled, networkSettings.lanMode, connectionType, currentRoom])
 
   // 监听 SocketService 的状态变化 - 只注册一次
   useEffect(() => {
@@ -142,17 +190,60 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // 监听 LAN Service 的事件
   useEffect(() => {
-    if (connectionType !== 'lan') return
+    console.log('🐛 [SocketContext] useEffect 执行')
+    console.log('🐛 [SocketContext] connectionType:', connectionType)
+    console.log('🐛 [SocketContext] playerId:', playerId)
+
+    if (connectionType !== 'lan') {
+      console.log('⚠️ [SocketContext] connectionType 不是 lan，跳过监听')
+      return
+    }
 
     // 只在模块已加载时监听
     try {
+      console.log('🐛 [SocketContext] 尝试获取 LANService')
+
+      // 检查模块是否已加载
+      if (!isLANModulesLoaded()) {
+        console.log('⚠️ [SocketContext] LAN 模块未加载，跳过事件监听')
+        console.log('💡 [SocketContext] 事件监听器将在创建/加入房间时注册')
+        return
+      }
+
       const lanService = getLANService()
+      console.log('🐛 [SocketContext] LANService 获取成功:', !!lanService)
 
       const handleLANRoomUpdate = (room: any) => {
-        console.log('LAN Room updated:', room)
+        console.log('🐛 [SocketContext] LAN Room updated 事件触发!')
+        console.log('🐛 [SocketContext] 房间数据:', {
+          id: room?.id,
+          gameStatus: room?.gameStatus,
+          playersCount: room?.players?.length,
+        })
+        console.log(
+          '🐛 [SocketContext] 玩家列表:',
+          room?.players?.map((p: any) => p.name).join(', '),
+        )
+        console.log('🐛 [SocketContext] 当前 playerId:', playerId)
+
         if (room) {
-          room.isHost = room.hostId === playerId
-          setCurrentRoom(room)
+          // 创建一个新的对象，确保 Zustand 检测到变化
+          const updatedRoom = {
+            ...room,
+            isHost: room.hostId === playerId,
+            players: [...room.players], // 创建新的 players 数组
+          }
+
+          console.log('🐛 [SocketContext] 准备调用 setCurrentRoom')
+          console.log('🐛 [SocketContext] 新房间状态:', {
+            id: updatedRoom.id,
+            gameStatus: updatedRoom.gameStatus,
+            playersCount: updatedRoom.players.length,
+          })
+          setCurrentRoom(updatedRoom)
+          console.log('🐛 [SocketContext] setCurrentRoom 完成')
+        } else {
+          console.log('⚠️ [SocketContext] room 为空!')
         }
       }
 
@@ -170,7 +261,14 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       lanService.on('connected', handleLANConnected)
       lanService.on('disconnected', handleLANDisconnected)
 
+      console.log('🐛 [SocketContext] 事件监听器已注册')
+      console.log(
+        '🐛 [SocketContext] room:update 监听器数量:',
+        (lanService as any).eventListeners?.get('room:update')?.size || 0,
+      )
+
       return () => {
+        console.log('🐛 [SocketContext] 清理事件监听器')
         lanService.off('room:update', handleLANRoomUpdate)
         lanService.off('connected', handleLANConnected)
         lanService.off('disconnected', handleLANDisconnected)
@@ -265,6 +363,38 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         // 标记为局域网模式
         setConnectionType('lan')
         setIsConnected(true)
+
+        // 注册事件监听器（因为 useEffect 可能在模块加载前执行）
+        console.log('🐛 [createLANRoom] 注册 LAN 事件监听器')
+        lanService.on('room:update', (room: any) => {
+          console.log('🐛 [createLANRoom] room:update 事件触发')
+          console.log('🐛 [createLANRoom] 房间数据:', {
+            id: room?.id,
+            gameStatus: room?.gameStatus,
+            playersCount: room?.players?.length,
+          })
+          console.log('🐛 [createLANRoom] 准备调用 setCurrentRoom')
+
+          if (room) {
+            // 创建一个新的对象，确保 Zustand 检测到变化
+            const updatedRoom = {
+              ...room,
+              isHost: room.hostId === playerId,
+              players: [...room.players], // 创建新的 players 数组
+            }
+
+            console.log('🐛 [createLANRoom] 更新后的房间状态:', {
+              id: updatedRoom.id,
+              gameStatus: updatedRoom.gameStatus,
+              playersCount: updatedRoom.players.length,
+              playerNames: updatedRoom.players.map((p: any) => p.name).join(', '),
+            })
+            setCurrentRoom(updatedRoom)
+            console.log('🐛 [createLANRoom] setCurrentRoom 调用完成')
+          } else {
+            console.log('⚠️ [createLANRoom] room 为空！')
+          }
+        })
 
         // 创建局域网房间，使用配置的端口
         const room = await lanService.createRoom(data, networkSettings.lanPort)
@@ -444,12 +574,23 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const rollDice = useCallback(
     async (data: any, callback: any) => {
+      console.log('🎲 [SocketContext] rollDice 调用, connectionType:', connectionType)
+      console.log('🐛 [SocketContext] rollDice data:', JSON.stringify(data))
+
       if (connectionType === 'lan') {
         try {
           const lanService = getLANService()
-          lanService.handleGameAction(data).then(callback).catch(console.error)
+
+          // 添加 type 字段，确保 onPlayerAction 能正确识别动作类型
+          const actionData = {
+            ...data,
+            type: 'roll_dice',
+          }
+
+          console.log('📤 [SocketContext] 发送游戏动作:', JSON.stringify(actionData))
+          lanService.handleGameAction(actionData).then(callback).catch(console.error)
         } catch (error) {
-          console.error('LAN 掷骰子失败:', error)
+          console.error('❌ [SocketContext] LAN 掷骰子失败:', error)
         }
       } else {
         socketService.rollDice(data, callback)
@@ -460,12 +601,23 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const completeTask = useCallback(
     async (data: any) => {
+      console.log('📋 [SocketContext] completeTask 调用, connectionType:', connectionType)
+      console.log('🐛 [SocketContext] completeTask data:', JSON.stringify(data))
+
       if (connectionType === 'lan') {
         try {
           const lanService = getLANService()
-          lanService.handleGameAction(data)
+
+          // 添加 type 字段，确保 onPlayerAction 能正确识别动作类型
+          const actionData = {
+            ...data,
+            type: 'complete_task',
+          }
+
+          console.log('📤 [SocketContext] 发送完成任务动作:', JSON.stringify(actionData))
+          lanService.handleGameAction(actionData)
         } catch (error) {
-          console.error('LAN 完成任务失败:', error)
+          console.error('❌ [SocketContext] LAN 完成任务失败:', error)
         }
       } else {
         socketService.completeTask(data)
@@ -510,9 +662,32 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     [connectionType],
   )
 
-  const runActions = useCallback((event: string, data: any, callback?: (res: any) => void) => {
-    socketService.runActions(event, data, callback)
-  }, [])
+  const runActions = useCallback(
+    (event: string, data: any, callback?: (res: any) => void) => {
+      console.log('🎬 [SocketContext] runActions 调用, event:', event, 'connectionType:', connectionType)
+      console.log('🐛 [SocketContext] runActions data:', JSON.stringify(data))
+
+      if (connectionType === 'lan') {
+        try {
+          const lanService = getLANService()
+
+          // 根据 event 类型添加对应的 type 字段
+          const actionData = {
+            ...data,
+            type: event, // event 就是 'move_complete' 等
+          }
+
+          console.log('📤 [SocketContext] LAN 模式发送动作:', JSON.stringify(actionData))
+          lanService.handleGameAction(actionData).then(callback).catch(console.error)
+        } catch (error) {
+          console.error('❌ [SocketContext] LAN runActions 失败:', error)
+        }
+      } else {
+        socketService.runActions(event, data, callback)
+      }
+    },
+    [connectionType],
+  )
 
   // 初始连接逻辑 - 只在首次加载时连接一次
   // 如果只开启局域网模式而未开启网络模式，则不自动连接

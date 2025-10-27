@@ -78,7 +78,7 @@ export const useAudioManager = (): AudioManager => {
     // 清理函数
     return () => {
       if (soundRef.current) {
-        soundRef.current.unloadAsync().catch(console.error)
+        soundRef.current?.unloadAsync().catch(console.error)
       }
     }
   }, []) // 移除 soundSettings 依赖，避免重复初始化
@@ -86,7 +86,7 @@ export const useAudioManager = (): AudioManager => {
   // 同步设置状态
   useEffect(() => {
     if (soundRef.current && isLoaded) {
-      soundRef.current.setVolumeAsync(soundSettings.globalMute ? 0 : volume).catch(console.error)
+      soundRef.current?.setVolumeAsync(soundSettings.globalMute ? 0 : volume).catch(console.error)
     }
     setIsMuted(soundSettings.globalMute)
   }, [soundSettings.globalMute, volume, isLoaded])
@@ -95,10 +95,10 @@ export const useAudioManager = (): AudioManager => {
     try {
       console.log('Attempting to play audio...', { isLoaded, globalMute: soundSettings.globalMute })
       if (soundRef.current && isLoaded && !soundSettings.globalMute) {
-        const status = await soundRef.current.getStatusAsync()
+        const status = await soundRef.current?.getStatusAsync()
         console.log('Current audio status before play:', status)
 
-        await soundRef.current.playAsync()
+        await soundRef.current?.playAsync()
         console.log('Audio play command sent')
         setIsPlaying(true)
       } else {
@@ -116,7 +116,7 @@ export const useAudioManager = (): AudioManager => {
   const pause = async () => {
     try {
       if (soundRef.current && isLoaded) {
-        await soundRef.current.pauseAsync()
+        await soundRef.current?.pauseAsync()
         setIsPlaying(false)
       }
     } catch (error) {
@@ -127,7 +127,7 @@ export const useAudioManager = (): AudioManager => {
   const stop = async () => {
     try {
       if (soundRef.current && isLoaded) {
-        await soundRef.current.stopAsync()
+        await soundRef.current?.stopAsync()
         setIsPlaying(false)
       }
     } catch (error) {
@@ -141,7 +141,7 @@ export const useAudioManager = (): AudioManager => {
       setVolumeState(clampedVolume)
 
       if (soundRef.current && isLoaded && !soundSettings.globalMute) {
-        await soundRef.current.setVolumeAsync(clampedVolume)
+        await soundRef.current?.setVolumeAsync(clampedVolume)
       }
     } catch (error) {
       console.error('Set volume failed:', error)
@@ -154,7 +154,7 @@ export const useAudioManager = (): AudioManager => {
       setIsMuted(newMuteState)
 
       if (soundRef.current && isLoaded) {
-        await soundRef.current.setVolumeAsync(newMuteState ? 0 : volume)
+        await soundRef.current?.setVolumeAsync(newMuteState ? 0 : volume)
       }
     } catch (error) {
       console.error('Toggle mute failed:', error)

@@ -18,6 +18,7 @@ class FlightChessGame extends BaseGame {
     console.log('🚀 开始飞行棋游戏')
     this.gamePhase = 'playing'
     this.room.gameStatus = 'playing'
+    console.log('✅ gameStatus 已设置为 playing')
     this.room.tasks = this.room.taskSet?.tasks || []
 
     // 调试任务集信息
@@ -65,7 +66,9 @@ class FlightChessGame extends BaseGame {
       playerPositions: this.playerPositions,
     })
 
+    console.log('📤 准备调用 updateRoomAndNotify...')
     await this.updateRoomAndNotify()
+    console.log('✅ updateRoomAndNotify 完成')
   }
 
   async onResume() {
@@ -96,24 +99,40 @@ class FlightChessGame extends BaseGame {
   }
 
   async onPlayerAction(_io: MockSocketIO, playerId: string, action: any, callback?: Function) {
+    console.log('🎯 [FlightChessGame] onPlayerAction 被调用!')
+    console.log('🐛 [FlightChessGame] playerId:', playerId)
+    console.log('🐛 [FlightChessGame] action:', JSON.stringify(action))
+    console.log('🐛 [FlightChessGame] 当前游戏状态:', this.room.gameStatus)
+    console.log('🐛 [FlightChessGame] 回调函数存在:', typeof callback === 'function')
+
     if (this.room.gameStatus !== 'playing') {
+      console.warn('⚠️ [FlightChessGame] 游戏未在进行中，拒绝操作')
       callback?.({ success: false, error: '游戏未在进行中' })
       return
     }
 
+    console.log('🎮 [FlightChessGame] 处理游戏动作, type:', action.type)
+
     switch (action.type) {
       case 'roll_dice':
+        console.log('🎲 [FlightChessGame] 处理投骰子动作')
         await this._handleDiceRoll(playerId, callback)
         break
       case 'move_complete':
+        console.log('🚶 [FlightChessGame] 处理移动完成动作')
         await this._handleMoveComplete(playerId)
         callback?.({ success: true })
         break
       case 'complete_task':
+        console.log('📋 [FlightChessGame] 处理任务完成动作')
         await this._handleTaskComplete(playerId, action)
         callback?.({ success: true })
         break
+      default:
+        console.warn('⚠️ [FlightChessGame] 未知的动作类型:', action.type)
     }
+
+    console.log('✅ [FlightChessGame] onPlayerAction 执行完成')
   }
 
   async _handleDiceRoll(playerId: string, callback?: Function) {

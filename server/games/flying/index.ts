@@ -95,7 +95,6 @@ class FlyingGame extends BaseGame {
       callback?.({ success: false, error: '游戏未在进行中' })
       return
     }
-
     switch (action.type) {
       case 'roll_dice':
         await this._handleDiceRoll(playerId, callback)

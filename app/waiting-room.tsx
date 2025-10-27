@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { Stack, useLocalSearchParams, useNavigation, useRouter } from 'expo-router'
 import { useColorScheme } from '@/hooks/use-color-scheme'
 import { Colors } from '@/constants/theme'
@@ -20,7 +20,7 @@ export default function WaitingRoomPage() {
   const socket = useSocket()
   const { currentRoom, clearRoom } = useRoomStore()
   const [isStartingGame, setIsStartingGame] = useState(false)
-
+  const [isNavigatingToGame, setIsNavigatingToGame] = useState(false)
   // 获取传入的参数
   const roomId = params.roomId as string
 
@@ -31,6 +31,12 @@ export default function WaitingRoomPage() {
   // 监听返回按钮点击事件
   useEffect(() => {
     const unsubscribe = navigation.addListener('beforeRemove', (_e) => {
+      // 如果是游戏开始的跳转，不清除房间状态
+      if (isNavigatingToGame) {
+        console.log('🎮 游戏开始跳转，保留房间状态')
+        return
+      }
+
       // 如果正在离开页面，清除房间状态
       console.log('🚪 等待室检测到返回操作，清除房间状态')
 
@@ -44,13 +50,14 @@ export default function WaitingRoomPage() {
     })
 
     return unsubscribe
-  }, [navigation, currentRoom?.id])
+  }, [navigation, currentRoom?.id, isNavigatingToGame])
 
   // 监听游戏状态变化，自动跳转到游戏页面
   useEffect(() => {
     if (currentRoom?.gameStatus === 'playing') {
       console.log('🎮 游戏开始，跳转到游戏页面')
       setIsStartingGame(false) // 重置开始游戏状态
+      setIsNavigatingToGame(true) // 标记为游戏跳转，防止清理房间
       router.replace({
         pathname: '/flying-chess',
         params: {
@@ -62,7 +69,7 @@ export default function WaitingRoomPage() {
   }, [currentRoom?.gameStatus])
 
   // 处理开始游戏
-  const handleStartGame = async () => {
+  const handleStartGame = useCallback(async () => {
     if (isStartingGame) {
       console.log('⚠️ 游戏正在开始中，请勿重复点击')
       return
@@ -81,25 +88,33 @@ export default function WaitingRoomPage() {
     try {
       setIsStartingGame(true)
       console.log('🎮 开始游戏，房间ID:', currentRoom.id)
+      console.log('🔍 当前房间状态:', {
+        gameStatus: currentRoom.gameStatus,
+        playersCount: currentRoom.players?.length,
+      })
 
       await socket.startGame({ roomId: currentRoom.id })
+
+      console.log('✅ startGame 调用完成')
 
       // 显示成功提示
       showSuccess('游戏开始', '正在启动游戏...')
 
-      // 如果3秒后还没有跳转，重置状态
+      // 如果5秒后还没有跳转，重置状态
+      // 使用更长的超时时间，给状态更新留足时间
       setTimeout(() => {
         if (currentRoom?.gameStatus !== 'playing') {
           setIsStartingGame(false)
           console.warn('⚠️ 游戏开始超时，重置状态')
+          showError('游戏启动超时', '请重试或检查网络连接')
         }
-      }, 3000)
+      }, 5000) // 增加到5秒
     } catch (error) {
       console.error('❌ 开始游戏失败:', error)
       setIsStartingGame(false)
-      showError('开始游戏失败', '请检查网络连接后重试')
+      showError('开始游戏失败', error instanceof Error ? error.message : '请检查网络连接后重试')
     }
-  }
+  }, [currentRoom?.gameStatus, isStartingGame, socket.isConnected, currentRoom?.id])
 
   return (
     <>

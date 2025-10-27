@@ -219,7 +219,7 @@ export default function JoinRoomPage() {
           hostPort: targetPort,
           roomId: targetRoomId,
           playerName: playerName.trim(),
-          avatar: selectedAvatar.id,
+          avatarId: selectedAvatar.id,
           gender: selectedGender,
         }
 

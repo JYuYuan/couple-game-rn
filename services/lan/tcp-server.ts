@@ -195,15 +195,19 @@ class TCPServer {
     this.clients.set(tempId, client)
     this.messageBuffer.set(tempId, '')
 
+    // 保存当前的 clientId 引用，用于在 data 事件中动态查找
+    let currentClientId = tempId
+
     // 监听数据
     socket.on('data', (data: Buffer) => {
-      this.handleClientData(tempId, data)
+      // 使用当前的 clientId（可能已经更新）
+      this.handleClientData(currentClientId, data)
     })
 
     // 监听关闭
     socket.on('close', (error?: any) => {
       console.log(`👋 客户端断开: ${clientAddress}`, error ? `错误: ${error}` : '')
-      this.handleClientDisconnect(tempId)
+      this.handleClientDisconnect(currentClientId)
     })
 
     // 监听错误
@@ -213,6 +217,12 @@ class TCPServer {
 
     // 触发连接事件
     this.emit('client:connected', { clientId: tempId })
+
+    // 存储 clientId 引用的更新函数
+    ;(socket as any).__updateClientId = (newId: string) => {
+      console.log(`🐛 [DEBUG] 更新 socket 的 clientId 引用: ${currentClientId} -> ${newId}`)
+      currentClientId = newId
+    }
   }
 
   /**
@@ -223,23 +233,33 @@ class TCPServer {
       const client = this.clients.get(clientId)
       if (!client) return
 
+      console.log(`🐛 [DEBUG] 收到原始数据 [${clientId}]: ${data.length} 字节`)
+
       // 将新数据追加到缓冲区
       let buffer = this.messageBuffer.get(clientId) || ''
       buffer += data.toString('utf8')
+
+      console.log(`🐛 [DEBUG] 当前缓冲区大小: ${buffer.length} 字节`)
 
       // 尝试解析完整的 JSON 消息
       // 使用换行符作为消息分隔符
       const messages = buffer.split('\n')
 
+      console.log(`🐛 [DEBUG] 分割后的消息数: ${messages.length}`)
+
       // 最后一个可能是不完整的消息,保留在缓冲区
       buffer = messages.pop() || ''
       this.messageBuffer.set(clientId, buffer)
 
+      console.log(`🐛 [DEBUG] 保留在缓冲区: ${buffer.length} 字节`)
+
       // 处理所有完整的消息
       for (const msgStr of messages) {
         if (msgStr.trim()) {
+          console.log(`🐛 [DEBUG] 尝试解析消息: ${msgStr.substring(0, 100)}...`)
           try {
             const message: TCPMessage = JSON.parse(msgStr)
+            console.log(`🐛 [DEBUG] 消息解析成功: type=${message.type}, event=${message.event}`)
             this.handleClientMessage(clientId, message)
           } catch (parseError) {
             console.error('解析消息失败:', parseError, 'Message:', msgStr)
@@ -257,20 +277,33 @@ class TCPServer {
   private handleClientMessage(clientId: string, message: TCPMessage): void {
     console.log(`📨 收到消息 [${clientId}]:`, JSON.stringify({ type: message.type, event: message.event, playerId: message.playerId }))
 
+    console.log(`🐛 [DEBUG] 开始处理消息`)
+    console.log(`🐛 [DEBUG] message.playerId: ${message.playerId}`)
+    console.log(`🐛 [DEBUG] 当前 clientId: ${clientId}`)
+
     // 如果消息包含 playerId,更新客户端映射
     if (message.playerId) {
       const client = this.clients.get(clientId)
+      console.log(`🐛 [DEBUG] client 存在: ${!!client}`)
+      console.log(`🐛 [DEBUG] client.playerId: ${client?.playerId}`)
+
       if (client && client.playerId !== message.playerId) {
         console.log(`🔄 需要更新客户端ID: ${clientId} -> ${message.playerId}`)
 
+        // 更新 socket 的 clientId 引用
+        if (client.socket && typeof client.socket.__updateClientId === 'function') {
+          client.socket.__updateClientId(message.playerId)
+        }
+
         // 移除旧的映射
         this.clients.delete(clientId)
+        const oldBuffer = this.messageBuffer.get(clientId) || ''
         this.messageBuffer.delete(clientId)
 
         // 添加新的映射
         client.playerId = message.playerId
         this.clients.set(message.playerId, client)
-        this.messageBuffer.set(message.playerId, this.messageBuffer.get(clientId) || '')
+        this.messageBuffer.set(message.playerId, oldBuffer)
 
         console.log(`✅ 客户端ID已更新: ${clientId} -> ${message.playerId}`)
         clientId = message.playerId
@@ -297,6 +330,7 @@ class TCPServer {
 
     if (message.type === 'event' && message.event) {
       console.log(`🔔 触发事件: ${message.event}`)
+      console.log(`🐛 [DEBUG] 事件监听器数量: ${this.eventListeners.get(message.event)?.size || 0}`)
 
       // 触发事件
       this.emit(message.event, {
@@ -304,6 +338,8 @@ class TCPServer {
         data: message.data,
         requestId: message.requestId,
       })
+
+      console.log(`🐛 [DEBUG] 事件触发完成`)
     }
   }
 
