@@ -364,38 +364,6 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setConnectionType('lan')
         setIsConnected(true)
 
-        // 注册事件监听器（因为 useEffect 可能在模块加载前执行）
-        console.log('🐛 [createLANRoom] 注册 LAN 事件监听器')
-        lanService.on('room:update', (room: any) => {
-          console.log('🐛 [createLANRoom] room:update 事件触发')
-          console.log('🐛 [createLANRoom] 房间数据:', {
-            id: room?.id,
-            gameStatus: room?.gameStatus,
-            playersCount: room?.players?.length,
-          })
-          console.log('🐛 [createLANRoom] 准备调用 setCurrentRoom')
-
-          if (room) {
-            // 创建一个新的对象，确保 Zustand 检测到变化
-            const updatedRoom = {
-              ...room,
-              isHost: room.hostId === playerId,
-              players: [...room.players], // 创建新的 players 数组
-            }
-
-            console.log('🐛 [createLANRoom] 更新后的房间状态:', {
-              id: updatedRoom.id,
-              gameStatus: updatedRoom.gameStatus,
-              playersCount: updatedRoom.players.length,
-              playerNames: updatedRoom.players.map((p: any) => p.name).join(', '),
-            })
-            setCurrentRoom(updatedRoom)
-            console.log('🐛 [createLANRoom] setCurrentRoom 调用完成')
-          } else {
-            console.log('⚠️ [createLANRoom] room 为空！')
-          }
-        })
-
         // 创建局域网房间，使用配置的端口
         const room = await lanService.createRoom(data, networkSettings.lanPort)
 
