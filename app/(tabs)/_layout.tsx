@@ -13,7 +13,7 @@ import type { BottomTabBarProps } from '@react-navigation/bottom-tabs'
 
 const { width: screenWidth } = getWindow()
 
-const ICONS = ['home', 'list-outline', 'settings-sharp'] // 支持3个标签页
+const ICONS: React.ComponentProps<typeof Ionicons>['name'][] = ['home', 'list-outline', 'settings-sharp'] // 支持3个标签页
 
 const CustomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) => {
   const insets = useSafeAreaInsets()
@@ -100,7 +100,7 @@ const CustomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) => {
 }
 
 interface TabButtonProps {
-  icon: string
+  icon: React.ComponentProps<typeof Ionicons>['name']
   isFocused: boolean
   onPress: () => void
   onLongPress: () => void
