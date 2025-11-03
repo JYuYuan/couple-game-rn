@@ -287,7 +287,11 @@ export const TaskSetModal: React.FC<TaskSetModalProps> = ({ visible, onClose, ta
                     ]}
                     onPress={() => setFormData((prev) => ({ ...prev, categoryId: category.id }))}
                   >
-                    <Ionicons name={category.icon as any} size={16} color={category.color} />
+                    <Ionicons
+                      name={category.icon as keyof typeof Ionicons.glyphMap}
+                      size={16}
+                      color={category.color}
+                    />
                     <Text
                       style={[
                         styles.pickerText,

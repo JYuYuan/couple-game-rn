@@ -1,4 +1,4 @@
-import type { SocketIOServer, Room, Player } from '../typings/socket'
+import type { Player, Room, SocketIOServer } from '../typings/socket'
 import roomManager from './RoomManager.js'
 
 abstract class BaseGame {
@@ -28,11 +28,16 @@ abstract class BaseGame {
 
   abstract onResume(io?: SocketIOServer): void
 
-  abstract onPlayerAction(io: SocketIOServer, playerId: string, action: any): void
+  abstract onPlayerAction(
+    io: SocketIOServer,
+    playerId: string,
+    action: unknown,
+    callback?: Function,
+  ): void
 
   abstract onEnd(io?: SocketIOServer): void
 
-  abstract _handleTaskComplete(playerId: string, action: any): void
+  abstract _handleTaskComplete(playerId: string, action: unknown): void
 
   /**
    * 同步游戏状态 - 确保 gameState 和 players 数组保持一致
@@ -49,7 +54,7 @@ abstract class BaseGame {
 
     console.log('🔄 游戏状态同步完成:', {
       playersCount: this.room.players.length,
-      positions: this.room.gameState.playerPositions
+      positions: this.room.gameState.playerPositions,
     })
   }
 
@@ -77,7 +82,7 @@ abstract class BaseGame {
   protected async updateRoomAndNotify(): Promise<void> {
     // 确保状态同步
     this.syncGameState()
-    
+
     this.room.lastActivity = Date.now()
     await roomManager.updateRoom(this.room)
     this.socket.to(this.room.id).emit('room:update', this.room)
@@ -152,15 +157,15 @@ abstract class BaseGame {
   /**
    * 序列化游戏状态（现在直接返回 room.gameState）
    */
-  serialize(): any {
+  serialize(): unknown {
     return this.room.gameState
   }
 
   /**
    * 反序列化游戏状态（现在直接设置到 room.gameState）
    */
-  deserialize(data: any): void {
-    if (this.room.gameState && data) {
+  deserialize(data: unknown): void {
+    if (this.room.gameState && data && typeof data === 'object') {
       Object.assign(this.room.gameState, data)
     }
   }

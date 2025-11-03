@@ -1,25 +1,21 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
+import { Stack, useLocalSearchParams } from 'expo-router'
 import { LinearGradient } from 'expo-linear-gradient'
 import { Ionicons } from '@expo/vector-icons'
-import { useColorScheme } from '@/hooks/use-color-scheme'
-import { Colors } from '@/constants/theme'
+import { usePageBase } from '@/hooks/usePageBase'
+import { commonStyles, spacing } from '@/constants/commonStyles'
 import WheelOfFortune, { WheelOfFortuneRef } from '@/components/WheelOfFortune'
 import SimpleTaskModal, { SimpleTaskData } from '@/components/SimpleTaskModal'
 import VictoryModal from '@/components/VictoryModal'
 import { PlayerAvatar } from '@/components/PlayerAvatar'
 import { useGameTasks } from '@/hooks/use-game-tasks'
 import { useWheelGame, WheelPlayer, WheelResult } from '@/hooks/use-wheel-game'
-import { useTranslation } from 'react-i18next'
 import { showConfirmDialog } from '@/components/ConfirmDialog'
 
 export default function WheelPointsGame() {
-  const { t } = useTranslation()
-  const router = useRouter()
+  const { t, router, colors } = usePageBase()
   const params = useLocalSearchParams()
-  const colorScheme = useColorScheme() ?? 'light'
-  const colors = Colors[colorScheme] as any
   const wheelRef = useRef<WheelOfFortuneRef>(null)
 
   // 获取传入的参数
@@ -385,22 +381,21 @@ export default function WheelPointsGame() {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    ...commonStyles.container,
   },
   content: {
-    flex: 1,
+    ...commonStyles.container,
   },
   contentContainer: {
-    padding: 20,
+    padding: spacing.xl,
     paddingBottom: 100,
   },
   statusBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 16,
+    ...commonStyles.card,
+    ...commonStyles.marginBottom16,
   },
   statusLeft: {
     flex: 1,
@@ -421,16 +416,12 @@ const styles = StyleSheet.create({
   },
   spinContainer: {
     alignItems: 'center',
-    gap: 12,
+    gap: spacing.md,
   },
   spinButton: {
-    borderRadius: 12,
+    ...commonStyles.button,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    ...commonStyles.shadow,
   },
   spinButtonGradient: {
     flexDirection: 'row',

@@ -26,6 +26,16 @@ import * as Clipboard from 'expo-clipboard'
 import { showConfirmDialog } from '@/components/ConfirmDialog'
 import toast from '@/utils/toast'
 
+interface SettingItem {
+  icon: keyof typeof Ionicons.glyphMap
+  label: string
+  value: string
+  type?: 'switch'
+  switchValue?: boolean
+  onPress?: () => void
+  disabled?: boolean
+}
+
 const Settings: React.FC = () => {
   const insets = useSafeAreaInsets()
   const {
@@ -53,7 +63,7 @@ const Settings: React.FC = () => {
 
   // 主题颜色
   const colorScheme = useColorScheme() ?? 'light'
-  const colors = Colors[colorScheme] as any
+  const colors = Colors[colorScheme]
 
   const backgroundColor = colors.settingsBackground
   const cardBackground = colors.settingsCardBackground
@@ -239,10 +249,10 @@ const Settings: React.FC = () => {
                           return
                         }
                         await Clipboard.setStringAsync(fetchIp.data)
-                        
+
                         toast.success(
                           t('common.success', '成功'),
-                          t('settings.lan.copied', 'IP地址已复制到剪贴板')
+                          t('settings.lan.copied', 'IP地址已复制到剪贴板'),
                         )
                       },
                     },
@@ -335,7 +345,7 @@ const Settings: React.FC = () => {
                   { backgroundColor: cardBackground, borderColor: cardBorder },
                 ]}
               >
-                {section.items.map((item: any, index: number) => (
+                {section.items.map((item, index: number) => (
                   <TouchableOpacity
                     key={index}
                     style={[
@@ -343,16 +353,30 @@ const Settings: React.FC = () => {
                       index < section.items.length - 1 && styles.settingItemBorder,
                       item.disabled && styles.settingItemDisabled,
                     ]}
-                    onPress={item.type === 'switch' ? undefined : item.onPress}
-                    activeOpacity={item.disabled || item.type === 'switch' ? 1 : 0.7}
-                    disabled={item.disabled || item.type === 'switch'}
+                    onPress={
+                      (item as SettingItem).type === 'switch'
+                        ? undefined
+                        : (item as SettingItem).onPress
+                    }
+                    activeOpacity={
+                      (item as SettingItem).disabled || (item as SettingItem).type === 'switch'
+                        ? 1
+                        : 0.7
+                    }
+                    disabled={
+                      (item as SettingItem).disabled || (item as SettingItem).type === 'switch'
+                    }
                   >
                     <View style={styles.settingItemLeft}>
                       <View style={[styles.iconContainer, { backgroundColor: `${accentColor}20` }]}>
                         {item.icon === 'refresh' && isCheckingUpdate ? (
                           <ActivityIndicator size="small" color={accentColor} />
                         ) : (
-                          <Ionicons name={item.icon} size={22} color={accentColor} />
+                          <Ionicons
+                            name={(item as SettingItem).icon}
+                            size={22}
+                            color={accentColor}
+                          />
                         )}
                       </View>
                       <Text
@@ -366,12 +390,12 @@ const Settings: React.FC = () => {
                       </Text>
                     </View>
                     <View style={styles.settingItemRight}>
-                      {item.type === 'switch' ? (
+                      {(item as SettingItem).type === 'switch' ? (
                         <Switch
-                          value={item.switchValue}
-                          onValueChange={() => item.onPress?.()}
+                          value={(item as SettingItem).switchValue}
+                          onValueChange={() => (item as SettingItem).onPress?.()}
                           trackColor={{ false: '#767577', true: accentColor }}
-                          thumbColor={item.switchValue ? '#ffffff' : '#f4f3f4'}
+                          thumbColor={(item as SettingItem).switchValue ? '#ffffff' : '#f4f3f4'}
                         />
                       ) : (
                         <>

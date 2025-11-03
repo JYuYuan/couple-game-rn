@@ -1,16 +1,11 @@
 // ConfirmDialog.tsx
 import React, { useEffect, useState } from 'react'
-import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from 'react-native-reanimated'
-import { BlurView } from 'expo-blur'
-import { LinearGradient } from 'expo-linear-gradient'
+import { StyleSheet, Text, View } from 'react-native'
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 import { Ionicons } from '@expo/vector-icons'
-import { useColorScheme } from '@/hooks/use-color-scheme'
-import { Colors } from '@/constants/theme'
+import { useTheme } from '@/hooks/useTheme'
+import { BaseModal } from './common/BaseModal'
+import { BaseButton } from './common/BaseButton'
 
 // Dialog 配置类型
 export interface ConfirmDialogOptions {
@@ -37,8 +32,7 @@ let showDialog: (options: ConfirmDialogOptions) => Promise<boolean>
 export function ConfirmDialogProvider() {
   const [state, setState] = useState<DialogState>({ visible: false })
 
-  const colorScheme = useColorScheme() ?? 'light'
-  const colors = Colors[colorScheme] as any
+  const { colors } = useTheme()
 
   // 动画状态
   const modalScale = useSharedValue(0.8)
@@ -104,19 +98,15 @@ export function ConfirmDialogProvider() {
   const finalConfirmColor = destructive ? '#FF6B6B' : confirmColor
 
   return (
-    <Modal visible transparent animationType="none" onRequestClose={handleCancel}>
-      <Animated.View style={[styles.backdrop, backdropStyle]}>
-        <BlurView intensity={20} style={StyleSheet.absoluteFillObject} />
-      </Animated.View>
-
+    <BaseModal visible={state.visible} onClose={handleCancel}>
       <View style={styles.container}>
         <Animated.View style={[styles.modal, modalStyle]}>
           <View
             style={[
               styles.modalContent,
               {
-                backgroundColor: colors.homeCardBackground,
-                borderColor: colors.homeCardBorder,
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
               },
             ]}
           >
@@ -127,49 +117,42 @@ export function ConfirmDialogProvider() {
                   { backgroundColor: (iconColor || finalConfirmColor) + '15' },
                 ]}
               >
-                <Ionicons name={icon as any} size={32} color={iconColor || finalConfirmColor} />
+                <Ionicons
+                  name={icon as keyof typeof Ionicons.glyphMap}
+                  size={32}
+                  color={iconColor || finalConfirmColor}
+                />
               </View>
             )}
 
-            {title ? (
-              <Text style={[styles.title, { color: colors.homeCardTitle }]}>{title}</Text>
-            ) : null}
+            {title ? <Text style={[styles.title, { color: colors.text }]}>{title}</Text> : null}
             {message ? (
-              <Text style={[styles.message, { color: colors.homeCardDescription }]}>{message}</Text>
+              <Text style={[styles.message, { color: colors.textSecondary }]}>{message}</Text>
             ) : null}
 
             <View style={styles.buttonContainer}>
               {cancelText !== false && (
-                <TouchableOpacity
-                  style={[styles.button, styles.cancelButton]}
+                <BaseButton
+                  title={cancelText}
+                  variant="secondary"
+                  size="medium"
                   onPress={handleCancel}
-                  activeOpacity={0.8}
-                >
-                  <View style={[styles.buttonContent, { backgroundColor: cancelColor + '15' }]}>
-                    <Text style={[styles.buttonText, { color: cancelColor }]}>{cancelText}</Text>
-                  </View>
-                </TouchableOpacity>
+                  style={[styles.button, styles.cancelButton]}
+                />
               )}
 
-              <TouchableOpacity
-                style={[styles.button, styles.confirmButton]}
+              <BaseButton
+                title={confirmText}
+                variant={destructive ? 'danger' : 'primary'}
+                size="medium"
                 onPress={handleConfirm}
-                activeOpacity={0.8}
-              >
-                <LinearGradient
-                  colors={[finalConfirmColor, finalConfirmColor + 'CC']}
-                  style={styles.buttonContent}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                >
-                  <Text style={[styles.buttonText, { color: 'white' }]}>{confirmText}</Text>
-                </LinearGradient>
-              </TouchableOpacity>
+                style={[styles.button, styles.confirmButton]}
+              />
             </View>
           </View>
         </Animated.View>
       </View>
-    </Modal>
+    </BaseModal>
   )
 }
 

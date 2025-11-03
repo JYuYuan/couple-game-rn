@@ -50,7 +50,7 @@ export default function MinesweeperBattle() {
   const params = useLocalSearchParams()
   const { t } = useTranslation()
   const colorScheme = useColorScheme() ?? 'light'
-  const colors = Colors[colorScheme] as any
+  const colors = Colors[colorScheme]
 
   // 获取传入的参数
   const taskSetId = params.taskSetId as string
@@ -385,7 +385,7 @@ export default function MinesweeperBattle() {
   }
 
   // 获取格子背景颜色
-  const getCellBackgroundColor = (cell: Cell, colors: any) => {
+  const getCellBackgroundColor = (cell: Cell, colors: typeof Colors.light | typeof Colors.dark) => {
     if (!cell.isRevealed) {
       return cell.isFlagged ? '#FFD700' + '30' : '#E3F2FD'
     }
@@ -404,7 +404,7 @@ export default function MinesweeperBattle() {
   }
 
   // 获取格子边框颜色
-  const getCellBorderColor = (cell: Cell, colors: any) => {
+  const getCellBorderColor = (cell: Cell, colors: typeof Colors.light | typeof Colors.dark) => {
     if (!cell.isRevealed) {
       return cell.isFlagged ? '#FFD700' : '#BDBDBD'
     }

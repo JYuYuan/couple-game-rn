@@ -8,30 +8,27 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
+import { Stack, useLocalSearchParams } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import { useColorScheme } from '@/hooks/use-color-scheme'
-import { Colors } from '@/constants/theme'
-import { useTranslation } from 'react-i18next'
+import { LinearGradient } from 'expo-linear-gradient'
+import { usePageBase } from '@/hooks/usePageBase'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
+import { commonStyles, spacing } from '@/constants/commonStyles'
 import { useSocket } from '@/hooks/use-socket'
 import { CreateRoomData } from '@/types/online'
-import { LinearGradient } from 'expo-linear-gradient'
 import { useSettingsStore } from '@/store'
-import { showError } from '@/utils/toast'
 import { AvatarGender } from '@/types/settings'
 import { AvatarOption, getRandomAvatarByGender } from '@/constants/avatars'
 import { AvatarPicker } from '@/components/AvatarPicker'
 import { useTasksStore } from '@/store/tasksStore'
 import { GameInfoCard } from '@/components/online/GameInfoCard'
 import { ModeSelector } from '@/components/online/ModeSelector'
-import { useGameTypeText, generateRoomName } from '@/components/online/RoomUtils'
+import { generateRoomName, useGameTypeText } from '@/components/online/RoomUtils'
 
 export default function CreateRoomPage() {
-  const router = useRouter()
+  const { colors, t, router } = usePageBase()
+  const { showError } = useErrorHandler()
   const params = useLocalSearchParams()
-  const colorScheme = useColorScheme() ?? 'light'
-  const colors = Colors[colorScheme] as any
-  const { t } = useTranslation()
   const socket = useSocket()
   const { networkSettings } = useSettingsStore()
   const { taskSets } = useTasksStore()
@@ -309,9 +306,7 @@ export default function CreateRoomPage() {
 
             {/* 最大玩家数 */}
             <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: colors.homeCardTitle }]}>
-                最大玩家数
-              </Text>
+              <Text style={[styles.sectionTitle, { color: colors.homeCardTitle }]}>最大玩家数</Text>
               <View style={styles.playerCountSelector}>
                 {[2, 3, 4].map((count) => (
                   <TouchableOpacity
@@ -392,19 +387,18 @@ export default function CreateRoomPage() {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    ...commonStyles.container,
   },
   content: {
-    flex: 1,
+    ...commonStyles.container,
   },
   connectionStatus: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 12,
-    marginHorizontal: 16,
-    marginBottom: 12,
-    borderRadius: 12,
+    ...commonStyles.card,
+    ...commonStyles.marginBottom12,
+    marginHorizontal: spacing.lg,
     gap: 8,
   },
   connectionText: {
@@ -417,32 +411,29 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   createSection: {
-    paddingHorizontal: 16,
+    paddingHorizontal: spacing.lg,
     paddingBottom: 32,
   },
   section: {
-    marginBottom: 24,
+    ...commonStyles.marginBottom20,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    marginBottom: 12,
+    ...commonStyles.marginBottom12,
   },
   input: {
+    ...commonStyles.input,
     borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 16,
   },
   playerCountSelector: {
     flexDirection: 'row',
-    gap: 12,
+    gap: spacing.md,
   },
   playerCountButton: {
     flex: 1,
     borderWidth: 2,
-    borderRadius: 12,
+    ...commonStyles.button,
     paddingVertical: 14,
     alignItems: 'center',
   },
@@ -451,7 +442,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   createButton: {
-    borderRadius: 12,
+    ...commonStyles.button,
     overflow: 'hidden',
     marginTop: 8,
   },
@@ -459,7 +450,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
+    paddingVertical: spacing.lg,
     gap: 8,
   },
   buttonText: {
@@ -470,13 +461,11 @@ const styles = StyleSheet.create({
   warningCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    padding: 16,
-    borderRadius: 12,
+    ...commonStyles.card,
     backgroundColor: '#FFF3CD',
     borderWidth: 1,
     borderColor: '#FFEAA7',
-    marginBottom: 16,
-    gap: 12,
+    gap: spacing.md,
   },
   warningContent: {
     flex: 1,
@@ -493,11 +482,9 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   emptyState: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    ...commonStyles.centerContainer,
     padding: 32,
-    gap: 16,
+    gap: spacing.lg,
   },
   emptyStateTitle: {
     fontSize: 20,
@@ -511,10 +498,9 @@ const styles = StyleSheet.create({
   },
   settingsButton: {
     flexDirection: 'row',
-    alignItems: 'center',
+    ...commonStyles.button,
     paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 12,
+    paddingVertical: spacing.md,
     gap: 8,
     marginTop: 8,
   },

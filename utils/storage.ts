@@ -1,8 +1,15 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Platform } from 'react-native'
 
+// 定义存储接口
+interface StorageInterface {
+  getItem: (name: string) => Promise<string | null> | string | null
+  setItem: (name: string, value: string) => Promise<void> | void
+  removeItem: (name: string) => Promise<void> | void
+}
+
 // 创建单例存储实例，避免重复初始化
-let storageInstance: any = null
+let storageInstance: StorageInterface | null = null
 
 export const getStorage = () => {
   if (storageInstance) {

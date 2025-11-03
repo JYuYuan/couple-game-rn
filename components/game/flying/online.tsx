@@ -12,7 +12,7 @@ import VictoryModal from '@/components/VictoryModal'
 import { GamePlayer } from '@/hooks/use-game-players'
 import { useAudioManager } from '@/hooks/use-audio-manager'
 import { useTranslation } from 'react-i18next'
-import { DiceRollResult, OnlinePlayer, TaskModalData } from '@/types/online'
+import { OnlinePlayer, TaskModalData } from '@/types/online'
 import { useSocket } from '@/hooks/use-socket'
 import { useRoomStore, useSettingsStore } from '@/store'
 import { useDeepCompareEffect } from 'ahooks'
@@ -155,10 +155,12 @@ export default function FlyingChessGame() {
       // 检查是否真的需要更新（避免不必要的重渲染）
       const needsUpdate = players.some((serverPlayer, index) => {
         const localPlayer = animatedPlayers[index]
-        return !localPlayer ||
+        return (
+          !localPlayer ||
           localPlayer.id !== serverPlayer.id ||
           localPlayer.position !== serverPlayer.position ||
           localPlayer.name !== serverPlayer.name
+        )
       })
 
       if (needsUpdate) {
@@ -174,7 +176,7 @@ export default function FlyingChessGame() {
   const playerCount = animatedPlayers.length || 1
   const availableWidth = maxContainerWidth - 32 // 减去padding
   const cardSpacing = Layout.spacing.sm * (playerCount - 1) // 卡片间距
-  
+
   // 修复两个玩家时的宽度计算问题
   let calculatedCardWidth: number
   if (playerCount <= 2) {
@@ -763,7 +765,6 @@ export default function FlyingChessGame() {
               <Text style={[styles.sectionTitle, { color: colors.homeCardTitle }]}>
                 {t('flyingChess.playersStatus', '玩家状态')}
               </Text>
-
             </View>
             <ScrollView
               horizontal
@@ -848,15 +849,18 @@ export default function FlyingChessGame() {
               ))}
             </ScrollView>
             <TouchableOpacity
-              style={[styles.leaveRoomButton, {
-                backgroundColor: colors.homeCardBackground,
-                borderColor: '#FF6B6B',
-                shadowColor: '#FF6B6B',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.15,
-                shadowRadius: 4,
-                elevation: 3,
-              }]}
+              style={[
+                styles.leaveRoomButton,
+                {
+                  backgroundColor: colors.homeCardBackground,
+                  borderColor: '#FF6B6B',
+                  shadowColor: '#FF6B6B',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.15,
+                  shadowRadius: 4,
+                  elevation: 3,
+                },
+              ]}
               onPress={handleLeaveRoom}
               activeOpacity={0.8}
             >

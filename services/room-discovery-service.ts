@@ -4,8 +4,8 @@ import { NetworkInfo } from 'react-native-network-info'
 // 房间发现服务
 export class RoomDiscoveryService {
   private static instance: RoomDiscoveryService
-  private discoveryInterval: any = null
-  private broadcastInterval: any = null
+  private discoveryInterval: NodeJS.Timeout | null = null
+  private broadcastInterval: NodeJS.Timeout | null = null
   private listeners: Map<string, Set<Function>> = new Map()
   private discoveredRooms: Map<string, LANRoomDiscovery> = new Map()
   private currentRoom: LANRoom | null = null
@@ -34,7 +34,7 @@ export class RoomDiscoveryService {
     }
   }
 
-  private emit(event: string, ...args: any[]): void {
+  private emit(event: string, ...args: unknown[]): void {
     const eventListeners = this.listeners.get(event)
     if (eventListeners) {
       eventListeners.forEach((callback) => callback(...args))
@@ -201,7 +201,7 @@ export class RoomDiscoveryService {
   }
 
   // 获取 SocketService 实例
-  private getSocketService(): any {
+  private getSocketService(): unknown {
     try {
       return require('./socket-service').socketService
     } catch (error) {

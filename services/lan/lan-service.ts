@@ -146,7 +146,7 @@ class LANService {
     try {
       await udpBroadcastService.startBroadcasting(broadcastData)
       console.log('✅ [LANService] UDP 广播已启动')
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ [LANService] 启动 UDP 广播失败:', error)
       console.error('💡 房间已创建，但其他设备可能无法发现此房间')
       // 不抛出错误，因为房间已经创建，只是广播失败
@@ -216,20 +216,21 @@ class LANService {
         }, 30000) // 增加到30秒以适应较慢的网络环境
 
         console.log('📤 [LANService] 调用 tcpClient.sendEvent...')
-        tcpClient.sendEvent('room:join', data, (response: any) => {
+        tcpClient.sendEvent('room:join', data, (response: unknown) => {
           console.log('📨 [LANService] 收到 room:join 响应:', JSON.stringify(response))
           clearTimeout(timeout)
 
-          if (response.error) {
-            console.error('❌ [LANService] 加入房间失败:', response.error)
-            reject(new Error(response.error))
+          const responseObj = response as { error?: string; id?: string } & BaseRoom
+          if (responseObj.error) {
+            console.error('❌ [LANService] 加入房间失败:', responseObj.error)
+            reject(new Error(responseObj.error))
           } else {
-            this.currentRoom = response
-            console.log('✅ [LANService] 加入房间成功，房间ID:', response.id)
+            this.currentRoom = responseObj
+            console.log('✅ [LANService] 加入房间成功，房间ID:', responseObj.id)
 
             // 返回包含网络信息的 LANRoom 对象
             const lanRoom = {
-              ...response,
+              ...responseObj,
               connectionType: 'lan' as const,
               networkInfo: {
                 hostIP: hostIP,
@@ -242,12 +243,13 @@ class LANService {
           }
         })
       })
-    } catch (error: any) {
-      console.error('❌ [LANService] 连接失败:', error.message)
+    } catch (error: unknown) {
+      const errorMessage = (error as Error)?.message || 'Unknown error'
+      console.error('❌ [LANService] 连接失败:', errorMessage)
       // 提供更详细的错误信息
-      if (error.message.includes('ECONNREFUSED')) {
+      if (errorMessage.includes('ECONNREFUSED')) {
         throw new Error('无法连接到房主设备，请确认房主已创建房间且网络连接正常')
-      } else if (error.message.includes('ETIMEDOUT')) {
+      } else if (errorMessage.includes('ETIMEDOUT')) {
         throw new Error('连接超时，请检查网络连接或重试')
       } else {
         throw error
@@ -362,8 +364,8 @@ class LANService {
   /**
    * 游戏动作
    */
-  async handleGameAction(data: DiceRollData | TaskCompleteData): Promise<any> {
-    const roomId = (data as any).roomId
+  async handleGameAction(data: DiceRollData | TaskCompleteData): Promise<unknown> {
+    const roomId = (data as { roomId?: string }).roomId
     console.log('🎮 [LANService] handleGameAction 调用, roomId:', roomId, 'isHost:', this.isHost)
 
     if (this.isHost) {
@@ -376,7 +378,10 @@ class LANService {
 
       console.log('🐛 [LANService] 游戏实例:', game)
       console.log('🐛 [LANService] 游戏实例类型:', game?.constructor?.name)
-      console.log('🐛 [LANService] 是否有 onPlayerAction:', typeof game?.onPlayerAction === 'function')
+      console.log(
+        '🐛 [LANService] 是否有 onPlayerAction:',
+        typeof game?.onPlayerAction === 'function',
+      )
 
       if (!game) {
         console.error('❌ [LANService] 游戏实例不存在!')
@@ -390,8 +395,8 @@ class LANService {
         throw new Error('游戏实例无效：缺少 onPlayerAction 方法')
       }
 
-      let callbackResult: any = null
-      const callback = (result: any) => {
+      let callbackResult: unknown = null
+      const callback = (result: unknown) => {
         callbackResult = result
       }
 
@@ -410,11 +415,12 @@ class LANService {
           reject(new Error('游戏动作超时'))
         }, 10000)
 
-        tcpClient.sendEvent('game:action', data, (response: any) => {
+        tcpClient.sendEvent('game:action', data, (response: unknown) => {
           clearTimeout(timeout)
 
-          if (response.error) {
-            reject(new Error(response.error))
+          const responseObj = response as { error?: string }
+          if (responseObj.error) {
+            reject(new Error(responseObj.error))
           } else {
             resolve(response)
           }
@@ -428,12 +434,12 @@ class LANService {
    */
   private setupTCPServerEvents(): void {
     // 客户端连接
-    tcpServer.on('client:connected', (data: any) => {
+    tcpServer.on('client:connected', (data: { clientId: string }) => {
       console.log('👤 新客户端连接:', data.clientId)
     })
 
     // 客户端断开
-    tcpServer.on('client:disconnected', async (data: any) => {
+    tcpServer.on('client:disconnected', async (data: { playerId: string }) => {
       console.log('👋 客户端断开:', data.playerId)
 
       // 从房间移除玩家
@@ -465,139 +471,153 @@ class LANService {
     console.log('🐛 [DEBUG] 检查 room:join 事件监听器是否存在')
 
     // 加入房间
-    tcpServer.on('room:join', async (data: any) => {
-      try {
-        console.log('📨 [TCPServer] 收到 room:join 请求')
-        console.log(
-          '📋 [TCPServer] 请求数据:',
-          JSON.stringify({
-            playerId: data.playerId,
-            requestId: data.requestId,
-            playerName: data.data?.playerName,
-          }),
-        )
+    tcpServer.on(
+      'room:join',
+      async (data: { playerId: string; requestId: string; data: JoinRoomData }) => {
+        try {
+          console.log('📨 [TCPServer] 收到 room:join 请求')
+          console.log(
+            '📋 [TCPServer] 请求数据:',
+            JSON.stringify({
+              playerId: data.playerId,
+              requestId: data.requestId,
+              playerName: data.data?.playerName,
+            }),
+          )
 
-        if (!this.currentRoom) {
-          console.error('❌ [TCPServer] 房间不存在')
-          throw new Error('房间不存在')
-        }
-
-        console.log('✅ [TCPServer] 当前房间:', this.currentRoom.id)
-
-        // 创建玩家
-        let player = await playerManager.getPlayer(data.playerId)
-        if (!player) {
-          console.log('[TCPServer] 创建新玩家:', data.playerId)
-          player = await playerManager.addPlayer(data.playerId, {
-            playerId: data.playerId,
-            name: data.data.playerName || `Player_${data.playerId.substring(0, 6)}`,
-            roomId: this.currentRoom.id,
-            isHost: false,
-            socketId: data.playerId,
-            isConnected: true,
-            avatarId: data.data.avatarId || '', // 头像ID
-            gender: data.data.gender || 'man', // 性别
-            color: this.getRandomColor(), // 随机背景色
-            ...data,
-          })
-          console.log('✅ [TCPServer] 玩家创建成功')
-        } else {
-          console.log('🔄 [TCPServer] 更新现有玩家:', data.playerId)
-          player.name = data.data.playerName || player.name
-          player.isHost = false
-          player.avatarId = data.data.avatarId || ''
-          player.gender = data.data.gender || 'man'
-          // 如果没有颜色，分配一个随机颜色
-          if (!player.color) {
-            player.color = this.getRandomColor()
+          if (!this.currentRoom) {
+            console.error('❌ [TCPServer] 房间不存在')
+            throw new Error('房间不存在')
           }
+
+          console.log('✅ [TCPServer] 当前房间:', this.currentRoom.id)
+
+          // 创建玩家
+          let player = await playerManager.getPlayer(data.playerId)
+          if (!player) {
+            console.log('[TCPServer] 创建新玩家:', data.playerId)
+            player = await playerManager.addPlayer(data.playerId, {
+              playerId: data.playerId,
+              name: data.data.playerName || `Player_${data.playerId.substring(0, 6)}`,
+              roomId: this.currentRoom.id,
+              isHost: false,
+              socketId: data.playerId,
+              isConnected: true,
+              avatarId: data.data.avatarId || '', // 头像ID
+              gender: data.data.gender || 'man', // 性别
+              color: this.getRandomColor(), // 随机背景色
+              ...data,
+            })
+            console.log('✅ [TCPServer] 玩家创建成功')
+          } else {
+            console.log('🔄 [TCPServer] 更新现有玩家:', data.playerId)
+            player.name = data.data.playerName || player.name
+            player.isHost = false
+            player.avatarId = data.data.avatarId || ''
+            player.gender = data.data.gender || 'man'
+            // 如果没有颜色，分配一个随机颜色
+            if (!player.color) {
+              player.color = this.getRandomColor()
+            }
+            await playerManager.updatePlayer(player)
+            console.log('✅ [TCPServer] 玩家更新成功')
+          }
+
+          // 加入房间
+          console.log('🚪 [TCPServer] 将玩家加入房间...')
+          const updatedRoom = await roomManager.addPlayerToRoom(this.currentRoom.id, player)
+          if (!updatedRoom) {
+            console.error('❌ [TCPServer] 房间已满')
+            throw new Error('房间已满')
+          }
+
+          console.log('✅ [TCPServer] 玩家已加入房间，当前玩家数:', updatedRoom.players.length)
+
+          player.roomId = updatedRoom.id
           await playerManager.updatePlayer(player)
-          console.log('✅ [TCPServer] 玩家更新成功')
+
+          this.currentRoom = updatedRoom
+
+          // 发送响应
+          console.log('📤 [TCPServer] 发送响应到客户端:', data.playerId)
+          console.log(
+            '📋 [TCPServer] 响应数据: requestId=',
+            data.requestId,
+            ', roomId=',
+            updatedRoom.id,
+          )
+
+          const success = tcpServer.sendToClient(data.playerId, {
+            type: 'response',
+            requestId: data.requestId,
+            data: updatedRoom,
+          })
+
+          console.log(success ? '✅ [TCPServer] 响应发送成功' : '❌ [TCPServer] 响应发送失败')
+
+          // 广播房间更新
+          console.log('📡 [TCPServer] 广播房间更新...')
+          console.log('🐛 [DEBUG] 当前连接的客户端数:', tcpServer.getClientCount())
+          tcpServer.broadcast({
+            type: 'broadcast',
+            event: 'room:update',
+            data: updatedRoom,
+          })
+          console.log('🐛 [DEBUG] 广播已发送')
+
+          // 更新 UDP 广播
+          udpBroadcastService.updateRoomInfo({
+            currentPlayers: updatedRoom.players.length,
+          })
+
+          // 触发本地事件
+          console.log('🐛 [DEBUG] 准备触发 room:update 事件')
+          console.log('🐛 [DEBUG] 监听器数量:', this.eventListeners.get('room:update')?.size || 0)
+          console.log('🐛 [DEBUG] 更新后的房间玩家数:', updatedRoom.players.length)
+          console.log(
+            '🐛 [DEBUG] 玩家列表:',
+            updatedRoom.players.map((p: any) => p.name).join(', '),
+          )
+          this.emit('room:update', updatedRoom)
+          console.log('🐛 [DEBUG] room:update 事件已触发')
+        } catch (error: unknown) {
+          const errorMessage = (error as Error)?.message || 'Unknown error'
+          console.error('❌ [TCPServer] 加入房间失败:', errorMessage)
+          console.log('📤 [TCPServer] 发送错误响应到客户端:', data.playerId)
+
+          tcpServer.sendToClient(data.playerId, {
+            type: 'response',
+            requestId: data.requestId,
+            data: { error: error.message },
+          })
         }
-
-        // 加入房间
-        console.log('🚪 [TCPServer] 将玩家加入房间...')
-        const updatedRoom = await roomManager.addPlayerToRoom(this.currentRoom.id, player)
-        if (!updatedRoom) {
-          console.error('❌ [TCPServer] 房间已满')
-          throw new Error('房间已满')
-        }
-
-        console.log('✅ [TCPServer] 玩家已加入房间，当前玩家数:', updatedRoom.players.length)
-
-        player.roomId = updatedRoom.id
-        await playerManager.updatePlayer(player)
-
-        this.currentRoom = updatedRoom
-
-        // 发送响应
-        console.log('📤 [TCPServer] 发送响应到客户端:', data.playerId)
-        console.log(
-          '📋 [TCPServer] 响应数据: requestId=',
-          data.requestId,
-          ', roomId=',
-          updatedRoom.id,
-        )
-
-        const success = tcpServer.sendToClient(data.playerId, {
-          type: 'response',
-          requestId: data.requestId,
-          data: updatedRoom,
-        })
-
-        console.log(success ? '✅ [TCPServer] 响应发送成功' : '❌ [TCPServer] 响应发送失败')
-
-        // 广播房间更新
-        console.log('📡 [TCPServer] 广播房间更新...')
-        console.log('🐛 [DEBUG] 当前连接的客户端数:', tcpServer.getClientCount())
-        tcpServer.broadcast({
-          type: 'broadcast',
-          event: 'room:update',
-          data: updatedRoom,
-        })
-        console.log('🐛 [DEBUG] 广播已发送')
-
-        // 更新 UDP 广播
-        udpBroadcastService.updateRoomInfo({
-          currentPlayers: updatedRoom.players.length,
-        })
-
-        // 触发本地事件
-        console.log('🐛 [DEBUG] 准备触发 room:update 事件')
-        console.log('🐛 [DEBUG] 监听器数量:', this.eventListeners.get('room:update')?.size || 0)
-        console.log('🐛 [DEBUG] 更新后的房间玩家数:', updatedRoom.players.length)
-        console.log('🐛 [DEBUG] 玩家列表:', updatedRoom.players.map((p: any) => p.name).join(', '))
-        this.emit('room:update', updatedRoom)
-        console.log('🐛 [DEBUG] room:update 事件已触发')
-      } catch (error: any) {
-        console.error('❌ [TCPServer] 加入房间失败:', error.message)
-        console.log('📤 [TCPServer] 发送错误响应到客户端:', data.playerId)
-
-        tcpServer.sendToClient(data.playerId, {
-          type: 'response',
-          requestId: data.requestId,
-          data: { error: error.message },
-        })
-      }
-    })
+      },
+    )
 
     // 游戏动作
-    tcpServer.on('game:action', async (data: any) => {
-      try {
-        const result = await this.handleGameAction(data.data)
-        tcpServer.sendToClient(data.playerId, {
-          type: 'response',
-          requestId: data.requestId,
-          data: result,
-        })
-      } catch (error: any) {
-        tcpServer.sendToClient(data.playerId, {
-          type: 'response',
-          requestId: data.requestId,
-          data: { error: error.message },
-        })
-      }
-    })
+    tcpServer.on(
+      'game:action',
+      async (data: {
+        playerId: string
+        requestId: string
+        data: DiceRollData | TaskCompleteData
+      }) => {
+        try {
+          const result = await this.handleGameAction(data.data)
+          tcpServer.sendToClient(data.playerId, {
+            type: 'response',
+            requestId: data.requestId,
+            data: result,
+          })
+        } catch (error: unknown) {
+          tcpServer.sendToClient(data.playerId, {
+            type: 'response',
+            requestId: data.requestId,
+            data: { error: error.message },
+          })
+        }
+      },
+    )
   }
 
   /**
@@ -617,22 +637,22 @@ class LANService {
     })
 
     // 房间更新
-    tcpClient.on('room:update', (data: any) => {
+    tcpClient.on('room:update', (data: BaseRoom) => {
       console.log('📨 收到房间更新:', data)
       this.currentRoom = data
       this.emit('room:update', data)
     })
 
     // 游戏事件
-    tcpClient.on('game:started', (data: any) => {
+    tcpClient.on('game:started', (data: { gameType: string }) => {
       this.emit('game:started', data)
     })
 
-    tcpClient.on('game:stateUpdate', (data: any) => {
+    tcpClient.on('game:stateUpdate', (data: unknown) => {
       this.emit('game:stateUpdate', data)
     })
 
-    tcpClient.on('game:ended', (data: any) => {
+    tcpClient.on('game:ended', (data: { winner?: string; reason?: string }) => {
       this.emit('game:ended', data)
     })
   }
@@ -640,10 +660,13 @@ class LANService {
   /**
    * 创建模拟的 Socket.IO 对象
    */
-  private createMockIO(): any {
+  private createMockIO(): {
+    emit: (event: string, data: unknown) => void
+    to: (roomId: string) => { emit: (event: string, data: unknown) => void }
+  } {
     return {
       to: (roomId: string) => ({
-        emit: (event: string, data: any) => {
+        emit: (event: string, data: unknown) => {
           console.log(`📡 [MockIO] to(${roomId}).emit(${event})`)
 
           // 广播给所有客户端
@@ -660,7 +683,7 @@ class LANService {
           console.log(`✅ [MockIO] 本地事件触发完成`)
         },
       }),
-      emit: (event: string, data: any) => {
+      emit: (event: string, data: unknown) => {
         console.log(`📡 [MockIO] emit(${event})`)
 
         // 全局广播
@@ -701,7 +724,7 @@ class LANService {
   /**
    * 触发本地事件
    */
-  private emit(event: string, data: any): void {
+  private emit(event: string, data: unknown): void {
     console.log(`🔔 [LANService] emit 事件: ${event}`)
     console.log(`🐛 [LANService] 监听器数量: ${this.eventListeners.get(event)?.size || 0}`)
 
@@ -774,3 +797,4 @@ class LANService {
 }
 
 export const lanService = LANService.getInstance()
+export type { LANService }

@@ -21,7 +21,7 @@ export const AvatarPicker: React.FC<AvatarPickerProps> = ({
   onAvatarChange,
 }) => {
   const colorScheme = useColorScheme() ?? 'light'
-  const colors = Colors[colorScheme] as any
+  const colors = Colors[colorScheme]
   const { t } = useTranslation()
 
   const handleGenderSelect = (gender: AvatarGender) => {

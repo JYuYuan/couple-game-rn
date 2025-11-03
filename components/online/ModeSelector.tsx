@@ -1,5 +1,5 @@
 import React from 'react'
-import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native'
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { useColorScheme } from '@/hooks/use-color-scheme'
 import { Colors } from '@/constants/theme'
@@ -41,18 +41,14 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({
           <Ionicons
             name="cloud"
             size={18}
-            color={
-              connectionMode === 'online' ? colors.settingsAccent : colors.homeCardDescription
-            }
+            color={connectionMode === 'online' ? colors.settingsAccent : colors.homeCardDescription}
           />
           <Text
             style={[
               styles.modeText,
               {
                 color:
-                  connectionMode === 'online'
-                    ? colors.settingsAccent
-                    : colors.homeCardDescription,
+                  connectionMode === 'online' ? colors.settingsAccent : colors.homeCardDescription,
               },
             ]}
           >
@@ -79,9 +75,7 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({
               styles.modeText,
               {
                 color:
-                  connectionMode === 'lan'
-                    ? colors.settingsAccent
-                    : colors.homeCardDescription,
+                  connectionMode === 'lan' ? colors.settingsAccent : colors.homeCardDescription,
               },
             ]}
           >

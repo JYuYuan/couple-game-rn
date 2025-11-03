@@ -9,18 +9,17 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
+import { Stack, useLocalSearchParams } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import { useColorScheme } from '@/hooks/use-color-scheme'
-import { Colors } from '@/constants/theme'
-import { useTranslation } from 'react-i18next'
+import { LinearGradient } from 'expo-linear-gradient'
+import { usePageBase } from '@/hooks/usePageBase'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
+import { commonStyles, spacing } from '@/constants/commonStyles'
 import { useSocket } from '@/hooks/use-socket'
 import { JoinLANRoomData, JoinRoomData, LANRoomDiscovery, OnlineRoom } from '@/types/online'
-import { LinearGradient } from 'expo-linear-gradient'
 import { useSettingsStore } from '@/store'
-import { showError } from '@/utils/toast'
 import { AvatarGender } from '@/types/settings'
-import { AvatarOption, getRandomAvatarByGender, getAvatarById } from '@/constants/avatars'
+import { AvatarOption, getAvatarById, getRandomAvatarByGender } from '@/constants/avatars'
 import { AvatarPicker } from '@/components/AvatarPicker'
 import { useTasksStore } from '@/store/tasksStore'
 import { GameInfoCard } from '@/components/online/GameInfoCard'
@@ -32,11 +31,9 @@ type LANTabType = 'scan' | 'manual'
 type OnlineTabType = 'browse' | 'code'
 
 export default function JoinRoomPage() {
-  const router = useRouter()
+  const { colors, t, router } = usePageBase()
+  const { showError } = useErrorHandler()
   const params = useLocalSearchParams()
-  const colorScheme = useColorScheme() ?? 'light'
-  const colors = Colors[colorScheme] as any
-  const { t } = useTranslation()
   const socket = useSocket()
   const { networkSettings, playerProfile, setPlayerProfile } = useSettingsStore()
   const { taskSets } = useTasksStore()
@@ -262,7 +259,7 @@ export default function JoinRoomPage() {
     try {
       await socket.startRoomScan?.()
       const updateInterval = setInterval(() => {
-        const rooms: any = socket.getDiscoveredRooms?.()
+        const rooms = socket.getDiscoveredRooms?.() as LANRoomDiscovery[] | undefined
         if (rooms) {
           setDiscoveredRooms(rooms)
         }
@@ -1107,19 +1104,18 @@ export default function JoinRoomPage() {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    ...commonStyles.container,
   },
   content: {
-    flex: 1,
+    ...commonStyles.container,
   },
   connectionStatus: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 12,
-    marginHorizontal: 16,
-    marginBottom: 12,
-    borderRadius: 12,
+    ...commonStyles.card,
+    ...commonStyles.marginBottom12,
+    marginHorizontal: spacing.lg,
     gap: 8,
   },
   connectionText: {
@@ -1132,11 +1128,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   joinSection: {
-    paddingHorizontal: 16,
+    paddingHorizontal: spacing.lg,
     paddingBottom: 32,
   },
   section: {
-    marginBottom: 24,
+    ...commonStyles.marginBottom20,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -1147,11 +1143,11 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    marginBottom: 12,
+    ...commonStyles.marginBottom12,
   },
   sectionSubtitle: {
     fontSize: 14,
-    marginBottom: 12,
+    ...commonStyles.marginBottom12,
     lineHeight: 20,
   },
   inputLabel: {
@@ -1161,16 +1157,14 @@ const styles = StyleSheet.create({
   },
   tabsContainer: {
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 16,
+    gap: spacing.md,
+    marginBottom: spacing.lg,
   },
   tab: {
     flex: 1,
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    borderRadius: 12,
+    ...commonStyles.button,
+    paddingVertical: spacing.md,
     borderWidth: 2,
     gap: 6,
   },
@@ -1196,11 +1190,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   input: {
+    ...commonStyles.input,
     borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 16,
   },
   scanButton: {
     flexDirection: 'row',
@@ -1325,15 +1316,15 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   joinButton: {
-    borderRadius: 12,
+    ...commonStyles.button,
     overflow: 'hidden',
-    marginTop: 12,
+    marginTop: spacing.md,
   },
   buttonGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
+    paddingVertical: spacing.lg,
     gap: 8,
   },
   buttonText: {

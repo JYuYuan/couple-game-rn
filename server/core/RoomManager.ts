@@ -1,13 +1,13 @@
 import { v4 as uuidv4 } from 'uuid'
 import redis from './redisClient.js'
-import type { Room, Player } from '../typings/socket'
+import type { Player, Room } from '../typings/socket'
 
 interface CreateRoomParams {
   name: string
   hostId: string
   maxPlayers?: number
   gameType: 'fly' | 'wheel' | 'minesweeper'
-  [key: string]: any
+  [key: string]: unknown
 }
 
 class RoomManager {

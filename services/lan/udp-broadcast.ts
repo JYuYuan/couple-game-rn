@@ -25,7 +25,7 @@ export interface RoomBroadcast {
  * UDP 广播服务类
  */
 class UDPBroadcastService {
-  private socket: any | null = null
+  private socket: dgram.Socket | null = null
   private broadcastInterval: ReturnType<typeof setInterval> | null = null
   private roomInfo: RoomBroadcast | null = null
   private discoveredRooms: Map<string, RoomBroadcast> = new Map()
@@ -55,7 +55,7 @@ class UDPBroadcastService {
     })
 
     // 监听广播消息
-    this.socket.on('message', (data: string | Buffer, rinfo: any) => {
+    this.socket.on('message', (data: string | Buffer, rinfo: { address: string; port: number }) => {
       try {
         const message = typeof data === 'string' ? data : data.toString('utf8')
         const roomData: RoomBroadcast = JSON.parse(message)
@@ -107,7 +107,7 @@ class UDPBroadcastService {
       }
     })
 
-    this.socket.on('error', (error: any) => {
+    this.socket.on('error', (error: Error) => {
       const errorCode = error?.code || 'UNKNOWN'
       const errorMessage = error?.message || error?.toString() || '未知错误'
 
@@ -159,20 +159,20 @@ class UDPBroadcastService {
               this.socket?.setMulticastLoopback(true)
               this.socket?.setMulticastTTL(255)
               console.log('✅ 多播选项设置成功')
-            } catch (e: any) {
-              console.warn('⚠️ 设置多播选项失败 (可忽略):', e?.message)
+            } catch (e: unknown) {
+              console.warn('⚠️ 设置多播选项失败 (可忽略):', (e as Error)?.message)
             }
 
             console.log('✅ UDP 广播接收已启用')
             console.log('📡 正在等待房间广播...')
-          } catch (e: any) {
-            console.error('❌ 设置广播选项失败:', e?.message || e)
+          } catch (e: unknown) {
+            console.error('❌ 设置广播选项失败:', (e as Error)?.message || e)
             console.error('💡 这可能导致无法接收广播消息')
           }
         },
       )
-    } catch (error: any) {
-      const errorMessage = error?.message || error?.toString() || '未知错误'
+    } catch (error: unknown) {
+      const errorMessage = (error as Error)?.message || (error as Error)?.toString() || '未知错误'
       console.error('❌ 绑定 UDP 端口失败:', errorMessage)
       console.error('💡 建议:')
       console.error('  1. 检查端口 8888 是否被其他应用占用')
@@ -269,7 +269,7 @@ class UDPBroadcastService {
       let isResolved = false
 
       // 错误处理
-      socket.on('error', (error: any) => {
+      socket.on('error', (error: Error) => {
         console.error('❌ UDP 广播 Socket 错误:', error)
         if (!isResolved) {
           isResolved = true
@@ -403,16 +403,23 @@ class UDPBroadcastService {
       for (const address of broadcastAddresses) {
         try {
           await new Promise<void>((resolve, reject) => {
-            this.socket.send(buffer, 0, buffer.length, BROADCAST_PORT, address, (error: any) => {
-              if (error) {
-                console.warn(`⚠️ 广播到 ${address} 失败:`, error.message)
-                errorCount++
-                reject(error)
-              } else {
-                successCount++
-                resolve()
-              }
-            })
+            this.socket.send(
+              buffer,
+              0,
+              buffer.length,
+              BROADCAST_PORT,
+              address,
+              (error: Error | null) => {
+                if (error) {
+                  console.warn(`⚠️ 广播到 ${address} 失败:`, error.message)
+                  errorCount++
+                  reject(error)
+                } else {
+                  successCount++
+                  resolve()
+                }
+              },
+            )
           })
         } catch (error) {
           // 单个地址失败不影响其他地址
@@ -528,7 +535,7 @@ class UDPBroadcastService {
   /**
    * 验证房间广播数据格式
    */
-  private isValidRoomBroadcast(data: any): data is RoomBroadcast {
+  private isValidRoomBroadcast(data: unknown): data is RoomBroadcast {
     return (
       data &&
       typeof data.roomId === 'string' &&
@@ -615,7 +622,7 @@ class UDPBroadcastService {
             testBuffer.length,
             BROADCAST_PORT,
             '255.255.255.255',
-            (error: any) => {
+            (error: Error | null) => {
               if (error) {
                 issues.push(`测试广播失败: ${error.message || error}`)
                 suggestions.push('可能是防火墙阻止或端口被占用')
@@ -630,8 +637,8 @@ class UDPBroadcastService {
           // 超时
           setTimeout(() => reject(new Error('测试超时')), 2000)
         })
-      } catch (error: any) {
-        issues.push(`Socket 测试失败: ${error.message}`)
+      } catch (error: unknown) {
+        issues.push(`Socket 测试失败: ${(error as Error).message}`)
         suggestions.push('请检查网络权限和防火墙设置')
       }
     }

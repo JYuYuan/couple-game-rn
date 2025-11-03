@@ -9,12 +9,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useColorScheme } from '@/hooks/use-color-scheme'
 import { Colors } from '@/constants/theme'
 import { getWindow } from '@/utils'
+import type { BottomTabBarProps } from '@react-navigation/bottom-tabs'
 
 const { width: screenWidth } = getWindow()
 
 const ICONS = ['home', 'list-outline', 'settings-sharp'] // 支持3个标签页
 
-const CustomTabBar: React.FC<any> = ({ state, navigation }) => {
+const CustomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) => {
   const insets = useSafeAreaInsets()
   const colorScheme = useColorScheme() ?? 'light'
   const colors = Colors[colorScheme] as any
@@ -69,7 +70,7 @@ const CustomTabBar: React.FC<any> = ({ state, navigation }) => {
             </BlurView>
           </Animated.View>
 
-          {state.routes.map((route: any, index: number) => {
+          {state.routes.map((route, index: number) => {
             const isFocused = state.index === index
             const onPress = () => {
               const event = navigation.emit({
@@ -98,7 +99,16 @@ const CustomTabBar: React.FC<any> = ({ state, navigation }) => {
   )
 }
 
-const TabButton: React.FC<any> = ({
+interface TabButtonProps {
+  icon: string
+  isFocused: boolean
+  onPress: () => void
+  onLongPress: () => void
+  activeColor: string
+  inactiveColor: string
+}
+
+const TabButton: React.FC<TabButtonProps> = ({
   icon,
   isFocused,
   onPress,

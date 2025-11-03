@@ -84,13 +84,33 @@ export default function Home() {
     },
   ]
 
+  // 游戏选项类型定义
+  interface GameOption {
+    key: string
+    title: string
+    subtitle: string
+    description: string
+    icon: string
+    href: string
+    gradient: [string, string]
+    accentColor: string
+    hasOnline: boolean
+  }
+
+  // GameCard组件属性类型
+  interface GameCardProps {
+    game: GameOption
+    colors: typeof Colors.light | typeof Colors.dark
+    index?: number
+  }
+
   // 检查是否有在线游戏进行中 - 只检查支持在线模式的游戏
   const hasOnlineGame =
     socket.currentRoom &&
     socket.currentRoom.gameStatus === 'playing' &&
     gameOptions.find((game) => game.hasOnline && game.key === socket.currentRoom?.gameType)
 
-  const GameCard = ({ game, colors }: any) => {
+  const GameCard = ({ game, colors }: GameCardProps) => {
     const scale = useSharedValue(1)
     const opacity = useSharedValue(1)
 

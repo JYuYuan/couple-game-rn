@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Dimensions, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { Dimensions, StyleSheet, Text, View } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import Animated, {
   interpolate,
@@ -9,10 +9,10 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated'
 import { LinearGradient } from 'expo-linear-gradient'
-import { BlurView } from 'expo-blur'
 import { Ionicons } from '@expo/vector-icons'
-import { useColorScheme } from '@/hooks/use-color-scheme'
-import { Colors } from '@/constants/theme'
+import { BaseModal } from '@/components/common/BaseModal'
+import { BaseButton } from '@/components/common/BaseButton'
+import { useTheme } from '@/hooks/useTheme'
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window')
 
@@ -34,8 +34,7 @@ interface MineTaskModalProps {
 
 export default function MineTaskModal({ visible, task, onComplete, onClose }: MineTaskModalProps) {
   const { t } = useTranslation()
-  const colorScheme = useColorScheme() ?? 'light'
-  const colors = Colors[colorScheme] as any
+  const { colors } = useTheme()
 
   const [isCompleted, setIsCompleted] = useState<boolean | null>(null)
   const [showResult, setShowResult] = useState(false)
@@ -65,10 +64,6 @@ export default function MineTaskModal({ visible, task, onComplete, onClose }: Mi
       contentOpacity.value = withTiming(0, { duration: 200 })
     }
   }, [visible])
-
-  const backdropStyle = useAnimatedStyle(() => ({
-    opacity: backdropOpacity.value,
-  }))
 
   const modalStyle = useAnimatedStyle(() => ({
     transform: [
@@ -113,15 +108,11 @@ export default function MineTaskModal({ visible, task, onComplete, onClose }: Mi
   const resultInfo = getResultInfo()
 
   return (
-    <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
-      <Animated.View style={[styles.backdrop, backdropStyle]}>
-        <BlurView intensity={20} style={StyleSheet.absoluteFillObject} />
-      </Animated.View>
-
+    <BaseModal visible={visible} onClose={onClose}>
       <View style={styles.container}>
         <Animated.View style={[styles.modal, modalStyle]}>
           <LinearGradient
-            colors={[colors.homeCardBackground, colors.homeCardBackground + 'F0']}
+            colors={[colors.surface, colors.surface + 'F0']}
             style={styles.modalContent}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
@@ -134,7 +125,7 @@ export default function MineTaskModal({ visible, task, onComplete, onClose }: Mi
                   <View style={[styles.mineIcon, { backgroundColor: '#F44336' + '20' }]}>
                     <Text style={styles.mineEmoji}>💣</Text>
                   </View>
-                  <Text style={[styles.headerTitle, { color: colors.homeCardTitle }]}>
+                  <Text style={[styles.headerTitle, { color: colors.text }]}>
                     {t('minesweeper.task.hitMine', '踩到地雷了！')}
                   </Text>
                   <Text style={[styles.headerSubtitle, { color: '#F44336' }]}>
@@ -149,14 +140,14 @@ export default function MineTaskModal({ visible, task, onComplete, onClose }: Mi
 
                 {/* 玩家信息 */}
                 <View style={styles.playerSection}>
-                  <Text style={[styles.sectionTitle, { color: colors.homeCardTitle }]}>
+                  <Text style={[styles.sectionTitle, { color: colors.text }]}>
                     {t('minesweeper.task.challenger', '挑战者')}
                   </Text>
                   <View style={[styles.playerCard, { backgroundColor: task.playerColor + '15' }]}>
                     <View style={[styles.playerAvatar, { backgroundColor: task.playerColor }]}>
                       <Text style={styles.playerAvatarText}>{task.playerName.charAt(0)}</Text>
                     </View>
-                    <Text style={[styles.playerName, { color: colors.homeCardTitle }]}>
+                    <Text style={[styles.playerName, { color: colors.text }]}>
                       {task.playerName}
                     </Text>
                   </View>
@@ -164,14 +155,12 @@ export default function MineTaskModal({ visible, task, onComplete, onClose }: Mi
 
                 {/* 任务内容 */}
                 <View style={styles.taskSection}>
-                  <Text style={[styles.sectionTitle, { color: colors.homeCardTitle }]}>
+                  <Text style={[styles.sectionTitle, { color: colors.text }]}>
                     {t('minesweeper.task.challengeTask', '挑战任务')}
                   </Text>
-                  <Text style={[styles.taskTitle, { color: colors.homeCardTitle }]}>
-                    {task.title}
-                  </Text>
+                  <Text style={[styles.taskTitle, { color: colors.text }]}>{task.title}</Text>
                   {task.description && (
-                    <Text style={[styles.taskDescription, { color: colors.homeCardDescription }]}>
+                    <Text style={[styles.taskDescription, { color: colors.textSecondary }]}>
                       {task.description}
                     </Text>
                   )}
@@ -181,9 +170,7 @@ export default function MineTaskModal({ visible, task, onComplete, onClose }: Mi
                 <View style={styles.penaltySection}>
                   <View style={styles.penaltyCard}>
                     <Text style={[styles.penaltyTitle, { color: '#F44336' }]}>⚠️ 挑战说明</Text>
-                    <Text
-                      style={[styles.penaltyDescription, { color: colors.homeCardDescription }]}
-                    >
+                    <Text style={[styles.penaltyDescription, { color: colors.textSecondary }]}>
                       • 踩雷后需要完成任务挑战{'\n'}• 任务完成与否不影响积分{'\n'}•
                       积分取决于获得的格子数量
                     </Text>
@@ -192,42 +179,28 @@ export default function MineTaskModal({ visible, task, onComplete, onClose }: Mi
 
                 {/* 选择按钮 */}
                 <View style={styles.actionSection}>
-                  <Text style={[styles.actionPrompt, { color: colors.homeCardTitle }]}>
+                  <Text style={[styles.actionPrompt, { color: colors.text }]}>
                     请选择任务完成情况：
                   </Text>
 
                   <View style={styles.actionButtons}>
-                    <TouchableOpacity
-                      style={styles.actionButton}
+                    <BaseButton
+                      title={t('common.completed', '已完成')}
+                      variant="primary"
+                      size="medium"
                       onPress={() => handleTaskChoice(true)}
-                      activeOpacity={0.8}
-                    >
-                      <LinearGradient
-                        colors={['#4CAF50', '#66BB6A']}
-                        style={styles.actionButtonGradient}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                      >
-                        <Ionicons name="checkmark" size={20} color="white" />
-                        <Text style={styles.actionButtonText}>{t('common.completed', '完成')}</Text>
-                      </LinearGradient>
-                    </TouchableOpacity>
+                      style={{ flex: 1 }}
+                      iconName="checkmark"
+                    />
 
-                    <TouchableOpacity
-                      style={styles.actionButton}
+                    <BaseButton
+                      title={t('common.failed', '未完成')}
+                      variant="danger"
+                      size="medium"
                       onPress={() => handleTaskChoice(false)}
-                      activeOpacity={0.8}
-                    >
-                      <LinearGradient
-                        colors={['#F44336', '#FF6B6B']}
-                        style={styles.actionButtonGradient}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                      >
-                        <Ionicons name="close" size={20} color="white" />
-                        <Text style={styles.actionButtonText}>{t('common.failed', '未完成')}</Text>
-                      </LinearGradient>
-                    </TouchableOpacity>
+                      style={{ flex: 1 }}
+                      iconName="close"
+                    />
                   </View>
                 </View>
               </>
@@ -236,19 +209,23 @@ export default function MineTaskModal({ visible, task, onComplete, onClose }: Mi
               resultInfo && (
                 <View style={styles.resultContainer}>
                   <View style={[styles.resultIcon, { backgroundColor: resultInfo.color + '20' }]}>
-                    <Ionicons name={resultInfo.icon as any} size={48} color={resultInfo.color} />
+                    <Ionicons
+                      name={resultInfo.icon as keyof typeof Ionicons.glyphMap}
+                      size={48}
+                      color={resultInfo.color}
+                    />
                   </View>
 
-                  <Text style={[styles.resultTitle, { color: colors.homeCardTitle }]}>
+                  <Text style={[styles.resultTitle, { color: colors.text }]}>
                     {resultInfo.title}
                   </Text>
 
-                  <Text style={[styles.resultDescription, { color: colors.homeCardDescription }]}>
+                  <Text style={[styles.resultDescription, { color: colors.textSecondary }]}>
                     {resultInfo.description}
                   </Text>
 
                   <View style={styles.resultFooter}>
-                    <Text style={[styles.resultFooterText, { color: colors.homeCardDescription }]}>
+                    <Text style={[styles.resultFooterText, { color: colors.textSecondary }]}>
                       继续游戏...
                     </Text>
                   </View>
@@ -258,7 +235,7 @@ export default function MineTaskModal({ visible, task, onComplete, onClose }: Mi
           </LinearGradient>
         </Animated.View>
       </View>
-    </Modal>
+    </BaseModal>
   )
 }
 

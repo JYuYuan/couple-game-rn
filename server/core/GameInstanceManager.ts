@@ -2,6 +2,14 @@ import redis from './redisClient.js'
 import GameRegistry from './GameRegistry.js'
 import roomManager from './RoomManager.js'
 import type { Room, SocketIOServer } from '../typings/socket'
+import type BaseGame from './BaseGame.js'
+
+interface GameData {
+  roomId: string
+  gameType: string
+  createdAt: number
+  lastActivity: number
+}
 
 class GameInstanceManager {
   private hashKey = 'games'
@@ -11,19 +19,23 @@ class GameInstanceManager {
   /**
    * 创建游戏实例
    */
-  async createGameInstance(room: Room, io: SocketIOServer): Promise<any> {
+  async createGameInstance(room: Room, io: SocketIOServer): Promise<BaseGame> {
     const game = GameRegistry.createGame(room.gameType, room, io)
     if (!game) {
       throw new Error(`不支持的游戏类型: ${room.gameType}`)
     }
 
     // 直接使用 room 数据，游戏状态已经在 room.gameState 中
-    await redis.hset(this.hashKey, room.id, JSON.stringify({
-      roomId: room.id,
-      gameType: room.gameType,
-      createdAt: Date.now(),
-      lastActivity: Date.now()
-    }))
+    await redis.hset(
+      this.hashKey,
+      room.id,
+      JSON.stringify({
+        roomId: room.id,
+        gameType: room.gameType,
+        createdAt: Date.now(),
+        lastActivity: Date.now(),
+      }),
+    )
 
     await redis.expire(this.hashKey, this.GAME_TTL / 1000)
 
@@ -36,7 +48,7 @@ class GameInstanceManager {
   /**
    * 获取游戏实例
    */
-  async getGameInstance(roomId: string, io?: SocketIOServer): Promise<any> {
+  async getGameInstance(roomId: string, io?: SocketIOServer): Promise<BaseGame | null> {
     // 先从本地缓存查找
     if (this.localCache.has(roomId)) {
       return this.localCache.get(roomId)
@@ -68,7 +80,7 @@ class GameInstanceManager {
   /**
    * 更新游戏实例状态
    */
-  async updateGameInstance(roomId: string, _game: any): Promise<void> {
+  async updateGameInstance(roomId: string, _game: BaseGame): Promise<void> {
     // 更新游戏实例的最后活动时间
     const gameData = { roomId, lastActivity: Date.now() }
     try {
@@ -89,10 +101,10 @@ class GameInstanceManager {
   /**
    * 获取所有活跃游戏
    */
-  async getAllActiveGames(): Promise<{ [roomId: string]: any }> {
+  async getAllActiveGames(): Promise<{ [roomId: string]: GameData }> {
     const games = await redis.hgetall(this.hashKey)
     const parsedGames = Object.fromEntries(
-      Object.entries(games).map(([key, value]) => [key, JSON.parse(value)])
+      Object.entries(games).map(([key, value]) => [key, JSON.parse(value)]),
     )
     return parsedGames
   }
@@ -115,7 +127,7 @@ class GameInstanceManager {
   /**
    * 从 room 数据重建游戏实例
    */
-  private recreateGameInstance(room: Room, io?: SocketIOServer): any {
+  private recreateGameInstance(room: Room, io?: SocketIOServer): BaseGame | null {
     if (!io) {
       console.warn('无法重建游戏实例：缺少 io 参数')
       return null
@@ -136,10 +148,10 @@ class GameInstanceManager {
   /**
    * 获取缓存统计信息
    */
-  getCacheStats(): { localCacheSize: number, redisKey: string } {
+  getCacheStats(): { localCacheSize: number; redisKey: string } {
     return {
       localCacheSize: this.localCache.size,
-      redisKey: this.hashKey
+      redisKey: this.hashKey,
     }
   }
 }

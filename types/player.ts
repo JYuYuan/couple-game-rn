@@ -116,21 +116,25 @@ export const PLAYER_COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4']
 
 
 // 类型守卫函数
-export function isLocalPlayer(player: any): player is LocalPlayer {
-  return typeof player.id === 'number' && 
-         typeof player.position === 'number' && 
-         typeof player.score === 'number'
+export function isLocalPlayer(player: unknown): player is LocalPlayer {
+  return typeof player === 'object' && 
+         player !== null &&
+         typeof (player as any).id === 'number' && 
+         typeof (player as any).position === 'number' && 
+         typeof (player as any).score === 'number'
 }
 
-export function isNetworkPlayer(player: any): player is NetworkPlayer {
-  return typeof player.id === 'string' && 
-         typeof player.socketId === 'string'
+export function isNetworkPlayer(player: unknown): player is NetworkPlayer {
+  return typeof player === 'object' && 
+         player !== null &&
+         typeof (player as any).id === 'string' && 
+         typeof (player as any).socketId === 'string'
 }
 
-export function isOnlinePlayer(player: any): player is OnlinePlayer {
+export function isOnlinePlayer(player: unknown): player is OnlinePlayer {
   return isNetworkPlayer(player) && 
-         'roomId' in player &&
-         typeof player.roomId === 'string'
+         'roomId' in (player as object) &&
+         typeof (player as any).roomId === 'string'
 }
 
 // 转换工具函数

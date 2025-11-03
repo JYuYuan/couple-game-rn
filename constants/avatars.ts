@@ -3,7 +3,7 @@ import { AvatarGender } from '@/types/settings'
 export interface AvatarOption {
   id: string
   gender: AvatarGender
-  source: any
+  source: number // React Native require() returns a number resource identifier
 }
 
 // 男性头像

@@ -6,17 +6,34 @@
 import type { BaseRoom } from '@/types/online'
 import roomManager from './room-manager'
 import FlightChessGame from './games/flight-chess-game'
+import type { MockSocketIO } from './base-game'
+
+// 定义游戏类构造函数类型
+type GameConstructor = new (room: BaseRoom, io: MockSocketIO) => GameInstance
+
+// 定义游戏实例接口
+interface GameInstance {
+  onStart(): Promise<void>
+  onResume(): Promise<void>
+  onPlayerAction(
+    io: MockSocketIO,
+    playerId: string,
+    action: unknown,
+    callback?: Function,
+  ): Promise<void>
+  onEnd(io?: MockSocketIO): Promise<void>
+}
 
 // 游戏注册表
 class SimpleGameRegistry {
-  private games: Map<string, any> = new Map()
+  private games: Map<string, GameConstructor> = new Map()
 
-  registerGame(type: string, gameClass: any): void {
+  registerGame(type: string, gameClass: GameConstructor): void {
     this.games.set(type, gameClass)
     console.log(`✅ 游戏类型已注册: ${type}`)
   }
 
-  createGame(type: string, room: BaseRoom, io: any): any {
+  createGame(type: string, room: BaseRoom, io: MockSocketIO): GameInstance | null {
     console.log('🎮 [GameRegistry] createGame 调用, type:', type)
 
     const GameClass = this.games.get(type)
@@ -33,7 +50,10 @@ class SimpleGameRegistry {
       const gameInstance = new GameClass(room, io)
       console.log('✅ [GameRegistry] 游戏实例创建成功')
       console.log('🐛 [GameRegistry] 实例类型:', gameInstance?.constructor?.name)
-      console.log('🐛 [GameRegistry] 实例有 onPlayerAction:', typeof gameInstance?.onPlayerAction === 'function')
+      console.log(
+        '🐛 [GameRegistry] 实例有 onPlayerAction:',
+        typeof gameInstance?.onPlayerAction === 'function',
+      )
       return gameInstance
     } catch (error) {
       console.error('❌ [GameRegistry] 创建游戏实例失败:', error)
@@ -56,13 +76,13 @@ interface GameData {
 
 class GameInstanceManager {
   private games: Map<string, GameData> = new Map()
-  private localCache: Map<string, any> = new Map()
+  private localCache: Map<string, GameInstance> = new Map()
   private readonly GAME_TTL = 2 * 60 * 60 * 1000 // 2小时
 
   /**
    * 创建游戏实例
    */
-  async createGameInstance(room: BaseRoom, io: any): Promise<any> {
+  async createGameInstance(room: BaseRoom, io: MockSocketIO): Promise<GameInstance | null> {
     console.log('🏗️ [GameInstanceManager] createGameInstance 调用')
     console.log('🐛 [GameInstanceManager] room.id:', room.id)
     console.log('🐛 [GameInstanceManager] room.gameType:', room.gameType)
@@ -75,7 +95,10 @@ class GameInstanceManager {
 
     console.log('✅ [GameInstanceManager] 游戏实例创建成功')
     console.log('🐛 [GameInstanceManager] 游戏类型:', game?.constructor?.name)
-    console.log('🐛 [GameInstanceManager] 游戏有 onPlayerAction:', typeof game?.onPlayerAction === 'function')
+    console.log(
+      '🐛 [GameInstanceManager] 游戏有 onPlayerAction:',
+      typeof game?.onPlayerAction === 'function',
+    )
 
     this.games.set(room.id, {
       roomId: room.id,
@@ -94,7 +117,7 @@ class GameInstanceManager {
   /**
    * 获取游戏实例
    */
-  async getGameInstance(roomId: string, io?: any): Promise<any> {
+  async getGameInstance(roomId: string, io?: MockSocketIO): Promise<GameInstance | null> {
     console.log('🔍 [GameInstanceManager] getGameInstance 调用, roomId:', roomId)
 
     // 先从本地缓存查找
@@ -102,7 +125,10 @@ class GameInstanceManager {
       const cachedGame = this.localCache.get(roomId)
       console.log('✅ [GameInstanceManager] 从缓存获取游戏实例')
       console.log('🐛 [GameInstanceManager] 缓存的游戏类型:', cachedGame?.constructor?.name)
-      console.log('🐛 [GameInstanceManager] 缓存的游戏有 onPlayerAction:', typeof cachedGame?.onPlayerAction === 'function')
+      console.log(
+        '🐛 [GameInstanceManager] 缓存的游戏有 onPlayerAction:',
+        typeof cachedGame?.onPlayerAction === 'function',
+      )
       return cachedGame
     }
 
@@ -134,7 +160,10 @@ class GameInstanceManager {
     if (game) {
       console.log('✅ [GameInstanceManager] 游戏实例重建成功')
       console.log('🐛 [GameInstanceManager] 重建的游戏类型:', game?.constructor?.name)
-      console.log('🐛 [GameInstanceManager] 重建的游戏有 onPlayerAction:', typeof game?.onPlayerAction === 'function')
+      console.log(
+        '🐛 [GameInstanceManager] 重建的游戏有 onPlayerAction:',
+        typeof game?.onPlayerAction === 'function',
+      )
       this.localCache.set(roomId, game)
       console.log('💾 [GameInstanceManager] 游戏实例已缓存')
     } else {
@@ -147,7 +176,7 @@ class GameInstanceManager {
   /**
    * 更新游戏实例状态
    */
-  async updateGameInstance(roomId: string, _game: any): Promise<void> {
+  async updateGameInstance(roomId: string, _game: GameInstance): Promise<void> {
     // 更新游戏实例的最后活动时间
     if (this.games.has(roomId)) {
       this.games.get(roomId)!.lastActivity = Date.now()
@@ -190,7 +219,7 @@ class GameInstanceManager {
   /**
    * 从 room 数据重建游戏实例
    */
-  private recreateGameInstance(room: BaseRoom, io?: any): any {
+  private recreateGameInstance(room: BaseRoom, io?: MockSocketIO): GameInstance | null {
     console.log('🔄 [GameInstanceManager] recreateGameInstance 调用')
     console.log('🐛 [GameInstanceManager] room.gameType:', room.gameType)
     console.log('🐛 [GameInstanceManager] io 是否存在:', !!io)
@@ -206,7 +235,10 @@ class GameInstanceManager {
     if (game) {
       console.log(`✅ 游戏实例已重建: 房间=${room.id}, 类型=${room.gameType}`)
       console.log('🐛 [GameInstanceManager] 重建后游戏类型:', game?.constructor?.name)
-      console.log('🐛 [GameInstanceManager] 重建后游戏有 onPlayerAction:', typeof game?.onPlayerAction === 'function')
+      console.log(
+        '🐛 [GameInstanceManager] 重建后游戏有 onPlayerAction:',
+        typeof game?.onPlayerAction === 'function',
+      )
     } else {
       console.error('❌ [GameInstanceManager] gameRegistry.createGame 返回 null')
     }
@@ -234,7 +266,7 @@ class GameInstanceManager {
   /**
    * 注册游戏类型
    */
-  registerGame(type: string, gameClass: any): void {
+  registerGame(type: string, gameClass: GameConstructor): void {
     gameRegistry.registerGame(type, gameClass)
   }
 

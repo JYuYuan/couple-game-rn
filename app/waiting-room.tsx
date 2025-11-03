@@ -14,7 +14,7 @@ export default function WaitingRoomPage() {
   const navigation = useNavigation()
   const params = useLocalSearchParams()
   const colorScheme = useColorScheme() ?? 'light'
-  const colors = Colors[colorScheme] as any
+  const colors = Colors[colorScheme]
   const { t } = useTranslation()
 
   const socket = useSocket()
@@ -135,7 +135,7 @@ export default function WaitingRoomPage() {
       />
 
       <RoomWaiting
-        isHost={currentRoom?.isHost}
+        isHost={currentRoom?.isHost as boolean}
         maxPlayers={currentRoom?.maxPlayers || 2}
         roomId={currentRoom?.id || roomId || 'UNKNOWN'}
         players={currentRoom?.players as OnlinePlayer[]}
@@ -147,8 +147,8 @@ export default function WaitingRoomPage() {
         isStartingGame={isStartingGame}
         isConnected={socket.isConnected}
         isLANRoom={isLANRoom}
-        lanIP={lanRoomInfo?.hostIP}
-        lanPort={lanRoomInfo?.tcpPort}
+        lanIP={lanRoomInfo?.hostIP as string}
+        lanPort={lanRoomInfo?.tcpPort as number}
       />
     </>
   )

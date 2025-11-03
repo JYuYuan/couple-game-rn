@@ -409,7 +409,11 @@ const TaskSettings: React.FC = () => {
           </View>
           {category && (
             <View style={styles.infoRow}>
-              <Ionicons name={category.icon as any} size={16} color={category.color} />
+              <Ionicons
+                name={category.icon as keyof typeof Ionicons.glyphMap}
+                size={16}
+                color={category.color}
+              />
               <Text style={[styles.infoText, { color: colors.homeCardDescription }]}>
                 {category.name}
               </Text>
@@ -486,7 +490,11 @@ const TaskSettings: React.FC = () => {
       >
         <View style={styles.categoryHeader}>
           <View style={[styles.categoryIcon, { backgroundColor: category.color + '20' }]}>
-            <Ionicons name={category.icon as any} size={24} color={category.color} />
+            <Ionicons
+              name={category.icon as keyof typeof Ionicons.glyphMap}
+              size={24}
+              color={category.color}
+            />
           </View>
           <View style={styles.categoryInfo}>
             <Text style={[styles.cardTitle, { color: colors.homeCardTitle }]}>{category.name}</Text>

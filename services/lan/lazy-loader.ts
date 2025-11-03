@@ -5,6 +5,9 @@
 
 import { Platform } from 'react-native'
 
+// 导入类型，但使用 type import 避免实际导入模块
+export type { LANService } from './lan-service'
+
 let _udpBroadcastService: any = null
 let _tcpServer: any = null
 let _tcpClient: any = null
@@ -60,11 +63,14 @@ export const isLANAvailable = (): boolean => {
     } else {
       throw new Error('模块存在但未正确导出')
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     _isAvailable = false
     console.warn('⚠️ LAN 模块不可用')
     console.warn('💡 提示: 使用 expo-dev-client 或生产构建来启用 LAN 功能')
-    console.warn('📝 错误详情:', error?.message || error)
+    console.warn(
+      '📝 错误详情:',
+      (error as Error)?.message || (error as Error)?.toString() || JSON.stringify(error),
+    )
 
     // 提供手动启用的提示
     console.warn('🔧 如果你确定已安装原生模块，可以在代码中调用 forceEnableLAN() 强制启用')
@@ -122,7 +128,7 @@ export const loadLANModules = async (): Promise<void> => {
 /**
  * 获取 LAN Service
  */
-export const getLANService = () => {
+export const getLANService = (): any => {
   if (!_lanService) {
     throw new Error('LAN 模块未加载。请先调用 loadLANModules()')
   }

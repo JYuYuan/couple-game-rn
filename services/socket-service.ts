@@ -118,7 +118,7 @@ class SocketService {
     }
   }
 
-  private emit(event: string, ...args: any[]): void {
+  private emit(event: string, ...args: unknown[]): void {
     const eventListeners = this.listeners.get(event)
     if (eventListeners && eventListeners.size > 0) {
       console.log(`SocketService: Emitting event ${event} to ${eventListeners.size} listeners`)
@@ -256,7 +256,7 @@ class SocketService {
       this.emit('reconnect_attempt', attemptNumber)
     })
 
-    this.socket.on('reconnect_error', (error: any) => {
+    this.socket.on('reconnect_error', (error: unknown) => {
       console.error('SocketService: Reconnection error:', error)
       this.emit('reconnect_error', error)
     })
@@ -339,7 +339,7 @@ class SocketService {
     })
 
     // 局域网房间发现事件
-    this.socket.on('lan:rooms', (rooms: any[]) => {
+    this.socket.on('lan:rooms', (rooms: unknown[]) => {
       console.log('SocketService: Received LAN rooms:', rooms.length)
       const roomDiscovery = require('./room-discovery-service').roomDiscoveryService
       roomDiscovery.handleRoomList(rooms)
@@ -374,7 +374,7 @@ class SocketService {
   }
 
   // Socket 操作
-  socketEmit(event: string, ...args: any[]): void {
+  socketEmit(event: string, ...args: unknown[]): void {
     // 直接检查socket实例的连接状态，不使用checkRealConnectionStatus避免副作用
     if (!this.socket?.connected) {
       console.warn(
@@ -565,7 +565,7 @@ class SocketService {
     this.runActions('complete_task', data)
   }
 
-  runActions(type: string, data: any, callback?: (res: any) => void): void {
+  runActions(type: string, data: unknown, callback?: (res: unknown) => void): void {
     console.log('游戏事件：', type, data)
 
     // Socket 模式
@@ -578,7 +578,7 @@ class SocketService {
   }
 
   getCurrentPlayer() {
-    this.on('game:state', (data: any) => {
+    this.on('game:state', (data: unknown) => {
       console.log(data)
     })
   }

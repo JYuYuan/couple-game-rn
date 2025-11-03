@@ -1,7 +1,8 @@
-import type { SocketIOServer, Room } from '../typings/socket'
+import type { Room, SocketIOServer } from '../typings/socket'
+import type BaseGame from './BaseGame.js'
 
 interface GameConstructor {
-  new (room: Room, io: SocketIOServer): any
+  new (room: Room, io: SocketIOServer): BaseGame
 }
 
 class GameRegistry {
@@ -16,7 +17,7 @@ class GameRegistry {
     this.registry.set(type, gameClass)
   }
 
-  createGame(type: string, room: Room, io: SocketIOServer): any {
+  createGame(type: string, room: Room, io: SocketIOServer): BaseGame | null {
     const GameClass = this.registry.get(type)
     if (!GameClass) {
       console.error(`未找到游戏类型: ${type}`)

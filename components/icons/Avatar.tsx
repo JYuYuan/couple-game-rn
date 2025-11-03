@@ -8,7 +8,7 @@ const eyeColors = ['#4169E1', '#228B22', '#8A2BE2', '#A52A2A', '#00CED1', '#FF63
 const blushColors = ['#FF91A4', '#FFB6C1', '#FFA07A', '#FFDAB9']
 
 // 基于seed的伪随机数生成器
-function rng(seed: any, n: any) {
+function rng(seed: number, n: number): number {
   return Math.abs(Math.sin(seed * (n + 12345))) % 1
 }
 

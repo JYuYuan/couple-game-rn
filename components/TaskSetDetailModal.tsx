@@ -176,7 +176,11 @@ export const TaskSetDetailModal: React.FC<TaskSetDetailModalProps> = ({
               <View style={styles.infoRow}>
                 {category && (
                   <View style={styles.categoryInfo}>
-                    <Ionicons name={category.icon as any} size={16} color={category.color} />
+                    <Ionicons
+                      name={category.icon as keyof typeof Ionicons.glyphMap}
+                      size={16}
+                      color={category.color}
+                    />
                     <Text style={[styles.categoryName, { color: colors.homeCardDescription }]}>
                       {category.name}
                     </Text>

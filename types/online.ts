@@ -55,7 +55,7 @@ export interface GameState {
     finalPositions: [string, number][]
   }
 
-  [key: string]: any
+  [key: string]: unknown
 }
 
 // 房间状态
@@ -78,7 +78,7 @@ export interface BaseRoom {
   gameType: 'fly' | 'wheel' | 'minesweeper'
   createdAt: number
   lastActivity: number
-  engine?: any
+  engine?: unknown
   currentUser?: string
   boardPath?: PathCell[]
   // 统一的游戏状态对象（匹配服务端结构）
@@ -89,11 +89,11 @@ export interface BaseRoom {
   diceValue?: number // 保留用于向后兼容
   gameData?: {
     diceValue?: number
-    boardPath?: any[]
-    currentTasks?: any[]
+    boardPath?: unknown[]
+    currentTasks?: unknown[]
   }
 
-  [key: string]: any
+  [key: string]: unknown
 }
 
 // 在线房间接口（继承基础房间，添加在线特有属性）
@@ -171,13 +171,13 @@ export interface TaskCompleteData {
 export interface SocketError {
   code: string
   message: string
-  details?: any
+  details?: unknown
 }
 
 // WebRTC 信令数据
 export interface WebRTCSignalingData {
   type: 'offer' | 'answer' | 'ice-candidate'
-  data: any
+  data: unknown
   fromPeerId: string
   toPeerId: string
   roomId: string

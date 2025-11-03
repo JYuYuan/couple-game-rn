@@ -17,7 +17,11 @@ export const useGameTypeText = () => {
   }
 }
 
-export const generateRoomName = (gameType: string, taskSetId: string | undefined, getGameTypeText: (type: string) => string) => {
+export const generateRoomName = (
+  gameType: string,
+  taskSetId: string | undefined,
+  getGameTypeText: (type: string) => string,
+) => {
   const gameTypeName = getGameTypeText(gameType)
   return `${gameTypeName}-${taskSetId}_${Date.now().toString().slice(-4)}`
 }

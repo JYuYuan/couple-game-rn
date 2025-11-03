@@ -20,6 +20,7 @@ import {
   isLANModulesLoaded,
   type RoomBroadcast,
 } from '@/services/lan'
+import { withLANService, withLANServiceTransform, withEventListener } from '@/utils/lan-helper'
 
 interface SocketContextValue {
   // 连接状态
@@ -57,19 +58,19 @@ interface SocketContextValue {
   resetRoomState: () => void
 
   // 游戏事件
-  startGame: (data: any) => void
-  rollDice: (data: any, callback?: (result: DiceRollResult) => void) => void
-  completeTask: (data: any) => void
+  startGame: (data: unknown) => void
+  rollDice: (data: unknown, callback?: (result: DiceRollResult) => void) => void
+  completeTask: (data: unknown) => void
 
   // 事件管理
-  runActions: (event: string, data: any) => void
-  emit: (event: string, data?: any) => void
+  runActions: (event: string, data: unknown) => void
+  emit: (event: string, data?: unknown) => void
   on: (event: string, callback: Function) => void
   off: (event: string, callback: Function) => void
 
   // 实用函数
   isHost: boolean
-  currentPlayer: any
+  currentPlayer: unknown
 }
 
 const SocketContext = createContext<SocketContextValue | null>(null)
@@ -199,19 +200,19 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       const lanService = getLANService()
       console.log('🐛 [SocketContext] LANService 获取成功，注册事件监听器')
 
-      const handleLANRoomUpdate = (room: any) => {
+      const handleLANRoomUpdate = (room: unknown) => {
         console.log('🐛 [SocketContext] LAN Room updated 事件触发!')
         console.log('🐛 [SocketContext] 房间数据:', {
-          id: room?.id,
-          gameStatus: room?.gameStatus,
-          playersCount: room?.players?.length,
+          id: (room as any)?.id,
+          gameStatus: (room as any)?.gameStatus,
+          playersCount: (room as any)?.players?.length,
         })
 
         if (room) {
           const updatedRoom = {
-            ...room,
-            isHost: room.hostId === playerId,
-            players: [...room.players],
+            ...(room as any),
+            isHost: (room as any).hostId === playerId,
+            players: [...(room as any).players],
           }
           setCurrentRoom(updatedRoom)
           console.log('🐛 [SocketContext] setCurrentRoom 完成')
@@ -271,16 +272,12 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [playerId, networkSettings.socketUrl])
 
   const disconnect = useCallback(() => {
-    if (connectionType === 'lan') {
-      try {
-        const lanService = getLANService()
-        lanService.leaveRoom()
-      } catch (error) {
-        console.warn('LAN 断开失败:', error)
-      }
-    } else {
-      socketService.disconnect()
-    }
+    withLANService(
+      connectionType,
+      (lanService) => lanService.leaveRoom(),
+      () => socketService.disconnect(),
+      '断开连接'
+    )
   }, [connectionType])
 
   const forceReconnect = useCallback(() => {
@@ -300,16 +297,12 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [])
 
   const leaveRoom = useCallback(() => {
-    if (connectionType === 'lan') {
-      try {
-        const lanService = getLANService()
-        lanService.leaveRoom()
-      } catch (error) {
-        console.warn('LAN 离开房间失败:', error)
-      }
-    } else {
-      socketService.leaveRoom()
-    }
+    withLANService(
+      connectionType,
+      (lanService) => lanService.leaveRoom(),
+      () => socketService.leaveRoom(),
+      '离开房间'
+    )
     // 确保清除 roomStore 中的房间状态
     const { useRoomStore } = require('@/store/roomStore')
     useRoomStore.getState().clearRoom()
@@ -423,7 +416,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         const discovered = lanService.getDiscoveredRooms()
         console.log(`📡 [SocketContext] 发现 ${discovered.length} 个房间`)
 
-        const targetRoom = discovered.find((r: any) => r.roomId === data.roomId)
+        const targetRoom = discovered.find((r: unknown) => (r as any).roomId === data.roomId)
 
         if (!targetRoom) {
           console.error('❌ [SocketContext] 未找到房间:', data.roomId)
@@ -514,135 +507,92 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // 游戏事件 - 统一使用socketService
   const startGame = useCallback(
-    async (data: any) => {
+    async (data: unknown) => {
       console.log('🎮 startGame called with data:', data)
-      if (connectionType === 'lan') {
-        try {
-          const lanService = getLANService()
-          lanService.startGame(data)
-        } catch (error) {
-          console.error('LAN 开始游戏失败:', error)
-        }
-      } else {
-        socketService.startGame(data)
-      }
+      await withLANService(
+        connectionType,
+        (lanService) => lanService.startGame(data as any),
+        () => socketService.startGame(data as any),
+        '开始游戏'
+      )
     },
     [connectionType],
   )
 
   const rollDice = useCallback(
-    async (data: any, callback: any) => {
+    async (data: unknown, callback: unknown) => {
       console.log('🎲 [SocketContext] rollDice 调用, connectionType:', connectionType)
       console.log('🐛 [SocketContext] rollDice data:', JSON.stringify(data))
 
-      if (connectionType === 'lan') {
-        try {
-          const lanService = getLANService()
-
-          // 添加 type 字段，确保 onPlayerAction 能正确识别动作类型
-          const actionData = {
-            ...data,
-            type: 'roll_dice',
-          }
-
-          console.log('📤 [SocketContext] 发送游戏动作:', JSON.stringify(actionData))
-          lanService.handleGameAction(actionData).then(callback).catch(console.error)
-        } catch (error) {
-          console.error('❌ [SocketContext] LAN 掷骰子失败:', error)
-        }
-      } else {
-        socketService.rollDice(data, callback)
-      }
+      await withLANServiceTransform(
+        connectionType,
+        data,
+        (d: any) => ({ ...d, type: 'roll_dice' }),
+        (lanService, transformedData) => {
+          console.log('📤 [SocketContext] 发送游戏动作:', JSON.stringify(transformedData))
+          return lanService.handleGameAction(transformedData).then(callback as any)
+        },
+        (d) => socketService.rollDice(d as any, callback as any),
+        '掷骰子'
+      )
     },
     [connectionType],
   )
 
   const completeTask = useCallback(
-    async (data: any) => {
+    async (data: unknown) => {
       console.log('📋 [SocketContext] completeTask 调用, connectionType:', connectionType)
       console.log('🐛 [SocketContext] completeTask data:', JSON.stringify(data))
 
-      if (connectionType === 'lan') {
-        try {
-          const lanService = getLANService()
-
-          // 添加 type 字段，确保 onPlayerAction 能正确识别动作类型
-          const actionData = {
-            ...data,
-            type: 'complete_task',
-          }
-
-          console.log('📤 [SocketContext] 发送完成任务动作:', JSON.stringify(actionData))
-          lanService.handleGameAction(actionData)
-        } catch (error) {
-          console.error('❌ [SocketContext] LAN 完成任务失败:', error)
-        }
-      } else {
-        socketService.completeTask(data)
-      }
+      await withLANServiceTransform(
+        connectionType,
+        data,
+        (d: any) => ({ ...d, type: 'complete_task' }),
+        (lanService, transformedData) => {
+          console.log('📤 [SocketContext] 发送完成任务动作:', JSON.stringify(transformedData))
+          return lanService.handleGameAction(transformedData)
+        },
+        (d) => socketService.completeTask(d as any),
+        '完成任务'
+      )
     },
     [connectionType],
   )
 
-  const emit = useCallback((event: string, data?: any) => {
+  const emit = useCallback((event: string, data?: unknown) => {
     socketService.socketEmit(event, data)
   }, [])
 
   const on = useCallback(
     (event: string, callback: Function) => {
-      if (connectionType === 'lan') {
-        try {
-          const lanService = getLANService()
-          lanService.on(event, callback)
-        } catch (error) {
-          console.warn('LAN 事件监听失败:', error)
-        }
-      } else {
-        socketService.on(event, callback)
-      }
+      withEventListener(connectionType, event, callback, 'on', socketService)
     },
     [connectionType],
   )
 
   const off = useCallback(
     (event: string, callback: Function) => {
-      if (connectionType === 'lan') {
-        try {
-          const lanService = getLANService()
-          lanService.off(event, callback)
-        } catch (error) {
-          console.warn('LAN 移除监听失败:', error)
-        }
-      } else {
-        socketService.off(event, callback)
-      }
+      withEventListener(connectionType, event, callback, 'off', socketService)
     },
     [connectionType],
   )
 
   const runActions = useCallback(
-    (event: string, data: any, callback?: (res: any) => void) => {
+    async (event: string, data: unknown, callback?: (res: unknown) => void) => {
       console.log('🎬 [SocketContext] runActions 调用, event:', event, 'connectionType:', connectionType)
       console.log('🐛 [SocketContext] runActions data:', JSON.stringify(data))
 
-      if (connectionType === 'lan') {
-        try {
-          const lanService = getLANService()
-
-          // 根据 event 类型添加对应的 type 字段
-          const actionData = {
-            ...data,
-            type: event, // event 就是 'move_complete' 等
-          }
-
-          console.log('📤 [SocketContext] LAN 模式发送动作:', JSON.stringify(actionData))
-          lanService.handleGameAction(actionData).then(callback).catch(console.error)
-        } catch (error) {
-          console.error('❌ [SocketContext] LAN runActions 失败:', error)
-        }
-      } else {
-        socketService.runActions(event, data, callback)
-      }
+      await withLANServiceTransform(
+        connectionType,
+        data,
+        (d: any) => ({ ...d, type: event }),
+        (lanService, transformedData) => {
+          console.log('📤 [SocketContext] LAN 模式发送动作:', JSON.stringify(transformedData))
+          return lanService.handleGameAction(transformedData).then(callback)
+        },
+        (d) => socketService.runActions(event, d, callback),
+        'runActions'
+      )
     },
     [connectionType],
   )

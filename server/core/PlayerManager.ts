@@ -7,7 +7,7 @@ interface AddPlayerParams {
   roomId?: string | null
   name: string
   isHost?: boolean
-  [key: string]: any
+  [key: string]: unknown
 }
 
 class PlayerManager {
@@ -31,7 +31,7 @@ class PlayerManager {
       score: 0, // 统一初始化分数
       playerId, // 为了兼容性
       ...rest,
-    } as any
+    } as Player
     await redis.hset(this.hashKey, player.id, JSON.stringify(player))
     return player
   }

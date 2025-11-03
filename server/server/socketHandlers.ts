@@ -1,11 +1,11 @@
 // socketHandlers.ts
 import type {
-  SocketIOServer,
-  SocketIOSocket,
+  GameData,
+  JoinData,
   PlayerInfo,
   RoomInfo,
-  JoinData,
-  GameData,
+  SocketIOServer,
+  SocketIOSocket,
 } from '../typings/socket'
 import roomManager from '../core/RoomManager.js'
 import playerManager from '../core/PlayerManager.js'
@@ -239,7 +239,7 @@ export default function registerSocketHandlers(io: SocketIOServer) {
     })
 
     // 离开房间
-    socket.on('room:leave', async (data: any) => {
+    socket.on('room:leave', async (data: { roomId?: string }) => {
       try {
         const player = await playerManager.getPlayer(playerId)
         if (!player || !player.roomId) {
@@ -355,7 +355,7 @@ export default function registerSocketHandlers(io: SocketIOServer) {
     })
 
     // 错误处理
-    socket.on('error', (error: any) => {
+    socket.on('error', (error: Error) => {
       console.error(`Socket错误 ${playerId}:`, error)
     })
 

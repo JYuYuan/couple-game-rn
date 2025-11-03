@@ -31,7 +31,11 @@ declare module 'react-native' {
 // Zustand 存储类型扩展
 declare global {
   interface Window {
-    __ZUSTAND_DEVTOOLS_EXTENSION__?: any;
+    // Zustand DevTools 扩展类型定义
+    __ZUSTAND_DEVTOOLS_EXTENSION__?: {
+      connect: (options?: unknown) => unknown;
+      disconnect: () => void;
+    };
   }
 }
 

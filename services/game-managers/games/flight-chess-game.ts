@@ -98,7 +98,7 @@ class FlightChessGame extends BaseGame {
     await this.updateRoomAndNotify()
   }
 
-  async onPlayerAction(_io: MockSocketIO, playerId: string, action: any, callback?: Function) {
+  async onPlayerAction(_io: MockSocketIO, playerId: string, action: unknown, callback?: Function) {
     console.log('🎯 [FlightChessGame] onPlayerAction 被调用!')
     console.log('🐛 [FlightChessGame] playerId:', playerId)
     console.log('🐛 [FlightChessGame] action:', JSON.stringify(action))
@@ -229,7 +229,7 @@ class FlightChessGame extends BaseGame {
     }
 
     // 将 NetworkPlayer 转换为 GamePlayer
-    const executorPlayers = executorNetworkPlayers.map(networkPlayer => ({
+    const executorPlayers = executorNetworkPlayers.map((networkPlayer) => ({
       id: parseInt(networkPlayer.id), // 转换 string 为 number
       name: networkPlayer.name || '',
       color: networkPlayer.color || '#FF6B6B',
@@ -239,7 +239,7 @@ class FlightChessGame extends BaseGame {
       gender: networkPlayer.gender || 'man',
       isAI: networkPlayer.isAI || false,
       completedTasks: networkPlayer.completedTasks || [],
-      achievements: networkPlayer.achievements || []
+      achievements: networkPlayer.achievements || [],
     }))
 
     // 构造 TaskModalData
@@ -406,7 +406,7 @@ class FlightChessGame extends BaseGame {
     await this.onEnd(this.socket)
   }
 
-  async _handleTaskComplete(playerId: string, action: any) {
+  async _handleTaskComplete(playerId: string, action: unknown) {
     console.log(`📋 处理任务完成: 玩家=${playerId}, 结果=${action.completed}`)
 
     // 获取当前任务信息

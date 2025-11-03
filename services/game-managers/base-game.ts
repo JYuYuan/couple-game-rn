@@ -9,9 +9,9 @@ import roomManager from './room-manager'
 // 模拟的 Socket.IO Server 接口
 export interface MockSocketIO {
   to(room: string): {
-    emit(event: string, data: any): void
+    emit(event: string, data: unknown): void
   }
-  emit(event: string, data: any): void
+  emit(event: string, data: unknown): void
 }
 
 export default abstract class BaseGame {
@@ -42,7 +42,7 @@ export default abstract class BaseGame {
   abstract onPlayerAction(
     io: MockSocketIO,
     playerId: string,
-    action: any,
+    action: unknown,
     callback?: Function,
   ): Promise<void>
 

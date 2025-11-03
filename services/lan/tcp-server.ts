@@ -10,14 +10,14 @@ const TCP_PORT = 3306 // 默认 TCP 端口
 export interface TCPMessage {
   type: 'event' | 'response' | 'broadcast'
   event?: string
-  data?: any
+  data?: unknown
   requestId?: string
   playerId?: string
 }
 
 export interface ClientConnection {
   playerId: string
-  socket: any
+  socket: TcpSocket.Socket
   isConnected: boolean
   playerName?: string
 }
@@ -26,7 +26,7 @@ export interface ClientConnection {
  * TCP Server 类
  */
 class TCPServer {
-  private server: any | null = null
+  private server: TcpSocket.Server | null = null
   private clients: Map<string, ClientConnection> = new Map()
   private port: number = TCP_PORT
   private eventListeners: Map<string, Set<Function>> = new Map()
@@ -51,12 +51,12 @@ class TCPServer {
 
       const tryStartServer = (currentPort: number) => {
         // 创建 TCP 服务器
-        this.server = TcpSocket.createServer((socket: any) => {
+        this.server = TcpSocket.createServer((socket: TcpSocket.Socket) => {
           this.handleNewConnection(socket)
         })
 
         // 监听错误
-        this.server.on('error', (error: any) => {
+        this.server.on('error', (error: Error) => {
           const errorMessage = error?.message || error?.toString() || JSON.stringify(error)
           const errorCode = error?.code || 'UNKNOWN'
           console.error(`TCP Server 错误 (端口 ${currentPort}):`, errorMessage)
@@ -99,10 +99,11 @@ class TCPServer {
             console.log(`🚀 TCP Server 启动成功，监听端口: ${this.port}`)
             resolve(this.port)
           })
-        } catch (error: any) {
+        } catch (error: unknown) {
           // 捕获 listen() 可能抛出的同步错误
-          const errorMessage = error?.message || error?.toString() || JSON.stringify(error)
-          const errorCode = error?.code || 'UNKNOWN'
+          const errorMessage =
+            (error as Error)?.message || (error as Error)?.toString() || JSON.stringify(error)
+          const errorCode = (error as any)?.code || 'UNKNOWN'
           console.error(`TCP Server 监听失败 (端口 ${currentPort}):`, errorMessage)
 
           // 如果是端口占用错误，尝试下一个端口
@@ -179,7 +180,7 @@ class TCPServer {
   /**
    * 处理新的客户端连接
    */
-  private handleNewConnection(socket: any): void {
+  private handleNewConnection(socket: TcpSocket.Socket): void {
     const clientAddress = `${socket.remoteAddress}:${socket.remotePort}`
     console.log(`📱 新客户端连接: ${clientAddress}`)
 
@@ -205,13 +206,13 @@ class TCPServer {
     })
 
     // 监听关闭
-    socket.on('close', (error?: any) => {
+    socket.on('close', (error?: Error) => {
       console.log(`👋 客户端断开: ${clientAddress}`, error ? `错误: ${error}` : '')
       this.handleClientDisconnect(currentClientId)
     })
 
     // 监听错误
-    socket.on('error', (error: any) => {
+    socket.on('error', (error: Error) => {
       console.error(`❌ 客户端错误 ${clientAddress}:`, error)
     })
 
@@ -275,7 +276,10 @@ class TCPServer {
    * 处理客户端消息
    */
   private handleClientMessage(clientId: string, message: TCPMessage): void {
-    console.log(`📨 收到消息 [${clientId}]:`, JSON.stringify({ type: message.type, event: message.event, playerId: message.playerId }))
+    console.log(
+      `📨 收到消息 [${clientId}]:`,
+      JSON.stringify({ type: message.type, event: message.event, playerId: message.playerId }),
+    )
 
     console.log(`🐛 [DEBUG] 开始处理消息`)
     console.log(`🐛 [DEBUG] message.playerId: ${message.playerId}`)
@@ -426,7 +430,7 @@ class TCPServer {
   /**
    * 触发事件
    */
-  private emit(event: string, data: any): void {
+  private emit(event: string, data: unknown): void {
     const listeners = this.eventListeners.get(event)
     if (listeners) {
       listeners.forEach((callback) => {

@@ -18,7 +18,6 @@ import { Colors, CommonStyles, Layout } from '@/constants/theme'
 import { useTasksStore } from '@/store/tasksStore'
 import { TaskSet } from '@/types/tasks'
 import { TaskSetDetailModal } from '@/components/TaskSetDetailModal'
-import { useSocket } from '@/hooks/use-socket'
 import { useSettingsStore } from '@/store'
 import toast from '@/utils/toast'
 
@@ -35,7 +34,6 @@ export default function GameMode() {
   const colorScheme = useColorScheme() ?? 'light'
   const colors = Colors[colorScheme] as any
   const { networkSettings } = useSettingsStore()
-  const socket = useSocket()
 
   // 获取传入的游戏类型参数
   const gameType = (params.type as string) || 'all'
@@ -107,13 +105,7 @@ export default function GameMode() {
   // 分类选择组件
   const CategorySelector = () => {
     return (
-      <Animated.View
-        style={[
-          styles.categoryContainer,
-          { backgroundColor: colors.homeBackground },
-          fadeStyle,
-        ]}
-      >
+      <Animated.View style={[styles.categoryContainer, fadeStyle]}>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -128,11 +120,8 @@ export default function GameMode() {
               selectedCategory === 'all' && styles.categoryButtonActive,
               {
                 backgroundColor:
-                  selectedCategory === 'all'
-                    ? colors.settingsAccent + '20'
-                    : colors.homeCardBackground,
-                borderColor:
-                  selectedCategory === 'all' ? colors.settingsAccent : colors.homeCardBorder,
+                  selectedCategory === 'all' ? colors.settingsAccent + '20' : colors.surface,
+                borderColor: selectedCategory === 'all' ? colors.settingsAccent : colors.border,
               },
             ]}
             onPress={() => setSelectedCategory('all')}
@@ -142,7 +131,7 @@ export default function GameMode() {
               colors={
                 selectedCategory === 'all'
                   ? ['#5E5CE6', '#BF5AF2']
-                  : [colors.homeCardBackground, colors.homeCardBackground]
+                  : [colors.surface, colors.surface]
               }
               style={styles.categoryGradient}
               start={{ x: 0, y: 0 }}
@@ -151,13 +140,13 @@ export default function GameMode() {
               <Ionicons
                 name="apps"
                 size={18}
-                color={selectedCategory === 'all' ? 'white' : colors.homeCardDescription}
+                color={selectedCategory === 'all' ? 'white' : colors.textSecondary}
               />
               <Text
                 style={[
                   styles.categoryButtonText,
                   {
-                    color: selectedCategory === 'all' ? 'white' : colors.homeCardDescription,
+                    color: selectedCategory === 'all' ? 'white' : colors.textSecondary,
                   },
                 ]}
               >
@@ -174,11 +163,8 @@ export default function GameMode() {
                 selectedCategory === category.id && styles.categoryButtonActive,
                 {
                   backgroundColor:
-                    selectedCategory === category.id
-                      ? category.color + '20'
-                      : colors.homeCardBackground,
-                  borderColor:
-                    selectedCategory === category.id ? category.color : colors.homeCardBorder,
+                    selectedCategory === category.id ? category.color + '20' : colors.surface,
+                  borderColor: selectedCategory === category.id ? category.color : colors.border,
                 },
               ]}
               onPress={() => setSelectedCategory(category.id)}
@@ -188,23 +174,22 @@ export default function GameMode() {
                 colors={
                   selectedCategory === category.id
                     ? [category.color, category.color + 'CC']
-                    : [colors.homeCardBackground, colors.homeCardBackground]
+                    : [colors.surface, colors.surface]
                 }
                 style={styles.categoryGradient}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
               >
                 <Ionicons
-                  name={category.icon as any}
+                  name={category.icon as keyof typeof Ionicons.glyphMap}
                   size={18}
-                  color={selectedCategory === category.id ? 'white' : colors.homeCardDescription}
+                  color={selectedCategory === category.id ? 'white' : colors.textSecondary}
                 />
                 <Text
                   style={[
                     styles.categoryButtonText,
                     {
-                      color:
-                        selectedCategory === category.id ? 'white' : colors.homeCardDescription,
+                      color: selectedCategory === category.id ? 'white' : colors.textSecondary,
                     },
                   ]}
                 >
@@ -280,23 +265,6 @@ export default function GameMode() {
       })
     }
 
-    const handleJoinRoom = () => {
-      // 检查当前游戏类型是否支持在线模式
-      if (!supportsOnlineMode) {
-        toast.info(t('gameMode.onlineNotSupported', '该游戏类型暂不支持在线模式'))
-        return
-      }
-
-      // 跳转到加入房间页面
-      router.push({
-        pathname: '/join-room',
-        params: {
-          gameType: gameType,
-          taskSetId: taskSet.id,
-        },
-      })
-    }
-
     return (
       <Animated.View style={[animatedStyle, cardFadeStyle, styles.taskSetCard]}>
         <TouchableOpacity
@@ -306,8 +274,8 @@ export default function GameMode() {
           style={[
             styles.cardContainer,
             {
-              backgroundColor: colors.homeCardBackground,
-              borderColor: colors.homeCardBorder,
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
               shadowColor: colorScheme === 'dark' ? '#000' : '#000',
             },
           ]}
@@ -329,16 +297,20 @@ export default function GameMode() {
               </View>
               {category && (
                 <View style={[styles.categoryBadge, { backgroundColor: category.color + '15' }]}>
-                  <Ionicons name={category.icon as any} size={12} color={category.color} />
+                  <Ionicons
+                    name={category.icon as keyof typeof Ionicons.glyphMap}
+                    size={12}
+                    color={category.color}
+                  />
                   <Text style={[styles.categoryText, { color: category.color }]}>
                     {category.name}
                   </Text>
                 </View>
               )}
             </View>
-            <Text style={[styles.cardTitle, { color: colors.homeCardTitle }]}>{taskSet.name}</Text>
+            <Text style={[styles.cardTitle, { color: colors.text }]}>{taskSet.name}</Text>
             {taskSet.description && (
-              <Text style={[styles.cardDescription, { color: colors.homeCardDescription }]}>
+              <Text style={[styles.cardDescription, { color: colors.textSecondary }]}>
                 {taskSet.description}
               </Text>
             )}
@@ -350,7 +322,7 @@ export default function GameMode() {
               <View style={[styles.statIcon, { backgroundColor: colors.settingsAccent + '15' }]}>
                 <Ionicons name="list" size={14} color={colors.settingsAccent} />
               </View>
-              <Text style={[styles.statText, { color: colors.homeCardDescription }]}>
+              <Text style={[styles.statText, { color: colors.textSecondary }]}>
                 {t('gameMode.taskCount', '{{count}} 个任务', { count: taskSet.tasks.length })}
               </Text>
             </View>
@@ -358,7 +330,7 @@ export default function GameMode() {
               <View style={[styles.statIcon, { backgroundColor: '#FF9500' + '15' }]}>
                 <Ionicons name="time" size={14} color="#FF9500" />
               </View>
-              <Text style={[styles.statText, { color: colors.homeCardDescription }]}>
+              <Text style={[styles.statText, { color: colors.textSecondary }]}>
                 {getEstimatedTime(taskSet.tasks.length)}
               </Text>
             </View>
@@ -587,10 +559,10 @@ export default function GameMode() {
                   <Ionicons name="game-controller-outline" size={48} color="white" />
                 </LinearGradient>
               </View>
-              <Text style={[styles.emptyText, { color: colors.homeCardTitle }]}>
+              <Text style={[styles.emptyText, { color: colors.text }]}>
                 {t('gameMode.empty.title', '暂无可用的游戏模式')}
               </Text>
-              <Text style={[styles.emptySubtext, { color: colors.homeCardDescription }]}>
+              <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>
                 {t('gameMode.empty.subtitle', '去任务管理页面添加一些任务集吧')}
               </Text>
               <TouchableOpacity

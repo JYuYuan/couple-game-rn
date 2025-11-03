@@ -1,12 +1,10 @@
 import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { PlayerIcon } from '@/components/icons'
 import { getRandomAvatarByGender } from '@/constants/avatars'
 import { AvatarGender } from '@/types/settings'
 import { LocalPlayer, PLAYER_COLORS } from '@/types/player'
 
-export interface WheelPlayer extends Omit<LocalPlayer, 'iconType'> {
-}
+export interface WheelPlayer extends Omit<LocalPlayer, 'iconType'> {}
 
 // 转盘奖励配置 - 所有区域都触发任务
 export const WHEEL_REWARDS = [

@@ -14,7 +14,7 @@ interface RoomWaitingProps {
   roomId: string
   players: OnlinePlayer[]
   maxPlayers: number
-  isHost: boolean
+  isHost?: boolean
   onStartGame: () => void
   onLeaveRoom: () => void
   isStartingGame?: boolean
@@ -38,7 +38,7 @@ export const RoomWaiting: React.FC<RoomWaitingProps> = ({
   lanPort,
 }) => {
   const colorScheme = useColorScheme() ?? 'light'
-  const colors = Colors[colorScheme] as any
+  const colors = Colors[colorScheme]
   const { t } = useTranslation()
 
   const canStartGame = players.length >= 2 && players.every((p) => p.isConnected)

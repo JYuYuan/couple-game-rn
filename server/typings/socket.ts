@@ -2,6 +2,15 @@ import type { Server, Socket } from 'socket.io'
 import type { TaskSet } from './tasks'
 import type { TaskModalData } from './room'
 
+// 导入PathCell类型
+interface PathCell {
+  id: number
+  x: number
+  y: number
+  type: 'start' | 'end' | 'path' | 'star' | 'trap'
+  direction: 'right' | 'down' | 'left' | 'up' | null
+}
+
 export type SocketIOServer = Server
 export type SocketIOSocket = Socket
 
@@ -32,11 +41,11 @@ export interface JoinData {
 export interface GameAction {
   type: string
   roomId: string
-  [key: string]: any
+  [key: string]: unknown
 }
 
 export interface SocketCallback {
-  (response?: any): void
+  (response?: unknown): void
 }
 
 export interface Player {
@@ -69,9 +78,9 @@ export interface Room {
   gameType: 'fly' | 'wheel' | 'minesweeper'
   createdAt: number
   lastActivity: number
-  engine: any
+  engine: unknown
   currentUser?: string
-  boardPath?: any[]
+  boardPath?: PathCell[]
   // 统一的游戏状态对象
   gameState?: {
     playerPositions: { [playerId: string]: number }
@@ -86,13 +95,14 @@ export interface Room {
     }
     currentTask?: TaskModalData
     boardSize: number
-    [key: string]: any
+    [key: string]: unknown
   }
   taskSet?: TaskSet
-  [key: string]: any
+  tasks?: string[] // 当前游戏中的任务列表
+  [key: string]: unknown
 }
 
 export interface GameData {
   roomId: string
-  [key: string]: any
+  [key: string]: unknown
 }

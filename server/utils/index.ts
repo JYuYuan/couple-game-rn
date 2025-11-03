@@ -8,11 +8,13 @@ export function generateRoomId() {
   return Math.random().toString(36).substring(2, 8).toUpperCase()
 }
 
-export function shuffleArray(array: any[]) {
+export function shuffleArray<T>(array: T[]): T[] {
   const newArray = [...array]
   for (let i = newArray.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1))
-    ;[newArray[i], newArray[j]] = [newArray[j], newArray[i]]
+    const temp = newArray[i]
+    newArray[i] = newArray[j]!
+    newArray[j] = temp!
   }
   return newArray
 }
@@ -115,17 +117,21 @@ export const createBoardPath = (): PathCell[] => {
 
   for (let i = 0; i < numStars && i < shuffled.length; i++) {
     const index = shuffled[i]
-    const cell = path[index]
-    if (cell) {
-      cell.type = 'star'
+    if (index !== undefined) {
+      const cell = path[index]
+      if (cell) {
+        cell.type = 'star'
+      }
     }
   }
 
   for (let i = numStars; i < numStars + numTraps && i < shuffled.length; i++) {
     const index = shuffled[i]
-    const cell = path[index]
-    if (cell) {
-      cell.type = 'trap'
+    if (index !== undefined) {
+      const cell = path[index]
+      if (cell) {
+        cell.type = 'trap'
+      }
     }
   }
 

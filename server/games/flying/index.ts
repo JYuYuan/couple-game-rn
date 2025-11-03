@@ -1,6 +1,6 @@
 import BaseGame from '../../core/BaseGame.js'
 import { createBoardPath } from '../../utils/index.js'
-import type { Player, SocketIOServer, Room } from '../../typings/socket'
+import type { Player, Room, SocketIOServer } from '../../typings/socket'
 import type { TaskModalData } from '../../typings/room'
 
 class FlyingGame extends BaseGame {
@@ -90,12 +90,21 @@ class FlyingGame extends BaseGame {
     await this.updateRoomAndNotify()
   }
 
-  async onPlayerAction(_io: SocketIOServer, playerId: string, action: any, callback?: Function) {
+  async onPlayerAction(
+    _io: SocketIOServer,
+    playerId: string,
+    action: unknown,
+    callback?: Function,
+  ) {
     if (this.room.gameStatus !== 'playing') {
       callback?.({ success: false, error: '游戏未在进行中' })
       return
     }
-    switch (action.type) {
+
+    // 类型安全的action访问
+    const actionData = action as { type?: string }
+
+    switch (actionData.type) {
       case 'roll_dice':
         await this._handleDiceRoll(playerId, callback)
         break
@@ -107,6 +116,8 @@ class FlyingGame extends BaseGame {
         await this._handleTaskComplete(playerId, action)
         callback?.({ success: true })
         break
+      default:
+        callback?.({ success: false, error: '未知的动作类型' })
     }
   }
 
@@ -367,8 +378,9 @@ class FlyingGame extends BaseGame {
     await this.onEnd(this.socket)
   }
 
-  async _handleTaskComplete(playerId: string, action: any) {
-    console.log(`📋 处理任务完成: 玩家=${playerId}, 结果=${action.completed}`)
+  async _handleTaskComplete(playerId: string, action: unknown) {
+    const actionData = action as { completed?: boolean }
+    console.log(`📋 处理任务完成: 玩家=${playerId}, 结果=${actionData.completed}`)
 
     // 获取当前任务信息
     const currentTask = this.room.gameState?.currentTask
@@ -378,7 +390,7 @@ class FlyingGame extends BaseGame {
     }
 
     const taskType = currentTask.type
-    const completed = action.completed
+    const completed = actionData.completed
 
     console.log(`🎯 任务类型: ${taskType}, 完成状态: ${completed}`)
 

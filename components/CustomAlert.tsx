@@ -1,7 +1,8 @@
 import React from 'react'
-import { Modal, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import { useColorScheme } from '@/hooks/use-color-scheme'
-import { Colors } from '@/constants/theme'
+import { StyleSheet, Text, View } from 'react-native'
+import { useTheme } from '@/hooks/useTheme'
+import { BaseModal } from './common/BaseModal'
+import { BaseButton } from './common/BaseButton'
 
 export interface AlertButton {
   text: string
@@ -24,8 +25,7 @@ export const CustomAlert: React.FC<CustomAlertProps> = ({
   buttons,
   onClose,
 }) => {
-  const colorScheme = useColorScheme() ?? 'light'
-  const colors = Colors[colorScheme] as any
+  const { colors } = useTheme()
 
   const handleButtonPress = (button: AlertButton) => {
     if (button.onPress) {
@@ -35,56 +35,34 @@ export const CustomAlert: React.FC<CustomAlertProps> = ({
   }
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType={Platform.OS === 'web' ? 'none' : 'fade'}
-      onRequestClose={onClose}
-    >
-      <View style={[styles.overlay, { backgroundColor: colors.modalOverlay }]}>
-        <View style={[styles.alertContainer, { backgroundColor: colors.modalBackground }]}>
-          <Text style={[styles.title, { color: colors.settingsText }]}>{title}</Text>
+    <BaseModal visible={visible} onClose={onClose}>
+      <View style={[styles.overlay, { backgroundColor: colors.overlay }]}>
+        <View style={[styles.alertContainer, { backgroundColor: colors.surface }]}>
+          <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
           {message && (
-            <Text style={[styles.message, { color: colors.settingsSecondaryText }]}>{message}</Text>
+            <Text style={[styles.message, { color: colors.textSecondary }]}>{message}</Text>
           )}
           <View style={styles.buttonContainer}>
             {buttons.map((button, index) => (
-              <TouchableOpacity
+              <BaseButton
                 key={index}
-                style={[
-                  styles.button,
-                  {
-                    backgroundColor:
-                      button.style === 'destructive'
-                        ? '#FF6B6B20'
-                        : button.style === 'cancel'
-                          ? colors.settingsCardBackground
-                          : colors.settingsAccent + '20',
-                  },
-                ]}
+                title={button.text}
+                variant={
+                  button.style === 'destructive'
+                    ? 'danger'
+                    : button.style === 'cancel'
+                      ? 'secondary'
+                      : 'primary'
+                }
+                size="medium"
                 onPress={() => handleButtonPress(button)}
-              >
-                <Text
-                  style={[
-                    styles.buttonText,
-                    {
-                      color:
-                        button.style === 'destructive'
-                          ? '#FF6B6B'
-                          : button.style === 'cancel'
-                            ? colors.settingsSecondaryText
-                            : colors.settingsAccent,
-                    },
-                  ]}
-                >
-                  {button.text}
-                </Text>
-              </TouchableOpacity>
+                style={styles.button}
+              />
             ))}
           </View>
         </View>
       </View>
-    </Modal>
+    </BaseModal>
   )
 }
 

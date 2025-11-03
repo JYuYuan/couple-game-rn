@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Platform, StyleSheet, TouchableOpacity, View } from 'react-native'
+import { Platform, StyleSheet, TouchableOpacity, View, ViewStyle } from 'react-native'
 import Animated, {
   interpolate,
   runOnJS,
@@ -56,7 +56,7 @@ const CellComponent: React.FC<CellComponentProps> = ({
   onPress,
 }) => {
   const colorScheme = useColorScheme() ?? 'light'
-  const colors = Colors[colorScheme] as any
+  const colors = Colors[colorScheme]
 
   const scale = useSharedValue(1)
   const glowAnimation = useSharedValue(0)
@@ -174,7 +174,11 @@ const CellComponent: React.FC<CellComponentProps> = ({
         >
           {/* 格子图标 */}
           {getCellIcon() && (
-            <Ionicons name={getCellIcon() as any} size={14} color={getIconColor()} />
+            <Ionicons
+              name={getCellIcon() as keyof typeof Ionicons.glyphMap}
+              size={14}
+              color={getIconColor()}
+            />
           )}
 
           {/* 玩家棋子 */}
@@ -235,7 +239,7 @@ const PlayerPiece: React.FC<PlayerPieceProps> = ({ player, index, total }) => {
     transform: [{ scale: interpolate(glowAnimation.value, [0, 1], [1, 1.1]) }],
   }))
 
-  const getPosition = (): any => {
+  const getPosition = (): ViewStyle => {
     if (total === 1) {
       // 单个玩家时填满整个格子
       return {
@@ -253,7 +257,7 @@ const PlayerPiece: React.FC<PlayerPieceProps> = ({ player, index, total }) => {
         : { position: 'absolute' as const, bottom: 0, left: 0, right: 0, height: '50%' }
     }
     // 更多玩家的布局
-    const positions = [
+    const positions: ViewStyle[] = [
       { position: 'absolute' as const, top: 0, left: 0, width: '50%', height: '50%' },
       { position: 'absolute' as const, top: 0, right: 0, width: '50%', height: '50%' },
       { position: 'absolute' as const, bottom: 0, left: 0, width: '50%', height: '50%' },

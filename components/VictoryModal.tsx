@@ -1,11 +1,9 @@
 import React, { useEffect } from 'react'
-import { Dimensions, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { Dimensions, StyleSheet, Text, View } from 'react-native'
 import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated'
 import { LinearGradient } from 'expo-linear-gradient'
-import { Ionicons } from '@expo/vector-icons'
-import { BlurView } from 'expo-blur'
-import { useColorScheme } from '@/hooks/use-color-scheme'
-import { Colors } from '@/constants/theme'
+import { BaseButton, BaseModal } from '@/components/common'
+import { useTheme } from '@/hooks'
 import { GamePlayer } from '@/hooks/use-game-players'
 import { useTranslation } from 'react-i18next'
 
@@ -28,8 +26,7 @@ export default function VictoryModal({
   onExit,
   onClose,
 }: VictoryModalProps) {
-  const colorScheme = useColorScheme() ?? 'light'
-  const colors = Colors[colorScheme] as any
+  const { colors } = useTheme()
   const { t } = useTranslation()
 
   // 动画值
@@ -63,111 +60,100 @@ export default function VictoryModal({
   if (!winner) return null
 
   return (
-    <Modal visible={visible} transparent animationType="none" statusBarTranslucent>
-      <BlurView intensity={20} style={StyleSheet.absoluteFillObject}>
-        <View style={styles.overlay}>
-          <Animated.View style={[styles.modalContainer, modalStyle]}>
-            {/* 庆祝背景 */}
-            <Animated.View style={[styles.confettiContainer, confettiStyle]}>
-              <View style={[styles.confetti, { backgroundColor: '#FFD700', top: 20, left: 30 }]} />
-              <View style={[styles.confetti, { backgroundColor: '#FF6B6B', top: 40, right: 40 }]} />
-              <View style={[styles.confetti, { backgroundColor: '#4ECDC4', top: 60, left: 60 }]} />
-              <View style={[styles.confetti, { backgroundColor: '#45B7D1', top: 80, right: 80 }]} />
-              <View
-                style={[styles.confetti, { backgroundColor: '#96CEB4', bottom: 60, left: 40 }]}
-              />
-              <View
-                style={[styles.confetti, { backgroundColor: '#FFEAA7', bottom: 80, right: 60 }]}
-              />
-            </Animated.View>
+    <BaseModal visible={visible} onClose={onClose} modalStyle={{ backgroundColor: colors.surface }}>
+      <View style={styles.overlay}>
+        <Animated.View style={[styles.modalContainer, modalStyle]}>
+          {/* 庆祝背景 */}
+          <Animated.View style={[styles.confettiContainer, confettiStyle]}>
+            <View style={[styles.confetti, { backgroundColor: '#FFD700', top: 20, left: 30 }]} />
+            <View style={[styles.confetti, { backgroundColor: '#FF6B6B', top: 40, right: 40 }]} />
+            <View style={[styles.confetti, { backgroundColor: '#4ECDC4', top: 60, left: 60 }]} />
+            <View style={[styles.confetti, { backgroundColor: '#45B7D1', top: 80, right: 80 }]} />
+            <View style={[styles.confetti, { backgroundColor: '#96CEB4', bottom: 60, left: 40 }]} />
+            <View
+              style={[styles.confetti, { backgroundColor: '#FFEAA7', bottom: 80, right: 60 }]}
+            />
+          </Animated.View>
 
-            <LinearGradient
-              colors={[colors.homeCardBackground, colors.homeCardBackground + 'F0']}
-              style={[styles.modal, { borderColor: colors.homeCardBorder }]}
-            >
-              {/* 胜利庆祝界面 */}
-              <View style={styles.victoryContent}>
-                {/* 胜利标题 */}
-                <View style={styles.victoryHeader}>
-                  <View style={styles.crownContainer}>
-                    <LinearGradient colors={['#FFD700', '#FFA500']} style={styles.crownGradient}>
-                      <Text style={styles.crownEmoji}>👑</Text>
-                    </LinearGradient>
-                  </View>
-
-                  <Text style={[styles.victoryTitle, { color: colors.homeCardTitle }]}>
-                    {isWinner
-                      ? t('victoryModal.youWin', '🎉 你赢了！🎉')
-                      : t('victoryModal.gameOver', '🎮 游戏结束')}
-                  </Text>
-
-                  <View style={[styles.winnerCard, { backgroundColor: winner.color + '15' }]}>
-                    <View style={[styles.winnerAvatar, { backgroundColor: winner.color }]}>
-                      <Text style={styles.winnerAvatarText}>{winner.name.charAt(0)}</Text>
-                    </View>
-                    <View style={styles.winnerInfo}>
-                      <Text style={[styles.winnerName, { color: colors.homeCardTitle }]}>
-                        {winner.name}
-                      </Text>
-                      <Text style={[styles.winnerSubtext, { color: colors.homeCardDescription }]}>
-                        {isWinner
-                          ? t('victoryModal.congratulations', '恭喜获得胜利！')
-                          : t('victoryModal.winnerIs', '胜利者')}
-                      </Text>
-                    </View>
-                  </View>
+          <LinearGradient
+            colors={[colors.surface, colors.surface + 'F0']}
+            style={[styles.modal, { borderColor: colors.border }]}
+          >
+            {/* 胜利庆祝界面 */}
+            <View style={styles.victoryContent}>
+              {/* 胜利标题 */}
+              <View style={styles.victoryHeader}>
+                <View style={styles.crownContainer}>
+                  <LinearGradient colors={['#FFD700', '#FFA500']} style={styles.crownGradient}>
+                    <Text style={styles.crownEmoji}>👑</Text>
+                  </LinearGradient>
                 </View>
 
-                {/* 按钮区域 - 只有胜利者或房主才能操作 */}
-                {isWinner ? (
-                  <View style={styles.buttonContainer}>
-                    {onRestart && (
-                      <TouchableOpacity style={styles.primaryButton} onPress={onRestart}>
-                        <LinearGradient
-                          colors={['#4CAF50', '#66BB6A']}
-                          style={styles.primaryButtonGradient}
-                        >
-                          <Ionicons name="refresh" size={20} color="white" />
-                          <Text style={styles.primaryButtonText}>
-                            {t('victoryModal.restart', '重新开始')}
-                          </Text>
-                        </LinearGradient>
-                      </TouchableOpacity>
-                    )}
+                <Text style={[styles.victoryTitle, { color: colors.text }]}>
+                  {isWinner
+                    ? t('victoryModal.youWin', '🎉 你赢了！🎉')
+                    : t('victoryModal.gameOver', '🎮 游戏结束')}
+                </Text>
 
-                    <TouchableOpacity
-                      style={[styles.secondaryButton, { borderColor: colors.homeCardBorder }]}
-                      onPress={onExit}
-                    >
-                      <Ionicons name="exit" size={20} color={colors.homeCardDescription} />
-                      <Text
-                        style={[styles.secondaryButtonText, { color: colors.homeCardDescription }]}
-                      >
-                        {t('victoryModal.exitGame', '退出游戏')}
-                      </Text>
-                    </TouchableOpacity>
+                <View style={[styles.winnerCard, { backgroundColor: winner.color + '15' }]}>
+                  <View style={[styles.winnerAvatar, { backgroundColor: winner.color }]}>
+                    <Text style={styles.winnerAvatarText}>{winner.name.charAt(0)}</Text>
                   </View>
-                ) : (
-                  <View style={styles.spectatorContainer}>
-                    <Text style={[styles.spectatorText, { color: colors.homeCardDescription }]}>
-                      {t('victoryModal.waitingForWinner', '等待胜利者操作...')}
+                  <View style={styles.winnerInfo}>
+                    <Text style={[styles.winnerName, { color: colors.text }]}>{winner.name}</Text>
+                    <Text style={[styles.winnerSubtext, { color: colors.textSecondary }]}>
+                      {isWinner
+                        ? t('victoryModal.congratulations', '恭喜获得胜利！')
+                        : t('victoryModal.winnerIs', '胜利者')}
                     </Text>
-                    <TouchableOpacity
-                      style={[styles.closeButton, { borderColor: colors.homeCardBorder }]}
-                      onPress={onClose}
-                    >
-                      <Text style={[styles.closeButtonText, { color: colors.homeCardDescription }]}>
-                        {t('victoryModal.close', '关闭')}
-                      </Text>
-                    </TouchableOpacity>
                   </View>
-                )}
+                </View>
               </View>
-            </LinearGradient>
-          </Animated.View>
-        </View>
-      </BlurView>
-    </Modal>
+
+              {/* 按钮区域 - 只有胜利者或房主才能操作 */}
+              {isWinner ? (
+                <View style={styles.buttonContainer}>
+                  {onRestart && (
+                    <BaseButton
+                      title={t('victoryModal.restart', '重新开始')}
+                      variant="primary"
+                      size="large"
+                      iconName="refresh"
+                      iconPosition="left"
+                      onPress={onRestart}
+                      style={styles.primaryButton}
+                    />
+                  )}
+
+                  <BaseButton
+                    title={t('victoryModal.exitGame', '退出游戏')}
+                    variant="secondary"
+                    size="large"
+                    iconName="exit"
+                    iconPosition="left"
+                    onPress={onExit}
+                    style={[styles.secondaryButton, { borderColor: colors.border }]}
+                  />
+                </View>
+              ) : (
+                <View style={styles.spectatorContainer}>
+                  <Text style={[styles.spectatorText, { color: colors.textSecondary }]}>
+                    {t('victoryModal.waitingForWinner', '等待胜利者操作...')}
+                  </Text>
+                  <BaseButton
+                    title={t('victoryModal.close', '关闭')}
+                    variant="secondary"
+                    size="medium"
+                    onPress={onClose}
+                    style={[styles.closeButton, { borderColor: colors.border }]}
+                  />
+                </View>
+              )}
+            </View>
+          </LinearGradient>
+        </Animated.View>
+      </View>
+    </BaseModal>
   )
 }
 

@@ -9,12 +9,11 @@ import {
   View,
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
-import { useColorScheme } from '@/hooks/use-color-scheme'
-import { Colors } from '@/constants/theme'
+import { useErrorHandler } from '@/constants/commonImports'
+import { useTheme } from '@/hooks'
 import { TaskCategory } from '@/types/tasks'
 import { useTasksStore } from '@/store/tasksStore'
 import { showConfirmDialog } from '@/components/ConfirmDialog'
-import toast from '@/utils/toast'
 
 interface CategoryModalProps {
   visible: boolean
@@ -71,8 +70,8 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
   onClose,
   category = null,
 }) => {
-  const colorScheme = useColorScheme() ?? 'light'
-  const colors = Colors[colorScheme] as any
+  const { colors } = useTheme()
+  const { showError } = useErrorHandler()
 
   const { addCategory, updateCategory } = useTasksStore()
 
@@ -105,7 +104,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
 
   const handleSave = async () => {
     if (!formData.name.trim()) {
-      toast.error('提示', '请输入分类名称')
+      showError('提示', '请输入分类名称')
       return
     }
 
@@ -144,59 +143,59 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
 
   return (
     <Modal visible={visible} animationType="fade" transparent>
-      <View style={[styles.overlay, { backgroundColor: colors.modalOverlay }]}>
-        <View style={[styles.modal, { backgroundColor: colors.modalBackground }]}>
+      <View style={[styles.overlay, { backgroundColor: colors.overlay }]}>
+        <View style={[styles.modal, { backgroundColor: colors.surface }]}>
           <View style={styles.header}>
-            <Text style={[styles.title, { color: colors.settingsText }]}>
+            <Text style={[styles.title, { color: colors.text }]}>
               {category ? '编辑分类' : '创建分类'}
             </Text>
             <TouchableOpacity onPress={onClose}>
-              <Ionicons name="close" size={24} color={colors.settingsSecondaryText} />
+              <Ionicons name="close" size={24} color={colors.textSecondary} />
             </TouchableOpacity>
           </View>
 
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
             <View style={styles.section}>
-              <Text style={[styles.label, { color: colors.settingsText }]}>名称</Text>
+              <Text style={[styles.label, { color: colors.text }]}>名称</Text>
               <TextInput
                 style={[
                   styles.input,
                   {
-                    backgroundColor: colors.settingsCardBackground,
-                    borderColor: colors.settingsCardBorder,
-                    color: colors.settingsText,
+                    backgroundColor: colors.background,
+                    borderColor: colors.border,
+                    color: colors.text,
                   },
                 ]}
                 value={formData.name}
                 onChangeText={(text) => setFormData((prev) => ({ ...prev, name: text }))}
                 placeholder="输入分类名称"
-                placeholderTextColor={colors.settingsSecondaryText}
+                placeholderTextColor={colors.textSecondary}
               />
             </View>
 
             <View style={styles.section}>
-              <Text style={[styles.label, { color: colors.settingsText }]}>描述</Text>
+              <Text style={[styles.label, { color: colors.text }]}>描述</Text>
               <TextInput
                 style={[
                   styles.input,
                   {
-                    backgroundColor: colors.settingsCardBackground,
-                    borderColor: colors.settingsCardBorder,
-                    color: colors.settingsText,
+                    backgroundColor: colors.background,
+                    borderColor: colors.border,
+                    color: colors.text,
                     minHeight: 60,
                   },
                 ]}
                 value={formData.description}
                 onChangeText={(text) => setFormData((prev) => ({ ...prev, description: text }))}
                 placeholder="输入分类描述（可选）"
-                placeholderTextColor={colors.settingsSecondaryText}
+                placeholderTextColor={colors.textSecondary}
                 multiline
                 textAlignVertical="top"
               />
             </View>
 
             <View style={styles.section}>
-              <Text style={[styles.label, { color: colors.settingsText }]}>图标</Text>
+              <Text style={[styles.label, { color: colors.text }]}>图标</Text>
               <View style={styles.optionsGrid}>
                 {ICON_OPTIONS.map((iconName) => (
                   <TouchableOpacity
@@ -205,19 +204,16 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
                       styles.iconOption,
                       {
                         backgroundColor:
-                          formData.icon === iconName
-                            ? formData.color + '20'
-                            : colors.settingsCardBackground,
-                        borderColor:
-                          formData.icon === iconName ? formData.color : colors.settingsCardBorder,
+                          formData.icon === iconName ? formData.color + '20' : colors.background,
+                        borderColor: formData.icon === iconName ? formData.color : colors.border,
                       },
                     ]}
                     onPress={() => setFormData((prev) => ({ ...prev, icon: iconName }))}
                   >
                     <Ionicons
-                      name={iconName as any}
+                      name={iconName as keyof typeof Ionicons.glyphMap}
                       size={24}
-                      color={formData.icon === iconName ? formData.color : colors.settingsText}
+                      color={formData.icon === iconName ? formData.color : colors.text}
                     />
                   </TouchableOpacity>
                 ))}
@@ -225,7 +221,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
             </View>
 
             <View style={styles.section}>
-              <Text style={[styles.label, { color: colors.settingsText }]}>颜色</Text>
+              <Text style={[styles.label, { color: colors.text }]}>颜色</Text>
               <View style={styles.optionsGrid}>
                 {COLOR_OPTIONS.map((colorValue) => (
                   <TouchableOpacity
@@ -234,8 +230,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
                       styles.colorOption,
                       {
                         backgroundColor: colorValue,
-                        borderColor:
-                          formData.color === colorValue ? colors.settingsText : 'transparent',
+                        borderColor: formData.color === colorValue ? colors.text : 'transparent',
                         borderWidth: formData.color === colorValue ? 2 : 0,
                       },
                     ]}
@@ -250,26 +245,28 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
             </View>
 
             <View style={styles.previewSection}>
-              <Text style={[styles.label, { color: colors.settingsText }]}>预览</Text>
+              <Text style={[styles.label, { color: colors.text }]}>预览</Text>
               <View
                 style={[
                   styles.preview,
                   {
-                    backgroundColor: colors.settingsCardBackground,
-                    borderColor: colors.settingsCardBorder,
+                    backgroundColor: colors.background,
+                    borderColor: colors.border,
                   },
                 ]}
               >
                 <View style={[styles.previewIcon, { backgroundColor: formData.color + '20' }]}>
-                  <Ionicons name={formData.icon as any} size={24} color={formData.color} />
+                  <Ionicons
+                    name={formData.icon as keyof typeof Ionicons.glyphMap}
+                    size={24}
+                    color={formData.color}
+                  />
                 </View>
                 <View style={styles.previewInfo}>
-                  <Text style={[styles.previewName, { color: colors.settingsText }]}>
+                  <Text style={[styles.previewName, { color: colors.text }]}>
                     {formData.name || '分类名称'}
                   </Text>
-                  <Text
-                    style={[styles.previewDescription, { color: colors.settingsSecondaryText }]}
-                  >
+                  <Text style={[styles.previewDescription, { color: colors.textSecondary }]}>
                     {formData.description || '分类描述'}
                   </Text>
                 </View>
@@ -279,17 +276,13 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
 
           <View style={styles.footer}>
             <TouchableOpacity
-              style={[
-                styles.button,
-                styles.cancelButton,
-                { backgroundColor: colors.settingsCardBackground },
-              ]}
+              style={[styles.button, styles.cancelButton, { backgroundColor: colors.background }]}
               onPress={onClose}
             >
-              <Text style={[styles.buttonText, { color: colors.settingsSecondaryText }]}>取消</Text>
+              <Text style={[styles.buttonText, { color: colors.textSecondary }]}>取消</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.button, styles.saveButton, { backgroundColor: colors.settingsAccent }]}
+              style={[styles.button, styles.saveButton, { backgroundColor: colors.primary }]}
               onPress={handleSave}
               disabled={loading}
             >
