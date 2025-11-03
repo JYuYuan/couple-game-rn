@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect, useState } from 'react'
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
-import { useTranslation } from 'react-i18next'
 import { LinearGradient } from 'expo-linear-gradient'
-import { useColorScheme } from '@/hooks/use-color-scheme'
-import { Colors } from '@/constants/theme'
+import { Ionicons } from '@expo/vector-icons'
+import { usePageBase } from '@/hooks/usePageBase'
+import { spacing } from '@/constants/commonStyles'
 import { useGameTasks } from '@/hooks/use-game-tasks'
 import MineTaskModal, { MineTaskData } from '@/components/MineTaskModal'
 import VictoryModal from '@/components/VictoryModal'
@@ -14,7 +14,7 @@ import { AvatarGender } from '@/types/settings'
 import { getRandomAvatarByGender } from '@/constants/avatars'
 import { getWindow } from '@/utils'
 
-const { width: screenWidth } = getWindow()
+const { width: screenWidth, height: screenHeight } = getWindow()
 // 扫雷游戏难度配置
 const DIFFICULTY_CONFIGS = {
   easy: { rows: 9, cols: 9, mines: 10, name: '简单' },
@@ -48,9 +48,7 @@ type GameStatus = 'waiting' | 'playing' | 'finished'
 export default function MinesweeperBattle() {
   const router = useRouter()
   const params = useLocalSearchParams()
-  const { t } = useTranslation()
-  const colorScheme = useColorScheme() ?? 'light'
-  const colors = Colors[colorScheme]
+  const { t, colors } = usePageBase()
 
   // 获取传入的参数
   const taskSetId = params.taskSetId as string
@@ -67,7 +65,7 @@ export default function MinesweeperBattle() {
   const [players] = useState<Player[]>(() => {
     return Array.from({ length: 2 }, (_, index) => {
       // 随机分配性别：第一个玩家随机，第二个玩家随机
-      const gender: AvatarGender = !index ? 'man' : 'woman'
+      const gender: AvatarGender = index % 2 === 0 ? 'man' : 'woman'
       const randomAvatar = getRandomAvatarByGender(gender)
 
       return {
@@ -91,7 +89,10 @@ export default function MinesweeperBattle() {
   const [winner, setWinner] = useState<Player | null>(null)
 
   const config = DIFFICULTY_CONFIGS[difficulty]
-  const cellSize = Math.min((screenWidth - 60) / config.cols, 28)
+  // 计算格子大小 - 考虑屏幕高度和布局空间
+  const availableWidth = screenWidth - 40
+  const availableHeight = screenHeight * 0.55 // 中央区域占55%高度
+  const cellSize = Math.min(availableWidth / config.cols, availableHeight / config.rows, 32)
   const currentPlayer = players[currentPlayerIndex]
 
   // 进入页面时自动开始游戏
@@ -385,7 +386,7 @@ export default function MinesweeperBattle() {
   }
 
   // 获取格子背景颜色
-  const getCellBackgroundColor = (cell: Cell, colors: typeof Colors.light | typeof Colors.dark) => {
+  const getCellBackgroundColor = (cell: Cell, colors: any) => {
     if (!cell.isRevealed) {
       return cell.isFlagged ? '#FFD700' + '30' : '#E3F2FD'
     }
@@ -404,7 +405,7 @@ export default function MinesweeperBattle() {
   }
 
   // 获取格子边框颜色
-  const getCellBorderColor = (cell: Cell, colors: typeof Colors.light | typeof Colors.dark) => {
+  const getCellBorderColor = (cell: Cell, colors: any) => {
     if (!cell.isRevealed) {
       return cell.isFlagged ? '#FFD700' : '#BDBDBD'
     }
@@ -446,6 +447,7 @@ export default function MinesweeperBattle() {
         }}
       />
       <View style={[styles.container, { backgroundColor: colors.homeBackground }]}>
+        {/* 背景渐变 */}
         <LinearGradient
           colors={[colors.homeGradientStart, colors.homeGradientMiddle, colors.homeGradientEnd]}
           style={StyleSheet.absoluteFillObject}
@@ -453,91 +455,79 @@ export default function MinesweeperBattle() {
           end={{ x: 1, y: 1 }}
         />
 
-        <ScrollView
-          style={styles.content}
-          contentContainerStyle={styles.contentContainer}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* 游戏状态栏 */}
-          <View style={[styles.statusBar, { backgroundColor: colors.homeCardBackground }]}>
-            <View style={styles.statusLeft}>
-              <Text style={[styles.statusTitle, { color: colors.homeCardTitle }]}>
-                {gameStatus === 'waiting'
-                  ? t('minesweeper.status.waiting', '准备开始')
-                  : gameStatus === 'playing'
-                    ? t('minesweeper.status.playing', '游戏进行中')
-                    : t('minesweeper.status.finished', '游戏结束')}
-              </Text>
-              {gameStatus === 'playing' && (
-                <Text style={[styles.currentPlayerText, { color: currentPlayer.color }]}>
-                  {t('minesweeper.status.currentPlayerTurn', '轮到 {{playerName}}', {
-                    playerName: currentPlayer.name,
-                  })}
-                </Text>
-              )}
-            </View>
+        {/* 顶部玩家HUD */}
+        <View style={styles.playersHUD}>
+          {players.map((player, index) => {
+            const isCurrentPlayer = currentPlayerIndex === index
+            const isLeftPlayer = index === 0
 
-            <View style={styles.statusRight}>
-              <Text style={[styles.timerText, { color: colors.homeCardDescription }]}>
-                ⏱️ {formatTime(timer)}
-              </Text>
-              <Text style={[styles.progressText, { color: colors.homeCardDescription }]}>
-                {t('minesweeper.stats.progress', '进度')}: {revealedCells}/
-                {config.rows * config.cols - config.mines}
-              </Text>
-            </View>
-          </View>
-
-          {/* 玩家信息 */}
-          <View style={[styles.playersInfo, { backgroundColor: colors.homeCardBackground }]}>
-            <Text style={[styles.sectionTitle, { color: colors.homeCardTitle }]}>
-              {t('minesweeper.players.title', '玩家状态')}
-            </Text>
-            <View style={styles.playersGrid}>
-              {players.map((player, index) => (
+            return (
+              <View
+                key={player.id}
+                style={[
+                  styles.playerHUDCard,
+                  {
+                    alignItems: isLeftPlayer ? 'flex-start' : 'flex-end',
+                  },
+                ]}
+              >
                 <View
-                  key={player.id}
                   style={[
-                    styles.playerCard,
+                    styles.playerHUDContent,
                     {
-                      backgroundColor: player.color + '15',
-                      borderColor: currentPlayerIndex === index ? player.color : 'transparent',
-                      borderWidth: currentPlayerIndex === index ? 2 : 0,
+                      flexDirection: isLeftPlayer ? 'row' : 'row-reverse',
+                      backgroundColor: colors.homeCardBackground + 'CC',
+                      borderColor: isCurrentPlayer ? player.color : 'transparent',
+                      borderWidth: isCurrentPlayer ? 3 : 0,
                     },
                   ]}
                 >
-                  <PlayerAvatar avatarId={player.avatarId} color={player.color} size={32} />
-                  <View style={styles.playerInfo}>
-                    <Text style={[styles.playerName, { color: colors.homeCardTitle }]}>
+                  <PlayerAvatar avatarId={player.avatarId} color={player.color} size={44} />
+                  <View
+                    style={[
+                      styles.playerHUDInfo,
+                      { alignItems: isLeftPlayer ? 'flex-start' : 'flex-end' },
+                    ]}
+                  >
+                    <Text style={[styles.playerHUDName, { color: colors.homeCardTitle }]}>
                       {player.name}
                     </Text>
-                    <Text style={[styles.playerStats, { color: colors.homeCardDescription }]}>
-                      {t('minesweeper.stats.cells', '格子')}: {player.cellsRevealed} |{' '}
-                      {t('minesweeper.stats.mines', '踩雷')}: {player.minesHit}
-                    </Text>
+                    <View style={styles.playerHUDStats}>
+                      <Text style={[styles.playerHUDStatText, { color: player.color }]}>
+                        🏆 {player.cellsRevealed}
+                      </Text>
+                      <Text style={[styles.playerHUDStatText, { color: colors.error }]}>
+                        💣 {player.minesHit}
+                      </Text>
+                    </View>
                   </View>
                 </View>
-              ))}
-            </View>
-          </View>
+              </View>
+            )
+          })}
+        </View>
 
-          {/* 难度选择 */}
-          {gameStatus === 'waiting' && (
-            <View
-              style={[styles.difficultyContainer, { backgroundColor: colors.homeCardBackground }]}
-            >
-              <Text style={[styles.sectionTitle, { color: colors.homeCardTitle }]}>
-                {t('minesweeper.difficulty.title', '难度选择')}
+        {/* 中央游戏区 */}
+        <View style={styles.gameCenterSection}>
+          {gameStatus === 'waiting' ? (
+            /* 难度选择 */
+            <View style={styles.difficultySelectionContainer}>
+              <Text style={[styles.difficultyTitle, { color: colors.homeCardTitle }]}>
+                {t('minesweeper.difficulty.title', '选择难度')}
               </Text>
-              <View style={styles.difficultyButtons}>
+              <View style={styles.difficultyGrid}>
                 {Object.entries(DIFFICULTY_CONFIGS).map(([key, config]) => (
                   <TouchableOpacity
                     key={key}
                     style={[
-                      styles.difficultyButton,
+                      styles.difficultyCard,
                       {
-                        backgroundColor: difficulty === key ? '#10B981' : colors.homeCardBackground,
-                        borderColor: difficulty === key ? '#10B981' : colors.homeCardBorder,
+                        backgroundColor:
+                          difficulty === key
+                            ? colors.success + '20'
+                            : colors.homeCardBackground + 'CC',
+                        borderColor: difficulty === key ? colors.success : 'transparent',
+                        borderWidth: difficulty === key ? 3 : 0,
                       },
                     ]}
                     onPress={() => setDifficulty(key as Difficulty)}
@@ -545,33 +535,44 @@ export default function MinesweeperBattle() {
                   >
                     <Text
                       style={[
-                        styles.difficultyButtonText,
-                        { color: difficulty === key ? 'white' : colors.homeCardTitle },
+                        styles.difficultyCardName,
+                        {
+                          color: difficulty === key ? colors.success : colors.homeCardTitle,
+                        },
                       ]}
                     >
                       {t(`minesweeper.difficulty.${key}`, config.name)}
                     </Text>
                     <Text
                       style={[
-                        styles.difficultyInfo,
-                        { color: difficulty === key ? 'white' : colors.homeCardDescription },
+                        styles.difficultyCardInfo,
+                        {
+                          color: difficulty === key ? colors.success : colors.homeCardDescription,
+                        },
                       ]}
                     >
-                      {config.rows}×{config.cols} · {config.mines}💣
+                      {config.rows}×{config.cols}
+                    </Text>
+                    <Text style={[styles.difficultyCardMines, { color: colors.error }]}>
+                      💣 {config.mines}
                     </Text>
                   </TouchableOpacity>
                 ))}
               </View>
             </View>
-          )}
-
-          {/* 游戏板 */}
-          {gameStatus !== 'waiting' && (
-            <View style={[styles.gameBoard, { backgroundColor: colors.homeCardBackground }]}>
-              <Text style={[styles.sectionTitle, { color: colors.homeCardTitle }]}>
-                {t('minesweeper.game.title', '扫雷战场')}
-              </Text>
-              <View style={[styles.boardContainer, { width: cellSize * config.cols }]}>
+          ) : (
+            /* 游戏板 */
+            <View style={styles.gameBoardContainer}>
+              <View
+                style={[
+                  styles.boardWrapper,
+                  {
+                    width: cellSize * config.cols,
+                    height: cellSize * config.rows,
+                    backgroundColor: colors.homeCardBackground + 'E6',
+                  },
+                ]}
+              >
                 {board.map((row, rowIndex) => (
                   <View key={rowIndex} style={styles.boardRow}>
                     {row.map((cell, colIndex) => (
@@ -612,24 +613,45 @@ export default function MinesweeperBattle() {
               </View>
             </View>
           )}
+        </View>
 
-          {/* 游戏说明 */}
+        {/* 底部状态栏 */}
+        <View style={styles.bottomStatusBar}>
           <View
-            style={[styles.instructionsContainer, { backgroundColor: colors.homeCardBackground }]}
+            style={[styles.statusBarContent, { backgroundColor: colors.homeCardBackground + 'CC' }]}
           >
-            <Text style={[styles.sectionTitle, { color: colors.homeCardTitle }]}>
-              {t('minesweeper.game.rules.title', '游戏规则')}
-            </Text>
-            <Text style={[styles.instructionText, { color: colors.homeCardDescription }]}>
-              • {t('minesweeper.game.rules.rule1', '双人轮流点击格子揭示内容')}
-              {'\n'}• {t('minesweeper.game.rules.rule2', '长按格子可以标记地雷')}
-              {'\n'}• {t('minesweeper.game.rules.rule3', '踩到地雷需要执行任务')}
-              {'\n'}• {t('minesweeper.game.rules.rule4', '获得格子数多的玩家获胜')}
-              {'\n'}• {t('minesweeper.game.rules.rule5', '格子数相同则踩雷少者胜')}
-              {'\n'}• {t('minesweeper.game.rules.rule6', '所有格子揭示完毕游戏结束')}
-            </Text>
+            {gameStatus === 'playing' ? (
+              <>
+                {/* 左侧：当前玩家指示 */}
+                <View style={styles.statusLeft}>
+                  <View style={[styles.turnIndicator, { backgroundColor: currentPlayer.color }]} />
+                  <Text style={[styles.turnText, { color: colors.homeCardTitle }]}>
+                    {currentPlayer.name}
+                  </Text>
+                </View>
+
+                {/* 中间：进度 */}
+                <View style={styles.statusCenter}>
+                  <Text style={[styles.progressText, { color: colors.homeCardDescription }]}>
+                    {revealedCells}/{config.rows * config.cols - config.mines}
+                  </Text>
+                </View>
+
+                {/* 右侧：计时器 */}
+                <View style={styles.statusRight}>
+                  <Ionicons name="time-outline" size={16} color={colors.homeCardDescription} />
+                  <Text style={[styles.timerText, { color: colors.homeCardDescription }]}>
+                    {formatTime(timer)}
+                  </Text>
+                </View>
+              </>
+            ) : (
+              <Text style={[styles.statusText, { color: colors.homeCardTitle }]}>
+                {t('minesweeper.status.selectDifficulty', '选择难度开始游戏')}
+              </Text>
+            )}
           </View>
-        </ScrollView>
+        </View>
       </View>
 
       {/* 踩雷任务弹窗 */}
@@ -671,117 +693,104 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  content: {
-    flex: 1,
-  },
-  contentContainer: {
-    padding: 16,
-    paddingBottom: 80,
-  },
-  statusBar: {
+  // 顶部玩家HUD
+  playersHUD: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 12,
-    borderRadius: 12,
-    marginBottom: 12,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.md,
+    gap: spacing.md,
   },
-  statusLeft: {
+  playerHUDCard: {
     flex: 1,
   },
-  statusTitle: {
+  playerHUDContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: spacing.sm,
+    borderRadius: 16,
+    gap: spacing.sm,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  playerHUDInfo: {
+    flex: 1,
+    gap: 4,
+  },
+  playerHUDName: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  playerHUDStats: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  playerHUDStatText: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  // 中央游戏区
+  gameCenterSection: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+  },
+  // 难度选择
+  difficultySelectionContainer: {
+    alignItems: 'center',
+    gap: spacing.lg,
+  },
+  difficultyTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+  },
+  difficultyGrid: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  difficultyCard: {
+    width: 100,
+    height: 120,
+    padding: spacing.md,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  difficultyCardName: {
     fontSize: 18,
     fontWeight: '700',
-    marginBottom: 4,
   },
-  currentPlayerText: {
+  difficultyCardInfo: {
     fontSize: 14,
     fontWeight: '600',
   },
-  statusRight: {
-    alignItems: 'flex-end',
-  },
-  timerText: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  progressText: {
+  difficultyCardMines: {
     fontSize: 12,
-    fontWeight: '500',
-  },
-  playersInfo: {
-    padding: 12,
-    borderRadius: 12,
-    marginBottom: 12,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 8,
-  },
-  playersGrid: {
-    gap: 8,
-  },
-  playerCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 10,
-    borderRadius: 8,
-    gap: 10,
-  },
-  playerInfo: {
-    flex: 1,
-  },
-  playerName: {
-    fontSize: 14,
     fontWeight: '600',
-    marginBottom: 2,
   },
-  playerStats: {
-    fontSize: 12,
-  },
-  difficultyContainer: {
-    padding: 12,
-    borderRadius: 12,
-    marginBottom: 12,
-  },
-  difficultyButtons: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  difficultyButton: {
-    flex: 1,
-    padding: 8,
-    borderRadius: 8,
-    borderWidth: 1,
+  // 游戏板
+  gameBoardContainer: {
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  difficultyButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  difficultyInfo: {
-    fontSize: 10,
-    fontWeight: '400',
-  },
-  gameBoard: {
-    padding: 16,
+  boardWrapper: {
     borderRadius: 16,
-    marginBottom: 12,
-    alignItems: 'center',
-  },
-  boardContainer: {
-    alignSelf: 'center',
-    backgroundColor: '#F8F9FA',
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
     overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 8,
   },
   boardRow: {
     flexDirection: 'row',
@@ -799,12 +808,61 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 1,
   },
-  instructionsContainer: {
-    padding: 12,
-    borderRadius: 12,
+  // 底部状态栏
+  bottomStatusBar: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.lg,
   },
-  instructionText: {
+  statusBarContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  statusLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    flex: 1,
+  },
+  turnIndicator: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  turnText: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  statusCenter: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  progressText: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  statusRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  timerText: {
     fontSize: 14,
-    lineHeight: 20,
+    fontWeight: '600',
+  },
+  statusText: {
+    fontSize: 15,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 })

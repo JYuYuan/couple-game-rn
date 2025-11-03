@@ -12,10 +12,8 @@ import {
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { useColorScheme } from '@/hooks/use-color-scheme'
-import { Colors } from '@/constants/theme'
-import { useTranslation } from 'react-i18next'
 import { TaskCategory, TaskSet } from '@/types/tasks'
+import { usePageBase } from '@/hooks/usePageBase'
 
 const { height: screenHeight } = Dimensions.get('window')
 
@@ -41,9 +39,7 @@ export const TaskSetDetailModal: React.FC<TaskSetDetailModalProps> = ({
   isEdit,
 }) => {
   const insets = useSafeAreaInsets()
-  const colorScheme = useColorScheme() ?? 'light'
-  const colors = Colors[colorScheme] as any
-  const { t } = useTranslation()
+  const { colors, t } = usePageBase()
 
   // 动画值
   const translateY = useSharedValue(screenHeight)

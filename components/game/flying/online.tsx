@@ -4,14 +4,12 @@ import { Stack, useNavigation, useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 import { LinearGradient } from 'expo-linear-gradient'
-import { useColorScheme } from '@/hooks/use-color-scheme'
-import { Colors, CommonStyles, Layout } from '@/constants/theme'
+import { CommonStyles, Layout } from '@/constants/theme'
 import GameBoard from '@/components/GameBoard'
 import TaskModal from '@/components/TaskModal'
 import VictoryModal from '@/components/VictoryModal'
 import { GamePlayer } from '@/hooks/use-game-players'
 import { useAudioManager } from '@/hooks/use-audio-manager'
-import { useTranslation } from 'react-i18next'
 import { OnlinePlayer, TaskModalData } from '@/types/online'
 import { useSocket } from '@/hooks/use-socket'
 import { useRoomStore, useSettingsStore } from '@/store'
@@ -19,13 +17,12 @@ import { useDeepCompareEffect } from 'ahooks'
 import toast from '@/utils/toast'
 import { PlayerAvatar } from '@/components/PlayerAvatar'
 import { getWindow } from '@/utils'
+import { usePageBase } from '@/hooks/usePageBase'
 
 export default function FlyingChessGame() {
   const router = useRouter()
   const navigation = useNavigation()
-  const colorScheme = useColorScheme() ?? 'light'
-  const colors = Colors[colorScheme] as any
-  const { t } = useTranslation()
+  const { colors, t } = usePageBase()
   const { playerId } = useSettingsStore()
   const socket = useSocket()
 

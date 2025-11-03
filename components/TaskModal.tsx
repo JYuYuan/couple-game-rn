@@ -8,7 +8,7 @@ import Animated, {
 } from 'react-native-reanimated'
 import { Ionicons } from '@expo/vector-icons'
 import { BaseButton, BaseModal } from '@/components/common'
-import { useTheme, useModalAnimation } from '@/hooks'
+import { useModalAnimation, useTheme } from '@/hooks'
 import { useTranslation } from 'react-i18next'
 import { TaskModalData } from '@/types/online'
 import { PlayerAvatar } from '@/components/PlayerAvatar'

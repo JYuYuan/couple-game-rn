@@ -97,6 +97,24 @@ export const CommonStyles = {
 
 export const Colors = {
   light: {
+    // 基础颜色 - 与 useTheme 保持一致
+    primary: '#007AFF',
+    secondary: '#8E8E93',
+    surface: '#FFFFFF',
+    textSecondary: '#8E8E93',
+    border: '#E5E5EA',
+
+    // 状态颜色
+    success: '#4CAF50',
+    warning: '#FF9500',
+    error: '#FF3B30',
+    info: '#5AC8FA',
+
+    // 特殊颜色
+    shadow: '#000000',
+    overlay: 'rgba(0, 0, 0, 0.5)',
+
+    // 原有颜色
     text: '#11181C',
     background: '#fff',
     tint: tintColorLight,
@@ -142,6 +160,24 @@ export const Colors = {
     homeBlurTint: 'light',
   },
   dark: {
+    // 基础颜色 - 与 useTheme 保持一致
+    primary: '#007AFF',
+    secondary: '#8E8E93',
+    surface: '#2C2C2E',
+    textSecondary: '#8E8E93',
+    border: '#38383A',
+
+    // 状态颜色
+    success: '#4CAF50',
+    warning: '#FF9500',
+    error: '#FF3B30',
+    info: '#5AC8FA',
+
+    // 特殊颜色
+    shadow: '#000000',
+    overlay: 'rgba(0, 0, 0, 0.7)',
+
+    // 原有颜色
     text: '#ECEDEE',
     background: '#151718',
     tint: tintColorDark,

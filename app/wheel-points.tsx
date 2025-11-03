@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { Stack, useLocalSearchParams } from 'expo-router'
 import { LinearGradient } from 'expo-linear-gradient'
 import { Ionicons } from '@expo/vector-icons'
 import { usePageBase } from '@/hooks/usePageBase'
-import { commonStyles, spacing } from '@/constants/commonStyles'
+import { spacing } from '@/constants/commonStyles'
 import WheelOfFortune, { WheelOfFortuneRef } from '@/components/WheelOfFortune'
 import SimpleTaskModal, { SimpleTaskData } from '@/components/SimpleTaskModal'
 import VictoryModal from '@/components/VictoryModal'
@@ -178,7 +178,6 @@ export default function WheelPointsGame() {
       }
     }, 1000)
   }
-
   return (
     <>
       <Stack.Screen
@@ -205,143 +204,145 @@ export default function WheelPointsGame() {
           end={{ x: 1, y: 1 }}
         />
 
-        <ScrollView
-          style={styles.content}
-          contentContainerStyle={styles.contentContainer}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* 游戏状态栏 */}
-          <View style={[styles.statusBar, { backgroundColor: colors.homeCardBackground }]}>
-            <View style={styles.statusLeft}>
-              <Text style={[styles.statusTitle, { color: colors.homeCardTitle }]}>
-                {gameStatus === 'waiting'
-                  ? t('wheelPoints.gameStatus.waiting', '准备开始')
-                  : gameStatus === 'playing'
-                    ? t('wheelPoints.gameStatus.playing', '游戏进行中')
-                    : t('wheelPoints.gameStatus.finished', '游戏结束')}
-              </Text>
-              {gameStatus === 'playing' && (
-                <View>
-                  <Text style={[styles.currentPlayerText, { color: currentPlayer.color }]}>
+        {/* 顶部玩家HUD - 半透明浮动 */}
+        <View style={styles.playersHUD}>
+          {players.map((player, index) => {
+            const progress = (player.score / winningScore) * 100
+            const isCurrentPlayer = currentPlayerIndex === index
+            const isLeftPlayer = index === 0
+
+            return (
+              <View
+                key={player.id}
+                style={[
+                  styles.playerHUDCard,
+                  {
+                    alignItems: isLeftPlayer ? 'flex-start' : 'flex-end',
+                  },
+                ]}
+              >
+                <View
+                  style={[
+                    styles.playerHUDContent,
+                    {
+                      flexDirection: isLeftPlayer ? 'row' : 'row-reverse',
+                      backgroundColor: colors.homeCardBackground + 'CC',
+                      borderColor: isCurrentPlayer ? player.color : 'transparent',
+                      borderWidth: isCurrentPlayer ? 2 : 0,
+                    },
+                  ]}
+                >
+                  <PlayerAvatar avatarId={player.avatarId || ''} color={player.color} size={48} />
+                  <View
+                    style={[
+                      styles.playerHUDInfo,
+                      { alignItems: isLeftPlayer ? 'flex-start' : 'flex-end' },
+                    ]}
+                  >
+                    <Text style={[styles.playerHUDName, { color: colors.homeCardTitle }]}>
+                      {player.name}
+                    </Text>
+                    <Text style={[styles.playerHUDScore, { color: player.color }]}>
+                      {player.score} / {winningScore}
+                    </Text>
+                    <View
+                      style={[
+                        styles.miniProgressBar,
+                        { backgroundColor: colors.homeCardDescription + '30' },
+                      ]}
+                    >
+                      <View
+                        style={[
+                          styles.miniProgressFill,
+                          {
+                            width: `${Math.min(progress, 100)}%`,
+                            backgroundColor: player.color,
+                          },
+                        ]}
+                      />
+                    </View>
+                  </View>
+                </View>
+              </View>
+            )
+          })}
+        </View>
+
+        {/* 中央转盘区域 */}
+        <View style={styles.wheelCenterSection}>
+          <WheelOfFortune
+            ref={wheelRef}
+            onSpinComplete={handleSpinComplete}
+            disabled={!isGameActive || isSpinning}
+          />
+        </View>
+
+        {/* 底部操作区 */}
+        <View style={styles.bottomSection}>
+          {/* 游戏状态指示 */}
+          <View
+            style={[styles.statusIndicator, { backgroundColor: colors.homeCardBackground + 'CC' }]}
+          >
+            <View style={styles.statusContent}>
+              {gameStatus === 'playing' ? (
+                <>
+                  <View style={[styles.statusDot, { backgroundColor: currentPlayer.color }]} />
+                  <Text style={[styles.statusText, { color: colors.homeCardTitle }]}>
                     {t('wheelPoints.currentPlayer', '轮到 {{playerName}}', {
                       playerName: currentPlayer.name,
                     })}
                   </Text>
-                  <Text style={[styles.roundText, { color: colors.homeCardDescription }]}>
+                  <Text style={[styles.roundBadge, { color: colors.homeCardDescription }]}>
                     {t('wheelPoints.round', '第 {{round}} 轮', { round: rounds + 1 })}
                   </Text>
-                </View>
+                </>
+              ) : (
+                <Text style={[styles.statusText, { color: colors.homeCardTitle }]}>
+                  {gameStatus === 'waiting'
+                    ? t('wheelPoints.gameStatus.waiting', '准备开始')
+                    : t('wheelPoints.gameStatus.finished', '游戏结束')}
+                </Text>
               )}
             </View>
-
-            {gameStatus === 'playing' && (
-              <View style={styles.spinContainer}>
-                <TouchableOpacity
-                  style={[
-                    styles.spinButton,
-                    {
-                      backgroundColor: isSpinning ? '#FF6B6B' : colors.settingsAccent,
-                      opacity: isSpinning ? 0.6 : 1,
-                    },
-                  ]}
-                  onPress={handleSpin}
-                  disabled={isSpinning}
-                  activeOpacity={0.8}
-                >
-                  <LinearGradient
-                    colors={isSpinning ? ['#FF6B6B', '#FF8A80'] : ['#4CAF50', '#66BB6A']}
-                    style={styles.spinButtonGradient}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                  >
-                    <Ionicons name={isSpinning ? 'hourglass' : 'play'} size={20} color="white" />
-                    <Text style={styles.spinButtonText}>
-                      {isSpinning
-                        ? t('wheelPoints.spin.spinning', '旋转中...')
-                        : t('wheelPoints.spin.start', '开始转盘')}
-                    </Text>
-                  </LinearGradient>
-                </TouchableOpacity>
-              </View>
-            )}
           </View>
 
-          {/* 玩家积分信息 */}
-          <View style={[styles.playersInfo, { backgroundColor: colors.homeCardBackground }]}>
-            <Text style={[styles.sectionTitle, { color: colors.homeCardTitle }]}>
-              {t('wheelPoints.scoreRanking', '积分排行')}
-            </Text>
-            <Text style={[styles.winCondition, { color: colors.homeCardDescription }]}>
-              {t('wheelPoints.winCondition', '胜利条件: 率先达到 {{score}} 分', {
-                score: winningScore,
-              })}
-            </Text>
-            <View style={styles.playersGrid}>
-              {players.map((player, index) => {
-                const progress = (player.score / winningScore) * 100
-                const isCurrentPlayer = currentPlayerIndex === index
-                return (
-                  <View
-                    key={player.id}
-                    style={[
-                      styles.playerCard,
-                      {
-                        backgroundColor: player.color + '15',
-                        borderColor: isCurrentPlayer ? player.color : 'transparent',
-                        borderWidth: isCurrentPlayer ? 2 : 0,
-                      },
-                    ]}
-                  >
-                    <PlayerAvatar avatarId={player.avatarId || ''} color={player.color} size={40} />
-                    <View style={styles.playerInfo}>
-                      <Text style={[styles.playerName, { color: colors.homeCardTitle }]}>
-                        {player.name}
-                      </Text>
-                      <Text style={[styles.playerScore, { color: player.color }]}>
-                        {player.score} {t('simpleTaskModal.points', '积分')}
-                      </Text>
-                      <View style={styles.progressBarContainer}>
-                        <View
-                          style={[
-                            styles.progressBar,
-                            { backgroundColor: colors.homeCardDescription + '20' },
-                          ]}
-                        >
-                          <View
-                            style={[
-                              styles.progressFill,
-                              {
-                                width: `${Math.min(progress, 100)}%`,
-                                backgroundColor: player.color,
-                              },
-                            ]}
-                          />
-                        </View>
-                        <Text style={[styles.progressText, { color: colors.homeCardDescription }]}>
-                          {Math.round(progress)}%
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
-                )
-              })}
-            </View>
-          </View>
-
-          {/* 转盘区域 */}
-          <View style={[styles.wheelSection, { backgroundColor: colors.homeCardBackground }]}>
-            <Text style={[styles.sectionTitle, { color: colors.homeCardTitle }]}>
-              {t('wheelPoints.luckyWheel', '幸运转盘')}
-            </Text>
-            <View style={styles.wheelContainer}>
-              <WheelOfFortune
-                ref={wheelRef}
-                onSpinComplete={handleSpinComplete}
-                disabled={!isGameActive || isSpinning}
-              />
-            </View>
-          </View>
-        </ScrollView>
+          {/* 旋转按钮 */}
+          {gameStatus === 'playing' && (
+            <TouchableOpacity
+              style={[
+                styles.floatingSpinButton,
+                {
+                  opacity: isSpinning ? 0.6 : 1,
+                },
+              ]}
+              onPress={handleSpin}
+              disabled={isSpinning}
+              activeOpacity={0.8}
+            >
+              <LinearGradient
+                colors={
+                  isSpinning
+                    ? [colors.error, colors.error + 'DD']
+                    : [colors.success, colors.success + 'DD']
+                }
+                style={styles.floatingSpinButtonGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+              >
+                <Ionicons
+                  name={isSpinning ? 'hourglass-outline' : 'play-circle'}
+                  size={32}
+                  color="white"
+                />
+                <Text style={styles.floatingSpinButtonText}>
+                  {isSpinning
+                    ? t('wheelPoints.spin.spinning', '旋转中...')
+                    : t('wheelPoints.spin.start', '开始转盘')}
+                </Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       {/* 简单任务弹窗 */}
@@ -381,140 +382,116 @@ export default function WheelPointsGame() {
 
 const styles = StyleSheet.create({
   container: {
-    ...commonStyles.container,
+    flex: 1,
   },
-  content: {
-    ...commonStyles.container,
-  },
-  contentContainer: {
-    padding: spacing.xl,
-    paddingBottom: 100,
-  },
-  statusBar: {
+  // 顶部玩家HUD
+  playersHUD: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    ...commonStyles.card,
-    ...commonStyles.marginBottom16,
-  },
-  statusLeft: {
-    flex: 1,
-  },
-  statusTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    marginBottom: 4,
-  },
-  currentPlayerText: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  roundText: {
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  spinContainer: {
-    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.md,
     gap: spacing.md,
   },
-  spinButton: {
-    ...commonStyles.button,
-    overflow: 'hidden',
-    ...commonStyles.shadow,
+  playerHUDCard: {
+    flex: 1,
   },
-  spinButtonGradient: {
+  playerHUDContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    gap: 8,
+    padding: spacing.sm,
+    borderRadius: 16,
+    gap: spacing.sm,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  spinButtonText: {
-    color: 'white',
+  playerHUDInfo: {
+    flex: 1,
+    gap: 4,
+  },
+  playerHUDName: {
     fontSize: 14,
     fontWeight: '600',
   },
-  playersInfo: {
-    padding: 12,
-    borderRadius: 12,
-    marginBottom: 12,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 8,
-  },
-  winCondition: {
-    fontSize: 14,
-    fontWeight: '500',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  playersGrid: {
-    gap: 8,
-  },
-  playerCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 10,
-    borderRadius: 8,
-    gap: 10,
-  },
-  playerAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  playerAvatarText: {
-    fontSize: 18,
-  },
-  playerInfo: {
-    flex: 1,
-  },
-  playerName: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  playerScore: {
+  playerHUDScore: {
     fontSize: 18,
     fontWeight: '700',
-    marginBottom: 8,
   },
-  progressBarContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  progressBar: {
-    flex: 1,
-    height: 6,
-    borderRadius: 3,
+  miniProgressBar: {
+    height: 4,
+    borderRadius: 2,
     overflow: 'hidden',
+    width: '100%',
   },
-  progressFill: {
+  miniProgressFill: {
     height: '100%',
-    borderRadius: 3,
+    borderRadius: 2,
   },
-  progressText: {
-    fontSize: 12,
-    fontWeight: '500',
-    minWidth: 35,
-    textAlign: 'right',
-  },
-  wheelSection: {
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 16,
+  // 中央转盘区域
+  wheelCenterSection: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
+    paddingVertical: spacing.lg,
   },
-  wheelContainer: {
+  // 底部操作区
+  bottomSection: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.xl,
+    gap: spacing.md,
+  },
+  statusIndicator: {
+    borderRadius: 16,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  statusContent: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
+    gap: spacing.sm,
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  statusText: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  roundBadge: {
+    fontSize: 13,
+    fontWeight: '500',
+    marginLeft: spacing.xs,
+  },
+  floatingSpinButton: {
+    borderRadius: 24,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  floatingSpinButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.xl,
+    gap: spacing.md,
+  },
+  floatingSpinButtonText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: '700',
   },
 })

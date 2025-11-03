@@ -2,9 +2,7 @@ import GameBoard from '@/components/GameBoard'
 import { PlayerAvatar } from '@/components/PlayerAvatar'
 import TaskModal from '@/components/TaskModal'
 import VictoryModal from '@/components/VictoryModal'
-import { Colors } from '@/constants/theme'
 import { useAudioManager } from '@/hooks/use-audio-manager'
-import { useColorScheme } from '@/hooks/use-color-scheme'
 import { GamePlayer, useGamePlayers } from '@/hooks/use-game-players'
 import { useGameTasks } from '@/hooks/use-game-tasks'
 import { PathCell } from '@/types/game'
@@ -13,16 +11,14 @@ import { createBoardPath } from '@/utils/board'
 import { LinearGradient } from 'expo-linear-gradient'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import React, { useEffect, useState } from 'react'
-import { useTranslation } from 'react-i18next'
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
+import { usePageBase } from '@/hooks/usePageBase'
 
 export default function OfflineGame() {
   const router = useRouter()
   const params = useLocalSearchParams()
-  const colorScheme = useColorScheme() ?? 'light'
-  const colors = Colors[colorScheme] as any
-  const { t } = useTranslation()
+  const { colors, t } = usePageBase()
 
   // 获取传入的参数
   const taskSetId = params.taskSetId as string
@@ -577,7 +573,7 @@ export default function OfflineGame() {
       <TaskModal
         visible={showTaskModal}
         task={taskModalData}
-        players={players}
+        players={players as any}
         onComplete={handleTaskComplete}
         onClose={() => setShowTaskModal(false)}
       />

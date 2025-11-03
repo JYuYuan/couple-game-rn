@@ -11,9 +11,6 @@ import {
   View,
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
-import { useColorScheme } from '@/hooks/use-color-scheme'
-import { Colors } from '@/constants/theme'
-import { useTranslation } from 'react-i18next'
 import { useSocket } from '@/hooks/use-socket'
 import {
   CreateRoomData,
@@ -28,6 +25,7 @@ import { showError } from '@/utils/toast'
 import { AvatarGender } from '@/types/settings'
 import { AvatarOption, getRandomAvatarByGender } from '@/constants/avatars'
 import { AvatarPicker } from '@/components/AvatarPicker'
+import { usePageBase } from '@/hooks/usePageBase'
 
 interface OnlineRoomModalProps {
   visible: boolean
@@ -44,9 +42,7 @@ export const OnlineRoomModal: React.FC<OnlineRoomModalProps> = ({
   gameType,
   onRoomJoined,
 }) => {
-  const colorScheme = useColorScheme() ?? 'light'
-  const colors = Colors[colorScheme] as any
-  const { t } = useTranslation()
+  const { colors, t } = usePageBase()
   const socket = useSocket()
   const [activeTab, setActiveTab] = useState<'join' | 'create'>('join')
   const [connectionMode, setConnectionMode] = useState<'online' | 'lan'>('online')

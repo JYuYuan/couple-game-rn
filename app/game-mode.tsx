@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
-import { useTranslation } from 'react-i18next'
 import Animated, {
   interpolate,
   useAnimatedStyle,
@@ -13,13 +12,13 @@ import Animated, {
 } from 'react-native-reanimated'
 import { LinearGradient } from 'expo-linear-gradient'
 import { Ionicons } from '@expo/vector-icons'
-import { useColorScheme } from '@/hooks/use-color-scheme'
-import { Colors, CommonStyles, Layout } from '@/constants/theme'
+import { CommonStyles, Layout } from '@/constants/theme'
 import { useTasksStore } from '@/store/tasksStore'
 import { TaskSet } from '@/types/tasks'
 import { TaskSetDetailModal } from '@/components/TaskSetDetailModal'
 import { useSettingsStore } from '@/store'
 import toast from '@/utils/toast'
+import { usePageBase } from '@/hooks/usePageBase'
 
 const routeConfig: Record<string, string> = {
   fly: '/flying-chess',
@@ -30,9 +29,7 @@ const routeConfig: Record<string, string> = {
 export default function GameMode() {
   const router = useRouter()
   const params = useLocalSearchParams()
-  const { t } = useTranslation()
-  const colorScheme = useColorScheme() ?? 'light'
-  const colors = Colors[colorScheme] as any
+  const { colors, t } = usePageBase()
   const { networkSettings } = useSettingsStore()
 
   // 获取传入的游戏类型参数
@@ -122,6 +119,7 @@ export default function GameMode() {
                 backgroundColor:
                   selectedCategory === 'all' ? colors.settingsAccent + '20' : colors.surface,
                 borderColor: selectedCategory === 'all' ? colors.settingsAccent : colors.border,
+                marginRight: 12,
               },
             ]}
             onPress={() => setSelectedCategory('all')}
@@ -140,13 +138,13 @@ export default function GameMode() {
               <Ionicons
                 name="apps"
                 size={18}
-                color={selectedCategory === 'all' ? 'white' : colors.textSecondary}
+                color={selectedCategory === 'all' ? 'white' : colors.text}
               />
               <Text
                 style={[
                   styles.categoryButtonText,
                   {
-                    color: selectedCategory === 'all' ? 'white' : colors.textSecondary,
+                    color: selectedCategory === 'all' ? 'white' : colors.text,
                   },
                 ]}
               >
@@ -155,7 +153,7 @@ export default function GameMode() {
             </LinearGradient>
           </TouchableOpacity>
 
-          {categories.map((category) => (
+          {categories.map((category, index) => (
             <TouchableOpacity
               key={category.id}
               style={[
@@ -165,6 +163,7 @@ export default function GameMode() {
                   backgroundColor:
                     selectedCategory === category.id ? category.color + '20' : colors.surface,
                   borderColor: selectedCategory === category.id ? category.color : colors.border,
+                  marginRight: index === categories.length - 1 ? 0 : 12,
                 },
               ]}
               onPress={() => setSelectedCategory(category.id)}
@@ -183,13 +182,13 @@ export default function GameMode() {
                 <Ionicons
                   name={category.icon as keyof typeof Ionicons.glyphMap}
                   size={18}
-                  color={selectedCategory === category.id ? 'white' : colors.textSecondary}
+                  color={selectedCategory === category.id ? 'white' : colors.text}
                 />
                 <Text
                   style={[
                     styles.categoryButtonText,
                     {
-                      color: selectedCategory === category.id ? 'white' : colors.textSecondary,
+                      color: selectedCategory === category.id ? 'white' : colors.text,
                     },
                   ]}
                 >
@@ -531,6 +530,9 @@ export default function GameMode() {
           </Animated.View>
         </View>
 
+        {/* 分类选择器 - 固定在顶部 */}
+        <CategorySelector />
+
         {/* 任务集列表 */}
         <ScrollView
           style={styles.content}
@@ -539,10 +541,7 @@ export default function GameMode() {
           bounces={true}
           alwaysBounceVertical={true}
           keyboardShouldPersistTaps="handled"
-          stickyHeaderIndices={[0]}
         >
-          {/* 分类选择器 - 作为粘性头部 */}
-          <CategorySelector />
           {filteredTaskSets.length > 0 ? (
             filteredTaskSets.map((taskSet, index) => (
               <TaskSetCard key={taskSet.id} taskSet={taskSet} index={index} />
@@ -655,9 +654,10 @@ const styles = StyleSheet.create({
   categoryContainer: {
     paddingTop: 20,
     paddingBottom: 10,
-    paddingHorizontal: 20,
+    zIndex: 10,
   },
   categoryScrollContent: {
+    paddingLeft: 20,
     paddingRight: 20,
   },
   categoryButton: {
@@ -665,7 +665,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     overflow: 'hidden',
     height: 40,
-    marginRight: 12,
   },
   categoryButtonActive: {
     borderWidth: 2,
@@ -686,8 +685,9 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   contentContainer: {
-    padding: Layout.padding.md,
-    paddingBottom: 20,
+    paddingHorizontal: Layout.padding.md,
+    paddingTop: 0,
+    paddingBottom: 40,
   },
   taskSetCard: {
     marginBottom: 16,

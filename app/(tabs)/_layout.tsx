@@ -6,19 +6,21 @@ import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-na
 import { Ionicons } from '@expo/vector-icons'
 import { BlurView } from 'expo-blur'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { useColorScheme } from '@/hooks/use-color-scheme'
-import { Colors } from '@/constants/theme'
 import { getWindow } from '@/utils'
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs'
+import { usePageBase } from '@/hooks/usePageBase'
 
 const { width: screenWidth } = getWindow()
 
-const ICONS: React.ComponentProps<typeof Ionicons>['name'][] = ['home', 'list-outline', 'settings-sharp'] // 支持3个标签页
+const ICONS: React.ComponentProps<typeof Ionicons>['name'][] = [
+  'home',
+  'list-outline',
+  'settings-sharp',
+] // 支持3个标签页
 
 const CustomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) => {
   const insets = useSafeAreaInsets()
-  const colorScheme = useColorScheme() ?? 'light'
-  const colors = Colors[colorScheme] as any
+  const { colors } = usePageBase()
 
   const tabCount = state.routes.length
   const tabBarPadding = 20

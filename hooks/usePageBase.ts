@@ -1,7 +1,7 @@
-import { useColorScheme } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { Colors } from '@/constants/theme'
+import { useColorScheme } from '@/hooks/use-color-scheme'
 
 /**
  * 页面基础 Hook，统一管理常用的页面逻辑

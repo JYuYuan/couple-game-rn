@@ -1,8 +1,7 @@
 import React from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
-import { useColorScheme } from '@/hooks/use-color-scheme'
-import { Colors } from '@/constants/theme'
+import { usePageBase } from '@/hooks/usePageBase'
 
 interface GameInfoCardProps {
   gameType: string
@@ -17,8 +16,7 @@ export const GameInfoCard: React.FC<GameInfoCardProps> = ({
   connectionMode,
   getGameTypeText,
 }) => {
-  const colorScheme = useColorScheme() ?? 'light'
-  const colors = Colors[colorScheme] as any
+  const { colors } = usePageBase()
   return (
     <View style={[styles.gameInfoCard, { backgroundColor: colors.homeCardBackground }]}>
       <View style={styles.gameInfoHeader}>

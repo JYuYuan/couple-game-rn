@@ -12,10 +12,7 @@ import {
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { useColorScheme } from '@/hooks/use-color-scheme'
-import { Colors } from '@/constants/theme'
 import { useTasksStore } from '@/store/tasksStore'
-import { useTranslation } from 'react-i18next'
 import { TaskCategory, TaskSet } from '@/types/tasks'
 import { TaskSetModal } from '@/components/TaskSetModal'
 import { CategoryModal } from '@/components/CategoryModal'
@@ -27,12 +24,11 @@ import * as FileSystem from 'expo-file-system/legacy'
 import * as Sharing from 'expo-sharing'
 import { showConfirmDialog } from '@/components/ConfirmDialog'
 import toast from '@/utils/toast'
+import { usePageBase } from '@/hooks/usePageBase'
 
 const TaskSettings: React.FC = () => {
   const insets = useSafeAreaInsets()
-  const { t } = useTranslation()
-  const colorScheme = useColorScheme() ?? 'light'
-  const colors = Colors[colorScheme] as any
+  const { colors, t } = usePageBase()
 
   const {
     categories,

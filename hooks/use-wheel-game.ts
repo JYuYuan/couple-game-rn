@@ -81,7 +81,7 @@ export const useWheelGame = () => {
     const playerNames = getPlayerNames()
     return Array.from({ length: 2 }, (_, index) => {
       // 随机分配性别：第一个玩家随机，第二个玩家随机
-      const gender: AvatarGender = Math.random() > 0.5 ? 'man' : 'woman'
+      const gender: AvatarGender = index % 2 === 0 ? 'man' : 'woman'
       const randomAvatar = getRandomAvatarByGender(gender)
 
       return {

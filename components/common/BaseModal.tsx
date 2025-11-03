@@ -4,7 +4,6 @@ import {
   Modal,
   StyleSheet,
   TouchableWithoutFeedback,
-  useColorScheme,
   View,
   ViewStyle,
 } from 'react-native'
@@ -66,8 +65,6 @@ export const BaseModal: React.FC<BaseModalProps> = ({
   backdropStyle,
   modalAnimationStyle,
 }) => {
-  const colorScheme = useColorScheme() ?? 'light'
-
   const handleBackdropPress = () => {
     if (closeOnBackdropPress) {
       onClose()
@@ -84,9 +81,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({
 
       <View style={[styles.container, containerStyle]}>
         <TouchableWithoutFeedback>
-          <Animated.View
-            style={[styles.modal, styles[`modal_${colorScheme}`], modalStyle, modalAnimationStyle]}
-          >
+          <Animated.View style={[styles.modal, modalStyle, modalAnimationStyle]}>
             <View style={styles.modalContent}>{children}</View>
           </Animated.View>
         </TouchableWithoutFeedback>
@@ -123,12 +118,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 20,
     elevation: 10,
-  },
-  modal_light: {
-    backgroundColor: '#FFFFFF',
-  },
-  modal_dark: {
-    backgroundColor: '#2C2C2E',
   },
   modalContent: {
     flex: 1,

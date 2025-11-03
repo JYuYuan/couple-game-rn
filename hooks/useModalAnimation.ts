@@ -59,14 +59,9 @@ export interface ModalAnimationStyles {
  */
 export function useModalAnimation(
   visible: boolean,
-  config: ModalAnimationConfig = {}
+  config: ModalAnimationConfig = {},
 ): ModalAnimationStyles {
-  const {
-    duration = 300,
-    initialScale = 0.8,
-    translateY = 50,
-    backdropDuration = 200,
-  } = config
+  const { duration = 300, initialScale = 0.8, translateY = 50, backdropDuration = 200 } = config
 
   // 动画共享值
   const modalScale = useSharedValue(initialScale)
@@ -98,10 +93,7 @@ export function useModalAnimation(
 
   // Modal 内容动画样式
   const modalStyle = useAnimatedStyle(() => ({
-    transform: [
-      { scale: modalScale.value },
-      { translateY: modalTranslateY.value },
-    ],
+    transform: [{ scale: modalScale.value }, { translateY: modalTranslateY.value }],
     opacity: modalOpacity.value,
   }))
 

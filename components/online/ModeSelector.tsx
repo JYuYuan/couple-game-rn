@@ -1,8 +1,7 @@
 import React from 'react'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
-import { useColorScheme } from '@/hooks/use-color-scheme'
-import { Colors } from '@/constants/theme'
+import { usePageBase } from '@/hooks/usePageBase'
 
 interface ModeSelectorProps {
   connectionMode: 'online' | 'lan'
@@ -17,8 +16,7 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({
   isOnlineEnabled,
   isLANEnabled,
 }) => {
-  const colorScheme = useColorScheme() ?? 'light'
-  const colors = Colors[colorScheme] as any
+  const { colors } = usePageBase()
 
   const availableModes = []
   if (isOnlineEnabled) availableModes.push('online')

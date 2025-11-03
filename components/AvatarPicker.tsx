@@ -3,9 +3,7 @@ import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { AvatarGender } from '@/types/settings'
 import { AvatarOption, AVATARS, getRandomAvatarByGender } from '@/constants/avatars'
-import { useColorScheme } from '@/hooks/use-color-scheme'
-import { Colors } from '@/constants/theme'
-import { useTranslation } from 'react-i18next'
+import { usePageBase } from '@/hooks/usePageBase'
 
 interface AvatarPickerProps {
   selectedGender: AvatarGender
@@ -20,9 +18,7 @@ export const AvatarPicker: React.FC<AvatarPickerProps> = ({
   onGenderChange,
   onAvatarChange,
 }) => {
-  const colorScheme = useColorScheme() ?? 'light'
-  const colors = Colors[colorScheme]
-  const { t } = useTranslation()
+  const { colors, t } = usePageBase()
 
   const handleGenderSelect = (gender: AvatarGender) => {
     onGenderChange(gender)

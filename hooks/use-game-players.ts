@@ -26,7 +26,7 @@ export const useGamePlayers = (initialPlayerCount: number = 2, boardSize: number
     const playerNames = getPlayerNames()
     return Array.from({ length: initialPlayerCount }, (_, index) => {
       // 随机分配性别
-      const gender: AvatarGender = index === 0 ? 'man' : 'woman'
+      const gender: AvatarGender = index % 2 === 0 ? 'man' : 'woman'
       const randomAvatar = getRandomAvatarByGender(gender)
 
       return {

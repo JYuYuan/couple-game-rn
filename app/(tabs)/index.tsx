@@ -1,7 +1,5 @@
 import React from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { useRouter } from 'expo-router'
-import { useTranslation } from 'react-i18next'
 import Animated, {
   interpolate,
   useAnimatedStyle,
@@ -14,18 +12,14 @@ import Animated, {
 import { LinearGradient } from 'expo-linear-gradient'
 import { BlurView } from 'expo-blur'
 import { Ionicons, MaterialIcons } from '@expo/vector-icons'
-import { useColorScheme } from '@/hooks/use-color-scheme'
 import { Colors } from '@/constants/theme'
 import { useSocket } from '@/hooks/use-socket'
+import { usePageBase } from '@/hooks/usePageBase'
 
 export default function Home() {
-  const router = useRouter()
-  const { t } = useTranslation()
   const socket = useSocket()
 
-  // 主题颜色
-  const colorScheme = useColorScheme() ?? 'light'
-  const colors = Colors[colorScheme] as any
+  const { colors, t, router } = usePageBase()
 
   // 浮动动画
   const floatAnimation = useSharedValue(0)
@@ -48,13 +42,13 @@ export default function Home() {
     transform: [{ rotate: `${rotateAnimation.value}deg` }],
   }))
 
-  const gameOptions = [
+  const gameOptions: GameOption[] = [
     {
       key: 'fly',
       title: t('home.flyingChess.title', '飞行棋'),
       subtitle: t('home.flyingChess.subtitle', '策略对战'),
       description: t('home.flyingChess.description', '体验策略与运气的完美结合'),
-      icon: 'airplane',
+      icon: 'airplane' as const,
       href: '/game-mode?type=fly',
       gradient: ['#5E5CE6', '#BF5AF2'],
       accentColor: '#5E5CE6',
@@ -65,7 +59,7 @@ export default function Home() {
       title: t('home.luckyWheel.title', '情侣任务'),
       subtitle: t('home.luckyWheel.subtitle', '趣味互动'),
       description: t('home.luckyWheel.description', '专为情侣设计的互动任务'),
-      icon: 'heart',
+      icon: 'heart' as const,
       href: '/game-mode?type=wheel',
       gradient: ['#FF6482', '#FF9F40'],
       accentColor: '#FF6482',
@@ -76,7 +70,7 @@ export default function Home() {
       title: t('home.minesweeper.title', '扫雷对战'),
       subtitle: t('home.minesweeper.subtitle', '双人对决'),
       description: t('home.minesweeper.description', '踩雷执行任务，积分决胜负'),
-      icon: 'nuclear',
+      icon: 'nuclear' as const,
       href: '/game-mode?type=minesweeper',
       gradient: ['#34D399', '#10B981'],
       accentColor: '#10B981',
@@ -90,7 +84,7 @@ export default function Home() {
     title: string
     subtitle: string
     description: string
-    icon: string
+    icon: React.ComponentProps<typeof Ionicons>['name']
     href: string
     gradient: [string, string]
     accentColor: string
@@ -134,12 +128,12 @@ export default function Home() {
     return (
       <Animated.View style={[animatedStyle, { marginBottom: 20 }]}>
         <Pressable
-          onPress={() => router.push(game.href)}
+          onPress={() => router.push(game.href as any)}
           onPressIn={handlePressIn}
           onPressOut={handlePressOut}
         >
           <View style={styles.cardContainer}>
-            <BlurView intensity={80} tint={colors.homeBlurTint} style={styles.blurContainer}>
+            <BlurView intensity={80} tint={colors.homeBlurTint as any} style={styles.blurContainer}>
               <View
                 style={[
                   styles.cardContent,
@@ -288,7 +282,7 @@ export default function Home() {
 
         {/* 底部提示 */}
         <View style={styles.footerContainer}>
-          <BlurView intensity={60} tint={colors.homeBlurTint} style={styles.footerBlur}>
+          <BlurView intensity={60} tint={colors.homeBlurTint as any} style={styles.footerBlur}>
             <View style={styles.footerContent}>
               <Ionicons name="sparkles" size={18} color="#5E5CE6" />
               <Text style={[styles.footerText, { color: colors.homeFooterText }]}>
@@ -337,7 +331,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 20,
     paddingTop: 80,
-    paddingBottom: 120,
+    paddingBottom: 40,
   },
   headerContainer: {
     alignItems: 'center',

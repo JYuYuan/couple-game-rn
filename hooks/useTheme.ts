@@ -1,65 +1,16 @@
-import { useColorScheme } from 'react-native'
 import { useMemo } from 'react'
+import { Colors } from '@/constants/theme'
+import { useColorScheme as useAppColorScheme } from '@/hooks/use-color-scheme'
 
-export interface ThemeColors {
-  // 基础颜色
-  primary: string
-  secondary: string
-  background: string
-  surface: string
-  text: string
-  textSecondary: string
-  border: string
-
-  // 状态颜色
-  success: string
-  warning: string
-  error: string
-  info: string
-
-  // 特殊颜色
-  shadow: string
-  overlay: string
-}
-
-const lightTheme: ThemeColors = {
-  primary: '#007AFF',
-  secondary: '#8E8E93',
-  background: '#F2F2F7',
-  surface: '#FFFFFF',
-  text: '#000000',
-  textSecondary: '#8E8E93',
-  border: '#E5E5EA',
-  success: '#4CAF50',
-  warning: '#FF9500',
-  error: '#FF3B30',
-  info: '#5AC8FA',
-  shadow: '#000000',
-  overlay: 'rgba(0, 0, 0, 0.5)',
-}
-
-const darkTheme: ThemeColors = {
-  primary: '#007AFF',
-  secondary: '#8E8E93',
-  background: '#000000',
-  surface: '#2C2C2E',
-  text: '#FFFFFF',
-  textSecondary: '#8E8E93',
-  border: '#38383A',
-  success: '#4CAF50',
-  warning: '#FF9500',
-  error: '#FF3B30',
-  info: '#5AC8FA',
-  shadow: '#000000',
-  overlay: 'rgba(0, 0, 0, 0.7)',
-}
+// 导出颜色类型，基于 Colors 对象
+export type ThemeColors = typeof Colors.light
 
 /**
- * 主题Hook
+ * 主题Hook - 统一使用 @/constants/theme 中的 Colors
  *
  * 提供统一的主题管理，包括：
  * - 自动检测系统主题
- * - 提供完整的颜色调色板
+ * - 提供完整的颜色调色板（来自 constants/theme.ts）
  * - 主题切换支持
  * - 类型安全的颜色访问
  *
@@ -84,11 +35,11 @@ const darkTheme: ThemeColors = {
  * ```
  */
 export const useTheme = () => {
-  const systemColorScheme = useColorScheme()
+  const systemColorScheme = useAppColorScheme()
   const colorScheme = systemColorScheme ?? 'light'
 
   const colors = useMemo(() => {
-    return colorScheme === 'dark' ? darkTheme : lightTheme
+    return colorScheme === 'dark' ? Colors.dark : Colors.light
   }, [colorScheme])
 
   const isDark = colorScheme === 'dark'
@@ -107,7 +58,7 @@ export const useTheme = () => {
  * @returns 样式工具对象
  */
 export const getThemeStyles = (colorScheme: 'light' | 'dark') => {
-  const colors = colorScheme === 'dark' ? darkTheme : lightTheme
+  const colors = colorScheme === 'dark' ? Colors.dark : Colors.light
 
   return {
     colors,

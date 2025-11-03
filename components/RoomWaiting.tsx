@@ -2,13 +2,11 @@ import React from 'react'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
-import { useColorScheme } from '@/hooks/use-color-scheme'
-import { Colors } from '@/constants/theme'
-import { useTranslation } from 'react-i18next'
 import { OnlinePlayer } from '@/types/online'
 import * as Clipboard from 'expo-clipboard'
 import { PlayerAvatar } from '@/components/PlayerAvatar'
 import toast from '@/utils/toast'
+import { usePageBase } from '@/hooks/usePageBase'
 
 interface RoomWaitingProps {
   roomId: string
@@ -37,9 +35,7 @@ export const RoomWaiting: React.FC<RoomWaitingProps> = ({
   lanIP,
   lanPort,
 }) => {
-  const colorScheme = useColorScheme() ?? 'light'
-  const colors = Colors[colorScheme]
-  const { t } = useTranslation()
+  const { colors, t } = usePageBase()
 
   const canStartGame = players.length >= 2 && players.every((p) => p.isConnected)
 

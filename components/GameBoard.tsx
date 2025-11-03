@@ -56,7 +56,6 @@ const CellComponent: React.FC<CellComponentProps> = ({
   onPress,
 }) => {
   const colorScheme = useColorScheme() ?? 'light'
-  const colors = Colors[colorScheme]
 
   const scale = useSharedValue(1)
   const glowAnimation = useSharedValue(0)

@@ -17,14 +17,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useSettingsStore } from '@/store'
 import { useTranslation } from 'react-i18next'
 import { LanguageMode, ThemeMode } from '@/types/settings'
-import { useColorScheme } from '@/hooks/use-color-scheme'
-import { Colors } from '@/constants/theme'
 import { checkForUpdates, getAppInfo } from '@/utils/app-info'
 import { getLocalIP } from '@/utils'
 import { useRequest } from 'ahooks'
 import * as Clipboard from 'expo-clipboard'
 import { showConfirmDialog } from '@/components/ConfirmDialog'
 import toast from '@/utils/toast'
+import { usePageBase } from '@/hooks/usePageBase'
 
 interface SettingItem {
   icon: keyof typeof Ionicons.glyphMap
@@ -48,7 +47,7 @@ const Settings: React.FC = () => {
     setSoundSettings,
     setNetworkSettings,
   } = useSettingsStore()
-  const { t, i18n } = useTranslation()
+  const { i18n } = useTranslation()
   const [showLanguageModal, setShowLanguageModal] = useState(false)
   const [showThemeModal, setShowThemeModal] = useState(false)
   const [showSocketUrlModal, setShowSocketUrlModal] = useState(false)
@@ -61,9 +60,7 @@ const Settings: React.FC = () => {
   const appInfo = getAppInfo()
   const fetchIp = useRequest(getLocalIP)
 
-  // 主题颜色
-  const colorScheme = useColorScheme() ?? 'light'
-  const colors = Colors[colorScheme]
+  const { colors, t } = usePageBase()
 
   const backgroundColor = colors.settingsBackground
   const cardBackground = colors.settingsCardBackground

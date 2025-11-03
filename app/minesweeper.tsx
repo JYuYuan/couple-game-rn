@@ -3,9 +3,8 @@ import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-nati
 import { Stack } from 'expo-router'
 import { LinearGradient } from 'expo-linear-gradient'
 import { Ionicons } from '@expo/vector-icons'
-import { useColorScheme } from '@/hooks/use-color-scheme'
-import { Colors } from '@/constants/theme'
 import { getWindow } from '@/utils'
+import { usePageBase } from '@/hooks/usePageBase'
 
 const { width: screenWidth } = getWindow()
 
@@ -28,8 +27,7 @@ type Difficulty = keyof typeof DIFFICULTY_CONFIGS
 type GameStatus = 'waiting' | 'playing' | 'won' | 'lost'
 
 export default function Minesweeper() {
-  const colorScheme = useColorScheme() ?? 'light'
-  const colors = Colors[colorScheme] as any
+  const { colors } = usePageBase()
 
   const [difficulty, setDifficulty] = useState<Difficulty>('easy')
   const [gameStatus, setGameStatus] = useState<GameStatus>('waiting')

@@ -1,21 +1,17 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import { Stack, useLocalSearchParams, useNavigation, useRouter } from 'expo-router'
-import { useColorScheme } from '@/hooks/use-color-scheme'
-import { Colors } from '@/constants/theme'
 import { RoomWaiting } from '@/components/RoomWaiting'
-import { useTranslation } from 'react-i18next'
 import { OnlinePlayer } from '@/types/online'
 import { useSocket } from '@/hooks/use-socket'
 import { useRoomStore } from '@/store/roomStore'
 import { showError, showSuccess } from '@/utils/toast'
+import { usePageBase } from '@/hooks/usePageBase'
 
 export default function WaitingRoomPage() {
   const router = useRouter()
   const navigation = useNavigation()
   const params = useLocalSearchParams()
-  const colorScheme = useColorScheme() ?? 'light'
-  const colors = Colors[colorScheme]
-  const { t } = useTranslation()
+  const { colors, t } = usePageBase()
 
   const socket = useSocket()
   const { currentRoom, clearRoom } = useRoomStore()

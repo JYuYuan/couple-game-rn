@@ -51,17 +51,17 @@ export default function MineTaskModal({ visible, task, onComplete, onClose }: Mi
       setShowResult(false)
 
       // 开始动画
-      backdropOpacity.value = withTiming(1, { duration: 300 })
+      backdropOpacity.value = withTiming(1, { duration: 0 })
       modalScale.value = withSpring(1, {
-        damping: 15,
-        stiffness: 150,
+        damping: 0,
+        stiffness: 0,
       })
-      contentOpacity.value = withTiming(1, { duration: 400 })
+      contentOpacity.value = withTiming(1, { duration: 0 })
     } else {
       // 关闭动画
-      backdropOpacity.value = withTiming(0, { duration: 200 })
-      modalScale.value = withTiming(0, { duration: 200 })
-      contentOpacity.value = withTiming(0, { duration: 200 })
+      backdropOpacity.value = withTiming(0, { duration: 0 })
+      modalScale.value = withTiming(0, { duration: 0 })
+      contentOpacity.value = withTiming(0, { duration: 0 })
     }
   }, [visible])
 
@@ -252,23 +252,146 @@ const styles = StyleSheet.create({
   },
   modal: {
     width: Math.min(screenWidth - 40, 400),
-    maxHeight: screenHeight * 0.8,
-    borderRadius: 24,
+    maxHeight: screenHeight * 0.85,
+    borderRadius: 20,
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
+    shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
-    shadowRadius: 20,
+    shadowRadius: 16,
     elevation: 20,
   },
   modalContent: {
-    padding: 24,
+    padding: 16,
   },
   header: {
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 12,
   },
   mineIcon: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  mineEmoji: {
+    fontSize: 32,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  headerSubtitle: {
+    fontSize: 12,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  playerSection: {
+    marginBottom: 12,
+  },
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  playerCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 8,
+    borderRadius: 10,
+    gap: 8,
+  },
+  playerAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  playerAvatarText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  playerName: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  taskSection: {
+    marginBottom: 12,
+  },
+  taskTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 6,
+    lineHeight: 20,
+    textAlign: 'center',
+  },
+  taskDescription: {
+    fontSize: 13,
+    lineHeight: 18,
+    textAlign: 'center',
+    opacity: 0.8,
+  },
+  penaltySection: {
+    marginBottom: 12,
+  },
+  penaltyCard: {
+    backgroundColor: '#F44336' + '10',
+    padding: 10,
+    borderRadius: 10,
+    borderLeftWidth: 3,
+    borderLeftColor: '#F44336',
+  },
+  penaltyTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    marginBottom: 6,
+  },
+  penaltyDescription: {
+    fontSize: 11,
+    lineHeight: 16,
+  },
+  actionSection: {
+    alignItems: 'center',
+  },
+  actionPrompt: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    gap: 10,
+    width: '100%',
+  },
+  actionButton: {
+    flex: 1,
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+  actionButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    gap: 6,
+  },
+  actionButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  resultContainer: {
+    alignItems: 'center',
+    paddingVertical: 16,
+  },
+  resultIcon: {
     width: 80,
     height: 80,
     borderRadius: 40,
@@ -276,146 +399,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 16,
   },
-  mineEmoji: {
-    fontSize: 40,
-  },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    fontWeight: '500',
-    textAlign: 'center',
-  },
-  playerSection: {
-    marginBottom: 20,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 12,
-  },
-  playerCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    borderRadius: 12,
-    gap: 12,
-  },
-  playerAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  playerAvatarText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  playerName: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  taskSection: {
-    marginBottom: 20,
-  },
-  taskTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 8,
-    lineHeight: 24,
-    textAlign: 'center',
-  },
-  taskDescription: {
-    fontSize: 14,
-    lineHeight: 20,
-    textAlign: 'center',
-    opacity: 0.8,
-  },
-  penaltySection: {
-    marginBottom: 20,
-  },
-  penaltyCard: {
-    backgroundColor: '#F44336' + '10',
-    padding: 12,
-    borderRadius: 12,
-    borderLeftWidth: 4,
-    borderLeftColor: '#F44336',
-  },
-  penaltyTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  penaltyDescription: {
-    fontSize: 12,
-    lineHeight: 18,
-  },
-  actionSection: {
-    alignItems: 'center',
-  },
-  actionPrompt: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  actionButtons: {
-    flexDirection: 'row',
-    gap: 12,
-    width: '100%',
-  },
-  actionButton: {
-    flex: 1,
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  actionButtonGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 14,
-    gap: 8,
-  },
-  actionButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  resultContainer: {
-    alignItems: 'center',
-    paddingVertical: 20,
-  },
-  resultIcon: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-  },
   resultTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '700',
-    marginBottom: 12,
+    marginBottom: 10,
     textAlign: 'center',
   },
   resultDescription: {
-    fontSize: 16,
+    fontSize: 14,
     textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: 20,
+    lineHeight: 20,
+    marginBottom: 16,
   },
   resultFooter: {
-    marginTop: 10,
+    marginTop: 8,
   },
   resultFooterText: {
-    fontSize: 14,
+    fontSize: 13,
     fontStyle: 'italic',
   },
 })

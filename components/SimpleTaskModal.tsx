@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Dimensions, StyleSheet, Text, View } from 'react-native'
-import { useTranslation } from 'react-i18next'
+import { Dimensions, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import Animated, {
   interpolate,
   useAnimatedStyle,
@@ -9,9 +8,9 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated'
 import { LinearGradient } from 'expo-linear-gradient'
+import { BlurView } from 'expo-blur'
 import { Ionicons } from '@expo/vector-icons'
-import { BaseButton, BaseModal } from '@/components/common'
-import { useTheme, useModalAnimation } from '@/hooks'
+import { usePageBase } from '@/hooks/usePageBase'
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window')
 
@@ -35,27 +34,49 @@ export default function SimpleTaskModal({
   onComplete,
   onClose,
 }: SimpleTaskModalProps) {
-  const { t } = useTranslation()
-  const { colors } = useTheme()
-
-  // 使用统一的 Modal 动画 hook，使用 spring 弹性效果
-  const { backdropStyle, modalStyle: baseModalStyle } = useModalAnimation(visible, {
-    duration: 400,
-    initialScale: 0,
-  })
+  const { colors, t } = usePageBase()
 
   const [isCompleted, setIsCompleted] = useState<boolean | null>(null)
   const [showResult, setShowResult] = useState(false)
 
-  // 自定义 modal 样式以使用 spring 动画
+  // 动画值
+  const modalScale = useSharedValue(0)
+  const backdropOpacity = useSharedValue(0)
+  const contentOpacity = useSharedValue(0)
+
+  useEffect(() => {
+    if (visible) {
+      // 重置状态
+      setIsCompleted(null)
+      setShowResult(false)
+
+      // 开始动画
+      backdropOpacity.value = withTiming(1, { duration: 300 })
+      modalScale.value = withSpring(1, {
+        damping: 15,
+        stiffness: 150,
+      })
+      contentOpacity.value = withTiming(1, { duration: 400 })
+    } else {
+      // 关闭动画
+      backdropOpacity.value = withTiming(0, { duration: 200 })
+      modalScale.value = withTiming(0, { duration: 200 })
+      contentOpacity.value = withTiming(0, { duration: 200 })
+    }
+  }, [visible])
+
+  const backdropStyle = useAnimatedStyle(() => ({
+    opacity: backdropOpacity.value,
+  }))
+
   const modalStyle = useAnimatedStyle(() => ({
     transform: [
-      { scale: visible ? withSpring(1, { damping: 15, stiffness: 150 }) : withTiming(0) },
+      { scale: modalScale.value },
       {
-        translateY: interpolate(visible ? 1 : 0, [0, 1], [50, 0]),
+        translateY: interpolate(modalScale.value, [0, 1], [50, 0]),
       },
     ],
-    opacity: withTiming(visible ? 1 : 0, { duration: visible ? 400 : 200 }),
+    opacity: contentOpacity.value,
   }))
 
   // 处理任务完成选择
@@ -91,111 +112,133 @@ export default function SimpleTaskModal({
   const resultInfo = getResultInfo()
 
   return (
-    <BaseModal visible={visible} onClose={onClose} modalStyle={{ backgroundColor: colors.surface }}>
-      <Animated.View style={[styles.modal, modalStyle]}>
-        <LinearGradient
-          colors={[colors.surface, colors.surface + 'F0']}
-          style={styles.modalContent}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-        >
-          {!showResult ? (
-            // 任务展示界面
-            <>
-              {/* 任务头部 */}
-              <View style={styles.header}>
-                <View style={[styles.taskIcon, { backgroundColor: '#FFD700' + '20' }]}>
-                  <Ionicons name="star" size={32} color="#FFD700" />
+    <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
+      <Animated.View style={[styles.backdrop, backdropStyle]}>
+        <BlurView intensity={20} style={StyleSheet.absoluteFillObject} />
+      </Animated.View>
+
+      <View style={styles.container}>
+        <Animated.View style={[styles.modal, modalStyle]}>
+          <LinearGradient
+            colors={[colors.homeCardBackground, colors.homeCardBackground + 'F0']}
+            style={styles.modalContent}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          >
+            {!showResult ? (
+              // 任务展示界面
+              <>
+                {/* 任务头部 */}
+                <View style={styles.header}>
+                  <View style={[styles.taskIcon, { backgroundColor: '#FFD700' + '20' }]}>
+                    <Ionicons name="star" size={32} color="#FFD700" />
+                  </View>
+                  <Text style={[styles.headerTitle, { color: colors.homeCardTitle }]}>
+                    {t('simpleTaskModal.taskChallenge', '任务挑战')}
+                  </Text>
                 </View>
-                <Text style={[styles.headerTitle, { color: colors.text }]}>
-                  {t('simpleTaskModal.taskChallenge', '任务挑战')}
-                </Text>
-              </View>
 
-              {/* 任务内容 */}
-              <View style={styles.taskSection}>
-                <Text style={[styles.taskTitle, { color: colors.text }]}>{task.title}</Text>
-
-                {task.description && (
-                  <Text style={[styles.taskDescription, { color: colors.textSecondary }]}>
-                    {task.description}
+                {/* 任务内容 */}
+                <View style={styles.taskSection}>
+                  <Text style={[styles.taskTitle, { color: colors.homeCardTitle }]}>
+                    {task.title}
                   </Text>
-                )}
 
-                {/* 积分显示 */}
-                <View style={styles.pointsSection}>
-                  <Text style={[styles.pointsLabel, { color: colors.textSecondary }]}>
-                    {t('simpleTaskModal.completedReward', '完成奖励')}
+                  {task.description && (
+                    <Text style={[styles.taskDescription, { color: colors.homeCardDescription }]}>
+                      {task.description}
+                    </Text>
+                  )}
+
+                  {/* 积分显示 */}
+                  <View style={styles.pointsSection}>
+                    <Text style={[styles.pointsLabel, { color: colors.homeCardDescription }]}>
+                      {t('simpleTaskModal.completedReward', '完成奖励')}
+                    </Text>
+                    <View style={styles.pointsBadge}>
+                      <Ionicons name="diamond" size={16} color="#FFD700" />
+                      <Text style={styles.pointsText}>
+                        {t('simpleTaskModal.pointsAmount', '{{points}} 积分', {
+                          points: task.points,
+                        })}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+
+                {/* 选择按钮 */}
+                <View style={styles.actionSection}>
+                  <Text style={[styles.actionPrompt, { color: colors.homeCardTitle }]}>
+                    {t('simpleTaskModal.chooseCompletion', '请选择任务完成情况：')}
                   </Text>
-                  <View style={styles.pointsBadge}>
-                    <Ionicons name="diamond" size={16} color="#FFD700" />
-                    <Text style={styles.pointsText}>
-                      {t('simpleTaskModal.pointsAmount', '{{points}} 积分', {
-                        points: task.points,
-                      })}
+
+                  <View style={styles.actionButtons}>
+                    <TouchableOpacity
+                      style={styles.actionButton}
+                      onPress={() => handleTaskChoice(true)}
+                      activeOpacity={0.8}
+                    >
+                      <LinearGradient
+                        colors={['#4CAF50', '#66BB6A']}
+                        style={styles.actionButtonGradient}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                      >
+                        <Ionicons name="checkmark" size={20} color="white" />
+                        <Text style={styles.actionButtonText}>
+                          {t('simpleTaskModal.completed', '完成')}
+                        </Text>
+                      </LinearGradient>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={styles.actionButton}
+                      onPress={() => handleTaskChoice(false)}
+                      activeOpacity={0.8}
+                    >
+                      <LinearGradient
+                        colors={['#FF6B6B', '#FF8A80']}
+                        style={styles.actionButtonGradient}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                      >
+                        <Ionicons name="close" size={20} color="white" />
+                        <Text style={styles.actionButtonText}>
+                          {t('simpleTaskModal.notCompleted', '未完成')}
+                        </Text>
+                      </LinearGradient>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </>
+            ) : (
+              // 结果展示界面
+              resultInfo && (
+                <View style={styles.resultContainer}>
+                  <View style={[styles.resultIcon, { backgroundColor: resultInfo.color + '20' }]}>
+                    <Ionicons name={resultInfo.icon as any} size={48} color={resultInfo.color} />
+                  </View>
+
+                  <Text style={[styles.resultTitle, { color: colors.homeCardTitle }]}>
+                    {resultInfo.title}
+                  </Text>
+
+                  <Text style={[styles.resultDescription, { color: colors.homeCardDescription }]}>
+                    {resultInfo.description}
+                  </Text>
+
+                  <View style={styles.resultFooter}>
+                    <Text style={[styles.resultFooterText, { color: colors.homeCardDescription }]}>
+                      {t('simpleTaskModal.updatingScore', '正在更新积分...')}
                     </Text>
                   </View>
                 </View>
-              </View>
-
-              {/* 选择按钮 */}
-              <View style={styles.actionSection}>
-                <Text style={[styles.actionPrompt, { color: colors.text }]}>
-                  {t('simpleTaskModal.chooseCompletion', '请选择任务完成情况：')}
-                </Text>
-
-                <View style={styles.actionButtons}>
-                  <BaseButton
-                    title={t('simpleTaskModal.completed', '完成')}
-                    variant="primary"
-                    size="large"
-                    iconName="checkmark"
-                    iconPosition="left"
-                    onPress={() => handleTaskChoice(true)}
-                    style={[styles.actionButton, { backgroundColor: '#4CAF50' }]}
-                  />
-
-                  <BaseButton
-                    title={t('simpleTaskModal.notCompleted', '未完成')}
-                    variant="primary"
-                    size="large"
-                    iconName="close"
-                    iconPosition="left"
-                    onPress={() => handleTaskChoice(false)}
-                    style={[styles.actionButton, { backgroundColor: '#FF6B6B' }]}
-                  />
-                </View>
-              </View>
-            </>
-          ) : (
-            // 结果展示界面
-            resultInfo && (
-              <View style={styles.resultContainer}>
-                <View style={[styles.resultIcon, { backgroundColor: resultInfo.color + '20' }]}>
-                  <Ionicons
-                    name={resultInfo.icon as keyof typeof Ionicons.glyphMap}
-                    size={48}
-                    color={resultInfo.color}
-                  />
-                </View>
-
-                <Text style={[styles.resultTitle, { color: colors.text }]}>{resultInfo.title}</Text>
-
-                <Text style={[styles.resultDescription, { color: colors.textSecondary }]}>
-                  {resultInfo.description}
-                </Text>
-
-                <View style={styles.resultFooter}>
-                  <Text style={[styles.resultFooterText, { color: colors.textSecondary }]}>
-                    {t('simpleTaskModal.updatingScore', '正在更新积分...')}
-                  </Text>
-                </View>
-              </View>
-            )
-          )}
-        </LinearGradient>
-      </Animated.View>
-    </BaseModal>
+              )
+            )}
+          </LinearGradient>
+        </Animated.View>
+      </View>
+    </Modal>
   )
 }
 

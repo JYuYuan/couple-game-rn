@@ -8,14 +8,12 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
-import { useTranslation } from 'react-i18next'
 import { Ionicons } from '@expo/vector-icons'
-import { useColorScheme } from '@/hooks/use-color-scheme'
-import { Colors } from '@/constants/theme'
 import { TaskSet } from '@/types/tasks'
 import { useTasksStore } from '@/store/tasksStore'
 import * as Clipboard from 'expo-clipboard'
 import toast from '@/utils/toast'
+import { usePageBase } from '@/hooks/usePageBase'
 
 interface TaskSetModalProps {
   visible: boolean
@@ -24,9 +22,7 @@ interface TaskSetModalProps {
 }
 
 export const TaskSetModal: React.FC<TaskSetModalProps> = ({ visible, onClose, taskSet = null }) => {
-  const { t } = useTranslation()
-  const colorScheme = useColorScheme() ?? 'light'
-  const colors = Colors[colorScheme] as any
+  const { colors, t } = usePageBase()
 
   const { categories, addTaskSet, updateTaskSet } = useTasksStore()
 
