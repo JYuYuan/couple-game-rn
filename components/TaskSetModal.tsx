@@ -22,8 +22,7 @@ interface TaskSetModalProps {
 }
 
 export const TaskSetModal: React.FC<TaskSetModalProps> = ({ visible, onClose, taskSet = null }) => {
-  const { colors, t } = usePageBase()
-
+  const { colors, t, colorScheme } = usePageBase()
   const { categories, addTaskSet, updateTaskSet } = useTasksStore()
 
   const [formData, setFormData] = useState({

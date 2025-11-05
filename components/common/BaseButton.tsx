@@ -94,11 +94,7 @@ export const BaseButton: React.FC<BaseButtonProps> = ({
   // 获取变体颜色
   const getVariantColors = (isGradient: boolean): string | string[] => {
     const colors = {
-      primary: isGradient
-        ? gradientColors || ['#007AFF', '#0056CC']
-        : colorScheme === 'dark'
-          ? '#007AFF'
-          : '#007AFF',
+      primary: isGradient ? gradientColors || ['#007AFF', '#0056CC'] : '#007AFF',
       secondary: isGradient
         ? gradientColors || ['#8E8E93', '#6D6D70']
         : colorScheme === 'dark'

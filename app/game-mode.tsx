@@ -275,7 +275,7 @@ export default function GameMode() {
             {
               backgroundColor: colors.surface,
               borderColor: colors.border,
-              shadowColor: colorScheme === 'dark' ? '#000' : '#000',
+              shadowColor: '#000',
             },
           ]}
         >
@@ -541,6 +541,7 @@ export default function GameMode() {
           bounces={true}
           alwaysBounceVertical={true}
           keyboardShouldPersistTaps="handled"
+          nestedScrollEnabled={true}
         >
           {filteredTaskSets.length > 0 ? (
             filteredTaskSets.map((taskSet, index) => (
@@ -603,7 +604,8 @@ export default function GameMode() {
 
 const styles = StyleSheet.create({
   container: {
-    ...CommonStyles.container, // 使用通用容器样式
+    ...CommonStyles.container,
+    alignItems: 'stretch',
   },
   decorativeContainer: {
     position: 'absolute',
@@ -683,11 +685,14 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     width: '100%',
+    zIndex: 1,
   },
   contentContainer: {
     paddingHorizontal: Layout.padding.md,
     paddingTop: 0,
     paddingBottom: 40,
+    flexGrow: 1,
+    justifyContent: 'flex-start',
   },
   taskSetCard: {
     marginBottom: 16,

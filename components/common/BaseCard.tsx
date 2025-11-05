@@ -143,7 +143,7 @@ export const BaseCard: React.FC<BaseCardProps> = ({
               <Ionicons
                 name={rightIcon}
                 size={iconSize}
-                color={colorScheme === 'dark' ? '#8E8E93' : '#8E8E93'}
+                color={'#8E8E93'}
                 style={styles.rightIcon}
               />
             )}
