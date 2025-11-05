@@ -193,6 +193,61 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
 
+  push-to-pages-branch:
+    needs: [build-web, deploy-pages]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: ./.github/scripts/install-deps.sh
+
+      - name: Build Web
+        run: ./.github/scripts/build-web.sh
+
+      - name: Configure git
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+
+      - name: Create or update pages branch
+        run: |
+          # 检查 pages 分支是否存在
+          if git rev-parse --verify origin/pages >/dev/null 2>&1; then
+            echo "pages 分支已存在，更新内容..."
+            git fetch origin pages:pages
+            git checkout pages
+          else
+            echo "pages 分支不存在，创建新分支..."
+            git checkout --orphan pages
+            git rm -rf .
+          fi
+
+          # 复制构建文件到分支根目录
+          cp -r dist/* .
+
+          # 提交更改
+          git add .
+
+          if git diff-index --quiet HEAD --; then
+            echo "没有文件变更，跳过提交"
+          else
+            git commit -m "chore: update pages content from main branch"
+            git push -u origin pages
+            echo "成功推送到 pages 分支"
+          fi
+
+
   create-release:
     needs: [build-android, build-ios, build-web]
     runs-on: ubuntu-latest
