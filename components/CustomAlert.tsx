@@ -1,6 +1,7 @@
 import React from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 import { useTheme } from '@/hooks/useTheme'
+import { useModalAnimation } from '@/hooks/useModalAnimation'
 import { BaseModal } from './common/BaseModal'
 import { BaseButton } from './common/BaseButton'
 
@@ -26,6 +27,7 @@ export const CustomAlert: React.FC<CustomAlertProps> = ({
   onClose,
 }) => {
   const { colors } = useTheme()
+  const { backdropStyle, modalStyle: animatedModalStyle } = useModalAnimation(visible)
 
   const handleButtonPress = (button: AlertButton) => {
     if (button.onPress) {
@@ -35,54 +37,41 @@ export const CustomAlert: React.FC<CustomAlertProps> = ({
   }
 
   return (
-    <BaseModal visible={visible} onClose={onClose}>
-      <View style={[styles.overlay, { backgroundColor: colors.overlay }]}>
-        <View style={[styles.alertContainer, { backgroundColor: colors.surface }]}>
-          <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
-          {message && (
-            <Text style={[styles.message, { color: colors.textSecondary }]}>{message}</Text>
-          )}
-          <View style={styles.buttonContainer}>
-            {buttons.map((button, index) => (
-              <BaseButton
-                key={index}
-                title={button.text}
-                variant={
-                  button.style === 'destructive'
-                    ? 'danger'
-                    : button.style === 'cancel'
-                      ? 'secondary'
-                      : 'primary'
-                }
-                size="medium"
-                onPress={() => handleButtonPress(button)}
-                style={styles.button}
-              />
-            ))}
-          </View>
-        </View>
+    <BaseModal
+      visible={visible}
+      onClose={onClose}
+      backdropStyle={backdropStyle}
+      modalAnimationStyle={animatedModalStyle}
+      modalStyle={styles.alertContainer}
+    >
+      <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
+      {message && <Text style={[styles.message, { color: colors.textSecondary }]}>{message}</Text>}
+      <View style={styles.buttonContainer}>
+        {buttons.map((button, index) => (
+          <BaseButton
+            key={index}
+            title={button.text}
+            variant={
+              button.style === 'destructive'
+                ? 'danger'
+                : button.style === 'cancel'
+                  ? 'secondary'
+                  : 'primary'
+            }
+            size="medium"
+            onPress={() => handleButtonPress(button)}
+            style={styles.button}
+          />
+        ))}
       </View>
     </BaseModal>
   )
 }
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-  },
   alertContainer: {
     width: '100%',
     maxWidth: 400,
-    borderRadius: 16,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
   },
   title: {
     fontSize: 18,
@@ -105,10 +94,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 8,
     alignItems: 'center',
-  },
-  buttonText: {
-    fontSize: 16,
-    fontWeight: '600',
   },
 })
 

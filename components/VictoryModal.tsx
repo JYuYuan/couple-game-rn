@@ -3,7 +3,7 @@ import { Dimensions, StyleSheet, Text, View } from 'react-native'
 import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated'
 import { LinearGradient } from 'expo-linear-gradient'
 import { BaseButton, BaseModal } from '@/components/common'
-import { useTheme } from '@/hooks'
+import { useTheme, useModalAnimation } from '@/hooks'
 import { GamePlayer } from '@/hooks/use-game-players'
 import { useTranslation } from 'react-i18next'
 
@@ -29,29 +29,24 @@ export default function VictoryModal({
   const { colors } = useTheme()
   const { t } = useTranslation()
 
-  // 动画值
-  const scale = useSharedValue(0)
-  const opacity = useSharedValue(0)
+  // 使用统一的 Modal 动画 hook
+  const { backdropStyle, modalStyle } = useModalAnimation(visible, {
+    duration: 300,
+    initialScale: 0.8,
+    translateY: 50,
+  })
+
+  // 庆祝彩带动画（保留特殊动画）
   const confettiScale = useSharedValue(0)
 
   useEffect(() => {
     if (visible) {
-      // 直接设置为显示状态，不使用动画
-      opacity.value = 1
-      scale.value = 1
+      // 彩带动画
       confettiScale.value = 1
     } else {
-      // 直接设置为隐藏状态，不使用动画
-      opacity.value = 0
-      scale.value = 1
-      confettiScale.value = 1
+      confettiScale.value = 0
     }
   }, [visible])
-
-  const modalStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-    transform: [{ scale: scale.value }],
-  }))
 
   const confettiStyle = useAnimatedStyle(() => ({
     transform: [{ scale: confettiScale.value }],
@@ -60,25 +55,27 @@ export default function VictoryModal({
   if (!winner) return null
 
   return (
-    <BaseModal visible={visible} onClose={onClose} modalStyle={{ backgroundColor: colors.surface }}>
-      <View style={styles.overlay}>
-        <Animated.View style={[styles.modalContainer, modalStyle]}>
-          {/* 庆祝背景 */}
-          <Animated.View style={[styles.confettiContainer, confettiStyle]}>
-            <View style={[styles.confetti, { backgroundColor: '#FFD700', top: 20, left: 30 }]} />
-            <View style={[styles.confetti, { backgroundColor: '#FF6B6B', top: 40, right: 40 }]} />
-            <View style={[styles.confetti, { backgroundColor: '#4ECDC4', top: 60, left: 60 }]} />
-            <View style={[styles.confetti, { backgroundColor: '#45B7D1', top: 80, right: 80 }]} />
-            <View style={[styles.confetti, { backgroundColor: '#96CEB4', bottom: 60, left: 40 }]} />
-            <View
-              style={[styles.confetti, { backgroundColor: '#FFEAA7', bottom: 80, right: 60 }]}
-            />
-          </Animated.View>
+    <BaseModal
+      visible={visible}
+      onClose={onClose}
+      backdropStyle={backdropStyle}
+      modalAnimationStyle={modalStyle}
+      modalStyle={[styles.modalContainer, { backgroundColor: colors.surface }]}
+    >
+      {/* 庆祝背景 */}
+      <Animated.View style={[styles.confettiContainer, confettiStyle]}>
+        <View style={[styles.confetti, { backgroundColor: '#FFD700', top: 20, left: 30 }]} />
+        <View style={[styles.confetti, { backgroundColor: '#FF6B6B', top: 40, right: 40 }]} />
+        <View style={[styles.confetti, { backgroundColor: '#4ECDC4', top: 60, left: 60 }]} />
+        <View style={[styles.confetti, { backgroundColor: '#45B7D1', top: 80, right: 80 }]} />
+        <View style={[styles.confetti, { backgroundColor: '#96CEB4', bottom: 60, left: 40 }]} />
+        <View style={[styles.confetti, { backgroundColor: '#FFEAA7', bottom: 80, right: 60 }]} />
+      </Animated.View>
 
-          <LinearGradient
-            colors={[colors.surface, colors.surface + 'F0']}
-            style={[styles.modal, { borderColor: colors.border }]}
-          >
+      <LinearGradient
+        colors={[colors.surface, colors.surface + 'F0']}
+        style={[styles.modal, { borderColor: colors.border }]}
+      >
             {/* 胜利庆祝界面 */}
             <View style={styles.victoryContent}>
               {/* 胜利标题 */}
@@ -150,20 +147,12 @@ export default function VictoryModal({
                 </View>
               )}
             </View>
-          </LinearGradient>
-        </Animated.View>
-      </View>
+      </LinearGradient>
     </BaseModal>
   )
 }
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
   modalContainer: {
     width: '100%',
     maxWidth: 400,

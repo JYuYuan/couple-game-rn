@@ -1,13 +1,9 @@
 import React, { ReactNode } from 'react'
-import {
-  Animated,
-  Modal,
-  StyleSheet,
-  TouchableWithoutFeedback,
-  View,
-  ViewStyle,
-} from 'react-native'
+import { Modal, StyleSheet, TouchableWithoutFeedback, View, ViewStyle } from 'react-native'
+import Animated from 'react-native-reanimated'
 import { BlurView } from 'expo-blur'
+import { useTheme } from '@/hooks/useTheme'
+import type { AnimatedStyle } from 'react-native-reanimated'
 
 export interface BaseModalProps {
   /** 是否显示模态框 */
@@ -27,9 +23,9 @@ export interface BaseModalProps {
   /** 自定义容器样式 */
   containerStyle?: ViewStyle
   /** 背景动画样式 */
-  backdropStyle?: ViewStyle
+  backdropStyle?: AnimatedStyle<ViewStyle>
   /** 模态框动画样式 */
-  modalAnimationStyle?: ViewStyle
+  modalAnimationStyle?: AnimatedStyle<ViewStyle>
 }
 
 /**
@@ -40,6 +36,7 @@ export interface BaseModalProps {
  * - 动画支持
  * - 点击背景关闭
  * - 自定义样式支持
+ * - 主题支持（夜间模式）
  *
  * @example
  * ```tsx
@@ -65,6 +62,8 @@ export const BaseModal: React.FC<BaseModalProps> = ({
   backdropStyle,
   modalAnimationStyle,
 }) => {
+  const { colors } = useTheme()
+
   const handleBackdropPress = () => {
     if (closeOnBackdropPress) {
       onClose()
@@ -73,16 +72,26 @@ export const BaseModal: React.FC<BaseModalProps> = ({
 
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
+      {/* 背景层 - 包裹所有内容 */}
       <TouchableWithoutFeedback onPress={handleBackdropPress}>
         <Animated.View style={[styles.backdrop, backdropStyle]}>
           {showBlur && <BlurView intensity={blurIntensity} style={StyleSheet.absoluteFillObject} />}
         </Animated.View>
       </TouchableWithoutFeedback>
 
-      <View style={[styles.container, containerStyle]}>
+      {/* 内容容器 - 使用 pointerEvents 让点击穿透到背景 */}
+      <View style={[styles.container, containerStyle]} pointerEvents="box-none">
+        {/* Modal 内容 - 阻止点击穿透 */}
         <TouchableWithoutFeedback>
-          <Animated.View style={[styles.modal, modalStyle, modalAnimationStyle]}>
-            <View style={styles.modalContent}>{children}</View>
+          <Animated.View
+            style={[
+              styles.modal,
+              { backgroundColor: colors.background }, // 使用主题背景色
+              modalStyle,
+              modalAnimationStyle,
+            ]}
+          >
+            {children}
           </Animated.View>
         </TouchableWithoutFeedback>
       </View>
@@ -92,15 +101,11 @@ export const BaseModal: React.FC<BaseModalProps> = ({
 
 const styles = StyleSheet.create({
   backdrop: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   container: {
-    flex: 1,
+    ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
@@ -118,9 +123,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 20,
     elevation: 10,
-  },
-  modalContent: {
-    flex: 1,
   },
 })
 

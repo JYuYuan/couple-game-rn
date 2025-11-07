@@ -1,18 +1,13 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect } from 'react'
 import { Dimensions, StyleSheet, Text, View } from 'react-native'
 import { useTranslation } from 'react-i18next'
-import Animated, {
-  interpolate,
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-  withTiming,
-} from 'react-native-reanimated'
 import { LinearGradient } from 'expo-linear-gradient'
 import { Ionicons } from '@expo/vector-icons'
 import { BaseModal } from '@/components/common/BaseModal'
 import { BaseButton } from '@/components/common/BaseButton'
 import { useTheme } from '@/hooks/useTheme'
+import { useModalResultState } from '@/hooks/useModalState'
+import { useModalAnimation } from '@/hooks/useModalAnimation'
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window')
 
@@ -36,230 +31,182 @@ export default function MineTaskModal({ visible, task, onComplete, onClose }: Mi
   const { t } = useTranslation()
   const { colors } = useTheme()
 
-  const [isCompleted, setIsCompleted] = useState<boolean | null>(null)
-  const [showResult, setShowResult] = useState(false)
+  // 使用统一的 Modal 动画
+  const { backdropStyle, modalStyle } = useModalAnimation(visible)
 
-  // 动画值
-  const modalScale = useSharedValue(0)
-  const backdropOpacity = useSharedValue(0)
-  const contentOpacity = useSharedValue(0)
+  // 使用统一的 Modal 结果状态管理
+  const { isCompleted, showResult, reset, handleChoice } = useModalResultState()
 
   useEffect(() => {
     if (visible) {
-      // 重置状态
-      setIsCompleted(null)
-      setShowResult(false)
-
-      // 开始动画
-      backdropOpacity.value = withTiming(1, { duration: 0 })
-      modalScale.value = withSpring(1, {
-        damping: 0,
-        stiffness: 0,
-      })
-      contentOpacity.value = withTiming(1, { duration: 0 })
-    } else {
-      // 关闭动画
-      backdropOpacity.value = withTiming(0, { duration: 0 })
-      modalScale.value = withTiming(0, { duration: 0 })
-      contentOpacity.value = withTiming(0, { duration: 0 })
+      reset()
     }
   }, [visible])
-
-  const modalStyle = useAnimatedStyle(() => ({
-    transform: [
-      { scale: modalScale.value },
-      {
-        translateY: interpolate(modalScale.value, [0, 1], [50, 0]),
-      },
-    ],
-    opacity: contentOpacity.value,
-  }))
-
-  // 处理任务完成选择
-  const handleTaskChoice = (completed: boolean) => {
-    setIsCompleted(completed)
-    setShowResult(true)
-
-    // 延迟执行回调
-    setTimeout(() => {
-      onComplete(completed)
-    }, 1500)
-  }
 
   // 获取结果信息
   const getResultInfo = () => {
     if (!task || isCompleted === null) return null
 
     return {
-      success: isCompleted,
-      icon: isCompleted ? 'shield-checkmark' : 'close-circle',
-      color: isCompleted ? '#4CAF50' : '#F44336',
+      icon: isCompleted ? 'checkmark-circle' : 'close-circle',
+      iconColor: isCompleted ? '#4CAF50' : '#F44336',
       title: isCompleted
-        ? t('minesweeper.task.result.completed', '任务完成！')
-        : t('minesweeper.task.result.failed', '任务失败！'),
+        ? t('minesweeper.task.completed', '任务完成！')
+        : t('minesweeper.task.failed', '任务失败'),
       description: isCompleted
-        ? t('minesweeper.task.result.completedDesc', '顺利完成挑战！')
-        : t('minesweeper.task.result.failedDesc', '挑战失败了'),
+        ? t('minesweeper.task.completedDesc', '成功解除危机')
+        : t('minesweeper.task.failedDesc', '受到地雷伤害'),
+      gradient: isCompleted ? ['#4CAF50', '#66BB6A'] : ['#F44336', '#EF5350'],
     }
   }
 
-  if (!visible || !task) return null
-
   const resultInfo = getResultInfo()
 
+  if (!task) return null
+
   return (
-    <BaseModal visible={visible} onClose={onClose}>
-      <View style={styles.container}>
-        <Animated.View style={[styles.modal, modalStyle]}>
-          <LinearGradient
-            colors={[colors.surface, colors.surface + 'F0']}
-            style={styles.modalContent}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-          >
-            {!showResult ? (
-              // 任务展示界面
-              <>
-                {/* 踩雷提示头部 */}
-                <View style={styles.header}>
-                  <View style={[styles.mineIcon, { backgroundColor: '#F44336' + '20' }]}>
-                    <Text style={styles.mineEmoji}>💣</Text>
-                  </View>
-                  <Text style={[styles.headerTitle, { color: colors.text }]}>
-                    {t('minesweeper.task.hitMine', '踩到地雷了！')}
-                  </Text>
-                  <Text style={[styles.headerSubtitle, { color: '#F44336' }]}>
-                    {t('minesweeper.task.position', '位置')}
-                    {': ('}
-                    {task.minePosition.row + 1}
-                    {', '}
-                    {task.minePosition.col + 1}
-                    {')'}
-                  </Text>
-                </View>
+    <BaseModal
+      visible={visible}
+      onClose={onClose}
+      backdropStyle={backdropStyle}
+      modalAnimationStyle={modalStyle}
+      modalStyle={styles.modal}
+    >
+      <LinearGradient
+        colors={[colors.surface, colors.surface + 'F0']}
+        style={styles.modalContent}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      >
+        {!showResult ? (
+          // 任务展示界面
+          <>
+            {/* 踩雷提示头部 */}
+            <View style={styles.header}>
+              <View style={[styles.mineIcon, { backgroundColor: '#F44336' + '20' }]}>
+                <Text style={styles.mineEmoji}>💣</Text>
+              </View>
+              <Text style={[styles.headerTitle, { color: colors.text }]}>
+                {t('minesweeper.task.hitMine', '踩到地雷了！')}
+              </Text>
+              <Text style={[styles.headerSubtitle, { color: '#F44336' }]}>
+                {t('minesweeper.task.position', '位置')}
+                {': ('}
+                {task.minePosition.row + 1}
+                {', '}
+                {task.minePosition.col + 1}
+                {')'}
+              </Text>
+            </View>
 
-                {/* 玩家信息 */}
-                <View style={styles.playerSection}>
-                  <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                    {t('minesweeper.task.challenger', '挑战者')}
-                  </Text>
-                  <View style={[styles.playerCard, { backgroundColor: task.playerColor + '15' }]}>
-                    <View style={[styles.playerAvatar, { backgroundColor: task.playerColor }]}>
-                      <Text style={styles.playerAvatarText}>{task.playerName.charAt(0)}</Text>
-                    </View>
-                    <Text style={[styles.playerName, { color: colors.text }]}>
-                      {task.playerName}
-                    </Text>
-                  </View>
-                </View>
+            {/* 玩家信息 */}
+            <View style={styles.playerSection}>
+              <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
+                {t('minesweeper.task.triggeredBy', '触发者')}
+              </Text>
+              <View style={[styles.playerChip, { backgroundColor: task.playerColor + '15' }]}>
+                <View style={[styles.playerDot, { backgroundColor: task.playerColor }]} />
+                <Text style={[styles.playerName, { color: colors.text }]}>{task.playerName}</Text>
+              </View>
+            </View>
 
-                {/* 任务内容 */}
-                <View style={styles.taskSection}>
-                  <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                    {t('minesweeper.task.challengeTask', '挑战任务')}
-                  </Text>
-                  <Text style={[styles.taskTitle, { color: colors.text }]}>{task.title}</Text>
-                  {task.description && (
-                    <Text style={[styles.taskDescription, { color: colors.textSecondary }]}>
-                      {task.description}
-                    </Text>
-                  )}
-                </View>
+            {/* 任务内容 */}
+            <View style={styles.taskSection}>
+              <Text style={[styles.taskTitle, { color: colors.text }]}>{task.title}</Text>
+              {task.description && (
+                <Text style={[styles.taskDescription, { color: colors.textSecondary }]}>
+                  {task.description}
+                </Text>
+              )}
+            </View>
 
-                {/* 惩罚说明 */}
-                <View style={styles.penaltySection}>
-                  <View style={styles.penaltyCard}>
-                    <Text style={[styles.penaltyTitle, { color: '#F44336' }]}>⚠️ 挑战说明</Text>
-                    <Text style={[styles.penaltyDescription, { color: colors.textSecondary }]}>
-                      • 踩雷后需要完成任务挑战{'\n'}• 任务完成与否不影响积分{'\n'}•
-                      积分取决于获得的格子数量
-                    </Text>
-                  </View>
-                </View>
+            {/* 规则说明 */}
+            <View style={[styles.ruleBox, { backgroundColor: colors.surface + '40' }]}>
+              <View style={styles.ruleRow}>
+                <Ionicons name="checkmark-circle-outline" size={16} color="#4CAF50" />
+                <Text style={[styles.ruleText, { color: colors.textSecondary }]}>
+                  {t('minesweeper.task.ruleSuccess', '完成任务：恢复生命值')}
+                </Text>
+              </View>
+              <View style={styles.ruleRow}>
+                <Ionicons name="close-circle-outline" size={16} color="#F44336" />
+                <Text style={[styles.ruleText, { color: colors.textSecondary }]}>
+                  {t('minesweeper.task.ruleFail', '失败惩罚：失去生命值')}
+                </Text>
+              </View>
+            </View>
 
-                {/* 选择按钮 */}
-                <View style={styles.actionSection}>
-                  <Text style={[styles.actionPrompt, { color: colors.text }]}>
-                    请选择任务完成情况：
-                  </Text>
+            {/* 操作按钮 */}
+            <View style={styles.actionSection}>
+              <BaseButton
+                variant="success"
+                size="large"
+                onPress={() => handleChoice(true, onComplete)}
+                style={styles.actionButton}
+              >
+                <Ionicons name="checkmark-circle" size={20} color="white" />
+                <Text style={styles.actionButtonText}>
+                  {t('minesweeper.task.complete', '完成任务')}
+                </Text>
+              </BaseButton>
 
-                  <View style={styles.actionButtons}>
-                    <BaseButton
-                      title={t('common.completed', '已完成')}
-                      variant="primary"
-                      size="medium"
-                      onPress={() => handleTaskChoice(true)}
-                      style={{ flex: 1 }}
-                      iconName="checkmark"
-                    />
+              <BaseButton
+                variant="danger"
+                size="large"
+                onPress={() => handleChoice(false, onComplete)}
+                style={styles.actionButton}
+              >
+                <Ionicons name="close-circle" size={20} color="white" />
+                <Text style={styles.actionButtonText}>
+                  {t('minesweeper.task.giveUp', '放弃任务')}
+                </Text>
+              </BaseButton>
+            </View>
+          </>
+        ) : (
+          // 结果展示界面
+          resultInfo && (
+            <View style={styles.resultContainer}>
+              <LinearGradient
+                colors={resultInfo.gradient}
+                style={styles.resultHeader}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+              >
+                <Ionicons
+                  name={resultInfo.icon as any}
+                  size={48}
+                  color="white"
+                  style={styles.resultIcon}
+                />
+                <Text style={styles.resultTitle}>{resultInfo.title}</Text>
+                <Text style={styles.resultDescription}>{resultInfo.description}</Text>
+              </LinearGradient>
 
-                    <BaseButton
-                      title={t('common.failed', '未完成')}
-                      variant="danger"
-                      size="medium"
-                      onPress={() => handleTaskChoice(false)}
-                      style={{ flex: 1 }}
-                      iconName="close"
-                    />
-                  </View>
-                </View>
-              </>
-            ) : (
-              // 结果展示界面
-              resultInfo && (
-                <View style={styles.resultContainer}>
-                  <View style={[styles.resultIcon, { backgroundColor: resultInfo.color + '20' }]}>
-                    <Ionicons
-                      name={resultInfo.icon as keyof typeof Ionicons.glyphMap}
-                      size={48}
-                      color={resultInfo.color}
-                    />
-                  </View>
-
-                  <Text style={[styles.resultTitle, { color: colors.text }]}>
-                    {resultInfo.title}
-                  </Text>
-
-                  <Text style={[styles.resultDescription, { color: colors.textSecondary }]}>
-                    {resultInfo.description}
-                  </Text>
-
-                  <View style={styles.resultFooter}>
-                    <Text style={[styles.resultFooterText, { color: colors.textSecondary }]}>
-                      继续游戏...
-                    </Text>
-                  </View>
-                </View>
-              )
-            )}
-          </LinearGradient>
-        </Animated.View>
-      </View>
+              <BaseButton
+                variant="primary"
+                size="large"
+                onPress={onClose}
+                style={styles.resultButton}
+              >
+                <Text style={styles.resultButtonText}>
+                  {t('minesweeper.task.continue', '继续游戏')}
+                </Text>
+              </BaseButton>
+            </View>
+          )
+        )}
+      </LinearGradient>
     </BaseModal>
   )
 }
 
 const styles = StyleSheet.create({
-  backdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
   modal: {
     width: Math.min(screenWidth - 40, 400),
     maxHeight: screenHeight * 0.85,
-    borderRadius: 20,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 20,
+    padding: 0, // 移除padding，让LinearGradient填满
   },
   modalContent: {
     padding: 16,
@@ -293,29 +240,23 @@ const styles = StyleSheet.create({
   playerSection: {
     marginBottom: 12,
   },
-  sectionTitle: {
-    fontSize: 14,
+  sectionLabel: {
+    fontSize: 12,
     fontWeight: '600',
-    marginBottom: 8,
+    marginBottom: 6,
   },
-  playerCard: {
+  playerChip: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 8,
-    borderRadius: 10,
-    gap: 8,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
   },
-  playerAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  playerAvatarText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '700',
+  playerDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginRight: 6,
   },
   playerName: {
     fontSize: 14,
@@ -326,96 +267,76 @@ const styles = StyleSheet.create({
   },
   taskTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     marginBottom: 6,
-    lineHeight: 20,
     textAlign: 'center',
   },
   taskDescription: {
     fontSize: 13,
     lineHeight: 18,
     textAlign: 'center',
-    opacity: 0.8,
   },
-  penaltySection: {
-    marginBottom: 12,
-  },
-  penaltyCard: {
-    backgroundColor: '#F44336' + '10',
+  ruleBox: {
     padding: 10,
-    borderRadius: 10,
-    borderLeftWidth: 3,
-    borderLeftColor: '#F44336',
+    borderRadius: 8,
+    marginBottom: 12,
+    gap: 6,
   },
-  penaltyTitle: {
-    fontSize: 13,
-    fontWeight: '600',
-    marginBottom: 6,
+  ruleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
-  penaltyDescription: {
-    fontSize: 11,
-    lineHeight: 16,
+  ruleText: {
+    fontSize: 12,
+    flex: 1,
   },
   actionSection: {
-    alignItems: 'center',
-  },
-  actionPrompt: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  actionButtons: {
-    flexDirection: 'row',
-    gap: 10,
-    width: '100%',
+    gap: 8,
   },
   actionButton: {
-    flex: 1,
-    borderRadius: 10,
-    overflow: 'hidden',
-  },
-  actionButtonGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
     gap: 6,
   },
   actionButtonText: {
-    color: 'white',
     fontSize: 14,
     fontWeight: '600',
+    color: 'white',
   },
   resultContainer: {
     alignItems: 'center',
-    paddingVertical: 16,
+  },
+  resultHeader: {
+    width: '100%',
+    padding: 20,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginBottom: 16,
   },
   resultIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
+    marginBottom: 8,
   },
   resultTitle: {
     fontSize: 20,
     fontWeight: '700',
-    marginBottom: 10,
+    color: 'white',
+    marginBottom: 4,
     textAlign: 'center',
   },
   resultDescription: {
     fontSize: 14,
+    color: 'white',
+    opacity: 0.9,
     textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: 16,
   },
-  resultFooter: {
-    marginTop: 8,
+  resultButton: {
+    width: '100%',
   },
-  resultFooterText: {
-    fontSize: 13,
-    fontStyle: 'italic',
+  resultButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: 'white',
   },
 })

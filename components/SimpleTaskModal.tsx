@@ -1,16 +1,11 @@
-import React, { useEffect, useState } from 'react'
-import { Dimensions, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import Animated, {
-  interpolate,
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-  withTiming,
-} from 'react-native-reanimated'
+import React, { useEffect } from 'react'
+import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient'
-import { BlurView } from 'expo-blur'
 import { Ionicons } from '@expo/vector-icons'
+import { BaseModal } from '@/components/common/BaseModal'
 import { usePageBase } from '@/hooks/usePageBase'
+import { useModalAnimation } from '@/hooks/useModalAnimation'
+import { useModalResultState } from '@/hooks/useModalState'
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window')
 
@@ -36,59 +31,20 @@ export default function SimpleTaskModal({
 }: SimpleTaskModalProps) {
   const { colors, t } = usePageBase()
 
-  const [isCompleted, setIsCompleted] = useState<boolean | null>(null)
-  const [showResult, setShowResult] = useState(false)
+  // 使用统一的 Modal 动画
+  const { backdropStyle, modalStyle } = useModalAnimation(visible, {
+    duration: 400,
+    backdropDuration: 300,
+  })
 
-  // 动画值
-  const modalScale = useSharedValue(0)
-  const backdropOpacity = useSharedValue(0)
-  const contentOpacity = useSharedValue(0)
+  // 使用统一的 Modal 结果状态管理
+  const { isCompleted, showResult, reset, handleChoice } = useModalResultState()
 
   useEffect(() => {
     if (visible) {
-      // 重置状态
-      setIsCompleted(null)
-      setShowResult(false)
-
-      // 开始动画
-      backdropOpacity.value = withTiming(1, { duration: 300 })
-      modalScale.value = withSpring(1, {
-        damping: 15,
-        stiffness: 150,
-      })
-      contentOpacity.value = withTiming(1, { duration: 400 })
-    } else {
-      // 关闭动画
-      backdropOpacity.value = withTiming(0, { duration: 200 })
-      modalScale.value = withTiming(0, { duration: 200 })
-      contentOpacity.value = withTiming(0, { duration: 200 })
+      reset()
     }
-  }, [visible])
-
-  const backdropStyle = useAnimatedStyle(() => ({
-    opacity: backdropOpacity.value,
-  }))
-
-  const modalStyle = useAnimatedStyle(() => ({
-    transform: [
-      { scale: modalScale.value },
-      {
-        translateY: interpolate(modalScale.value, [0, 1], [50, 0]),
-      },
-    ],
-    opacity: contentOpacity.value,
-  }))
-
-  // 处理任务完成选择
-  const handleTaskChoice = (completed: boolean) => {
-    setIsCompleted(completed)
-    setShowResult(true)
-
-    // 延迟执行回调
-    setTimeout(() => {
-      onComplete(completed)
-    }, 1500)
-  }
+  }, [visible, reset])
 
   // 获取结果信息
   const getResultInfo = () => {
@@ -107,162 +63,145 @@ export default function SimpleTaskModal({
     }
   }
 
-  if (!visible || !task) return null
+  if (!task) return null
 
   const resultInfo = getResultInfo()
 
   return (
-    <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
-      <Animated.View style={[styles.backdrop, backdropStyle]}>
-        <BlurView intensity={20} style={StyleSheet.absoluteFillObject} />
-      </Animated.View>
+    <BaseModal
+      visible={visible}
+      onClose={onClose}
+      backdropStyle={backdropStyle}
+      modalAnimationStyle={modalStyle}
+      modalStyle={styles.modal}
+    >
+      <LinearGradient
+        colors={[colors.homeCardBackground, colors.homeCardBackground + 'F0']}
+        style={styles.modalContent}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      >
+        {!showResult ? (
+          // 任务展示界面
+          <>
+            {/* 任务头部 */}
+            <View style={styles.header}>
+              <View style={[styles.taskIcon, { backgroundColor: '#FFD700' + '20' }]}>
+                <Ionicons name="star" size={32} color="#FFD700" />
+              </View>
+              <Text style={[styles.headerTitle, { color: colors.homeCardTitle }]}>
+                {t('simpleTaskModal.taskChallenge', '任务挑战')}
+              </Text>
+            </View>
 
-      <View style={styles.container}>
-        <Animated.View style={[styles.modal, modalStyle]}>
-          <LinearGradient
-            colors={[colors.homeCardBackground, colors.homeCardBackground + 'F0']}
-            style={styles.modalContent}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-          >
-            {!showResult ? (
-              // 任务展示界面
-              <>
-                {/* 任务头部 */}
-                <View style={styles.header}>
-                  <View style={[styles.taskIcon, { backgroundColor: '#FFD700' + '20' }]}>
-                    <Ionicons name="star" size={32} color="#FFD700" />
-                  </View>
-                  <Text style={[styles.headerTitle, { color: colors.homeCardTitle }]}>
-                    {t('simpleTaskModal.taskChallenge', '任务挑战')}
+            {/* 任务内容 */}
+            <View style={styles.taskSection}>
+              <Text style={[styles.taskTitle, { color: colors.homeCardTitle }]}>
+                {task.title}
+              </Text>
+
+              {task.description && (
+                <Text style={[styles.taskDescription, { color: colors.homeCardDescription }]}>
+                  {task.description}
+                </Text>
+              )}
+
+              {/* 积分显示 */}
+              <View style={styles.pointsSection}>
+                <Text style={[styles.pointsLabel, { color: colors.homeCardDescription }]}>
+                  {t('simpleTaskModal.completedReward', '完成奖励')}
+                </Text>
+                <View style={styles.pointsBadge}>
+                  <Ionicons name="diamond" size={16} color="#FFD700" />
+                  <Text style={styles.pointsText}>
+                    {t('simpleTaskModal.pointsAmount', '{{points}} 积分', {
+                      points: task.points,
+                    })}
                   </Text>
                 </View>
+              </View>
+            </View>
 
-                {/* 任务内容 */}
-                <View style={styles.taskSection}>
-                  <Text style={[styles.taskTitle, { color: colors.homeCardTitle }]}>
-                    {task.title}
-                  </Text>
+            {/* 选择按钮 */}
+            <View style={styles.actionSection}>
+              <Text style={[styles.actionPrompt, { color: colors.homeCardTitle }]}>
+                {t('simpleTaskModal.chooseCompletion', '请选择任务完成情况：')}
+              </Text>
 
-                  {task.description && (
-                    <Text style={[styles.taskDescription, { color: colors.homeCardDescription }]}>
-                      {task.description}
+              <View style={styles.actionButtons}>
+                <TouchableOpacity
+                  style={styles.actionButton}
+                  onPress={() => handleChoice(true, onComplete)}
+                  activeOpacity={0.8}
+                >
+                  <LinearGradient
+                    colors={['#4CAF50', '#66BB6A']}
+                    style={styles.actionButtonGradient}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                  >
+                    <Ionicons name="checkmark" size={24} color="white" />
+                    <Text style={styles.actionButtonText}>
+                      {t('simpleTaskModal.completed', '完成')}
                     </Text>
-                  )}
+                  </LinearGradient>
+                </TouchableOpacity>
 
-                  {/* 积分显示 */}
-                  <View style={styles.pointsSection}>
-                    <Text style={[styles.pointsLabel, { color: colors.homeCardDescription }]}>
-                      {t('simpleTaskModal.completedReward', '完成奖励')}
+                <TouchableOpacity
+                  style={styles.actionButton}
+                  onPress={() => handleChoice(false, onComplete)}
+                  activeOpacity={0.8}
+                >
+                  <LinearGradient
+                    colors={['#FF6B6B', '#FF8A80']}
+                    style={styles.actionButtonGradient}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                  >
+                    <Ionicons name="close" size={24} color="white" />
+                    <Text style={styles.actionButtonText}>
+                      {t('simpleTaskModal.notCompleted', '未完成')}
                     </Text>
-                    <View style={styles.pointsBadge}>
-                      <Ionicons name="diamond" size={16} color="#FFD700" />
-                      <Text style={styles.pointsText}>
-                        {t('simpleTaskModal.pointsAmount', '{{points}} 积分', {
-                          points: task.points,
-                        })}
-                      </Text>
-                    </View>
-                  </View>
-                </View>
+                  </LinearGradient>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </>
+        ) : (
+          // 结果展示界面
+          resultInfo && (
+            <View style={styles.resultContainer}>
+              <View style={[styles.resultIcon, { backgroundColor: resultInfo.color + '20' }]}>
+                <Ionicons name={resultInfo.icon as any} size={48} color={resultInfo.color} />
+              </View>
 
-                {/* 选择按钮 */}
-                <View style={styles.actionSection}>
-                  <Text style={[styles.actionPrompt, { color: colors.homeCardTitle }]}>
-                    {t('simpleTaskModal.chooseCompletion', '请选择任务完成情况：')}
-                  </Text>
+              <Text style={[styles.resultTitle, { color: colors.homeCardTitle }]}>
+                {resultInfo.title}
+              </Text>
 
-                  <View style={styles.actionButtons}>
-                    <TouchableOpacity
-                      style={styles.actionButton}
-                      onPress={() => handleTaskChoice(true)}
-                      activeOpacity={0.8}
-                    >
-                      <LinearGradient
-                        colors={['#4CAF50', '#66BB6A']}
-                        style={styles.actionButtonGradient}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                      >
-                        <Ionicons name="checkmark" size={20} color="white" />
-                        <Text style={styles.actionButtonText}>
-                          {t('simpleTaskModal.completed', '完成')}
-                        </Text>
-                      </LinearGradient>
-                    </TouchableOpacity>
+              <Text style={[styles.resultDescription, { color: colors.homeCardDescription }]}>
+                {resultInfo.description}
+              </Text>
 
-                    <TouchableOpacity
-                      style={styles.actionButton}
-                      onPress={() => handleTaskChoice(false)}
-                      activeOpacity={0.8}
-                    >
-                      <LinearGradient
-                        colors={['#FF6B6B', '#FF8A80']}
-                        style={styles.actionButtonGradient}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                      >
-                        <Ionicons name="close" size={20} color="white" />
-                        <Text style={styles.actionButtonText}>
-                          {t('simpleTaskModal.notCompleted', '未完成')}
-                        </Text>
-                      </LinearGradient>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </>
-            ) : (
-              // 结果展示界面
-              resultInfo && (
-                <View style={styles.resultContainer}>
-                  <View style={[styles.resultIcon, { backgroundColor: resultInfo.color + '20' }]}>
-                    <Ionicons name={resultInfo.icon as any} size={48} color={resultInfo.color} />
-                  </View>
-
-                  <Text style={[styles.resultTitle, { color: colors.homeCardTitle }]}>
-                    {resultInfo.title}
-                  </Text>
-
-                  <Text style={[styles.resultDescription, { color: colors.homeCardDescription }]}>
-                    {resultInfo.description}
-                  </Text>
-
-                  <View style={styles.resultFooter}>
-                    <Text style={[styles.resultFooterText, { color: colors.homeCardDescription }]}>
-                      {t('simpleTaskModal.updatingScore', '正在更新积分...')}
-                    </Text>
-                  </View>
-                </View>
-              )
-            )}
-          </LinearGradient>
-        </Animated.View>
-      </View>
-    </Modal>
+              <View style={styles.resultFooter}>
+                <Text style={[styles.resultFooterText, { color: colors.homeCardDescription }]}>
+                  {t('simpleTaskModal.updatingScore', '正在更新积分...')}
+                </Text>
+              </View>
+            </View>
+          )
+        )}
+      </LinearGradient>
+    </BaseModal>
   )
 }
 
 const styles = StyleSheet.create({
-  backdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
   modal: {
     width: Math.min(screenWidth - 40, 400),
     maxHeight: screenHeight * 0.8,
-    borderRadius: 24,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 20,
+    padding: 0, // 移除padding，让LinearGradient填满
   },
   modalContent: {
     padding: 24,
@@ -333,26 +272,35 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   actionButtons: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     gap: 12,
     width: '100%',
   },
   actionButton: {
-    flex: 1,
-    borderRadius: 12,
+    width: '100%',
+    borderRadius: 16,
     overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+    minHeight: 56, // 确保按钮有最小高度，防止被压扁
   },
   actionButtonGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 14,
+    paddingVertical: 16,
+    paddingHorizontal: 12, // 添加水平 padding，防止内容过于拥挤
     gap: 8,
+    minHeight: 56, // 与按钮高度一致
+    borderRadius: 16, // LinearGradient 需要明确设置圆角
   },
   actionButtonText: {
     color: 'white',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   resultContainer: {
     alignItems: 'center',

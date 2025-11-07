@@ -1,19 +1,11 @@
-import React, { useEffect } from 'react'
-import {
-  Dimensions,
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  TouchableWithoutFeedback,
-  View,
-} from 'react-native'
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
+import React from 'react'
+import { Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { TaskCategory, TaskSet } from '@/types/tasks'
 import { usePageBase } from '@/hooks/usePageBase'
+import { useModalAnimation } from '@/hooks/useModalAnimation'
+import { BaseModal } from '@/components/common'
 
 const { height: screenHeight } = Dimensions.get('window')
 
@@ -41,22 +33,11 @@ export const TaskSetDetailModal: React.FC<TaskSetDetailModalProps> = ({
   const insets = useSafeAreaInsets()
   const { colors, t } = usePageBase()
 
-  // 动画值
-  const translateY = useSharedValue(screenHeight)
-
-  useEffect(() => {
-    if (visible) {
-      // 打开动画 - 从下滑入
-      translateY.value = withTiming(0, { duration: 350 })
-    } else {
-      // 关闭动画 - 向下滑出
-      translateY.value = withTiming(screenHeight, { duration: 300 })
-    }
-  }, [visible])
-
-  const modalStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.value }],
-  }))
+  // 使用统一的 Modal 动画 hook（底部滑入动画）
+  const { backdropStyle, modalStyle } = useModalAnimation(visible, {
+    type: 'slide-bottom',
+    duration: 350,
+  })
 
   const handleBackdropPress = () => {
     onClose()
@@ -95,17 +76,15 @@ export const TaskSetDetailModal: React.FC<TaskSetDetailModalProps> = ({
   if (!visible || !taskSet) return null
 
   return (
-    <Modal visible={visible} transparent={true} animationType="none" onRequestClose={onClose}>
-      {/* 透明背景蒙层 */}
-      <View style={styles.backdrop}>
-        <TouchableWithoutFeedback onPress={handleBackdropPress}>
-          <View style={styles.backdropTouchable} />
-        </TouchableWithoutFeedback>
-      </View>
-
-      {/* 弹窗内容 */}
-      <Animated.View style={[styles.modalContainer, modalStyle]}>
-        <View
+    <BaseModal
+      visible={visible}
+      onClose={onClose}
+      backdropStyle={backdropStyle}
+      modalAnimationStyle={modalStyle}
+      modalStyle={styles.modalContainer}
+      containerStyle={styles.container}
+    >
+      <View
           style={[
             styles.modalContent,
             {
@@ -302,24 +281,18 @@ export const TaskSetDetailModal: React.FC<TaskSetDetailModalProps> = ({
             <View style={styles.bottomSpacer} />
           </ScrollView>
         </View>
-      </Animated.View>
-    </Modal>
+    </BaseModal>
   )
 }
 
 const styles = StyleSheet.create({
-  backdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'transparent',
-  },
-  backdropTouchable: {
-    flex: 1,
+  container: {
+    justifyContent: 'flex-end',
+    alignItems: 'stretch',
+    padding: 0,
   },
   modalContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
+    width: '100%',
     height: screenHeight * 0.75, // 3/4屏高度
   },
   modalContent: {

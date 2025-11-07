@@ -1,9 +1,8 @@
 import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { LocalPlayer as GamePlayer, PLAYER_COLORS } from '@/types/player'
-import { AvatarGender } from '@/types/settings'
-import { getRandomAvatarByGender } from '@/constants/avatars'
+import { LocalPlayer as GamePlayer } from '@/types/player'
 import { showConfirmDialog } from '@/components/ConfirmDialog'
+import { createLocalPlayers } from '@/utils/playerFactory'
 
 // 重新导出 GamePlayer 类型以保持向后兼容
 export type { LocalPlayer as GamePlayer } from '@/types/player'
@@ -24,23 +23,10 @@ export const useGamePlayers = (initialPlayerCount: number = 2, boardSize: number
 
   const [players, setPlayers] = useState<GamePlayer[]>(() => {
     const playerNames = getPlayerNames()
-    return Array.from({ length: initialPlayerCount }, (_, index) => {
-      // 随机分配性别
-      const gender: AvatarGender = index % 2 === 0 ? 'man' : 'woman'
-      const randomAvatar = getRandomAvatarByGender(gender)
-
-      return {
-        id: index + 1,
-        name: playerNames[index],
-        color: PLAYER_COLORS[index],
-        position: 0,
-        score: 0,
-        completedTasks: [],
-        achievements: [],
-        avatarId: randomAvatar.id,
-        gender: gender,
-        isAI: false, // 添加缺失的 isAI 属性
-      }
+    return createLocalPlayers({
+      count: initialPlayerCount,
+      playerNames,
+      gameType: 'flying',
     })
   })
 

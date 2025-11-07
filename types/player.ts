@@ -51,13 +51,9 @@ export interface LANPlayer extends NetworkPlayer {
   port: number
 }
 
-// 转盘游戏玩家类型
-export interface WheelPlayer extends LocalPlayer {
-  // 转盘游戏特有的属性可以在这里添加
-}
-
-// 游戏玩家类型（别名）
+// 游戏玩家类型（别名，用于飞行棋和转盘游戏）
 export type GamePlayer = LocalPlayer
+export type WheelPlayer = LocalPlayer
 
 // 服务端玩家类型
 export interface ServerPlayer extends OnlinePlayer {

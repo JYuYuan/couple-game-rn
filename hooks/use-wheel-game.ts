@@ -1,10 +1,10 @@
 import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { getRandomAvatarByGender } from '@/constants/avatars'
-import { AvatarGender } from '@/types/settings'
-import { LocalPlayer, PLAYER_COLORS } from '@/types/player'
+import { WheelPlayer } from '@/types/player'
+import { createLocalPlayers } from '@/utils/playerFactory'
 
-export interface WheelPlayer extends Omit<LocalPlayer, 'iconType'> {}
+// 重新导出 WheelPlayer 类型以保持向后兼容
+export type { WheelPlayer } from '@/types/player'
 
 // 转盘奖励配置 - 所有区域都触发任务
 export const WHEEL_REWARDS = [
@@ -79,23 +79,10 @@ export const useWheelGame = () => {
   // 玩家状态
   const [players, setPlayers] = useState<WheelPlayer[]>(() => {
     const playerNames = getPlayerNames()
-    return Array.from({ length: 2 }, (_, index) => {
-      // 随机分配性别：第一个玩家随机，第二个玩家随机
-      const gender: AvatarGender = index % 2 === 0 ? 'man' : 'woman'
-      const randomAvatar = getRandomAvatarByGender(gender)
-
-      return {
-        id: index + 1,
-        name: playerNames[index],
-        color: PLAYER_COLORS[index],
-        position: 0, // 添加缺少的 position 属性
-        score: 0,
-        avatarId: randomAvatar.id,
-        gender: gender,
-        completedTasks: [],
-        achievements: [],
-        isAI: false, // 添加缺少的 isAI 属性
-      }
+    return createLocalPlayers({
+      count: 2,
+      playerNames,
+      gameType: 'wheel',
     })
   })
 

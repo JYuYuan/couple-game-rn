@@ -9,6 +9,7 @@ import Animated, {
 import { Ionicons } from '@expo/vector-icons'
 import { BaseButton, BaseModal } from '@/components/common'
 import { useModalAnimation, useTheme } from '@/hooks'
+import { useModalState } from '@/hooks/useModalState'
 import { useTranslation } from 'react-i18next'
 import { TaskModalData } from '@/types/online'
 import { PlayerAvatar } from '@/components/PlayerAvatar'
@@ -37,22 +38,15 @@ export default function TaskModal({ visible, task, onComplete, onClose }: TaskMo
   // 使用统一的 Modal 动画 hook
   const { backdropStyle, modalStyle } = useModalAnimation(visible)
 
-  const [isCompleted, setIsCompleted] = useState<boolean | null>(null)
-  const [showResult, setShowResult] = useState(false)
-  const [isProcessing, setIsProcessing] = useState(false)
-  const [hasError, setHasError] = useState(false)
-  const [errorMessage, setErrorMessage] = useState<string>('')
+  // 使用统一的 Modal 状态管理 hook
+  const modalState = useModalState()
 
   // 进度条动画值（保留，因为这是特定于任务的动画）
   const progressValue = useSharedValue(0)
 
   useEffect(() => {
     if (visible) {
-      setIsCompleted(null)
-      setShowResult(false)
-      setIsProcessing(false)
-      setHasError(false)
-      setErrorMessage('')
+      modalState.reset()
       progressValue.value = 0
     }
   }, [visible])
@@ -138,79 +132,74 @@ export default function TaskModal({ visible, task, onComplete, onClose }: TaskMo
   // 处理任务完成选择
   const handleTaskChoice = useCallback(
     (completed: boolean) => {
-      if (isProcessing) return
+      if (modalState.isProcessing) return
 
-      setIsProcessing(true)
-      setHasError(false)
+      modalState.startProcessing()
       triggerHaptic()
-      setIsCompleted(completed)
+      modalState.setIsCompleted(completed)
 
       try {
         progressValue.value = withTiming(1, { duration: 2000 })
 
         setTimeout(() => {
-          setShowResult(true)
+          modalState.setShowResult(true)
         }, 800)
 
         setTimeout(() => {
           try {
             onComplete(completed)
-            setIsProcessing(false)
+            modalState.finishProcessing()
           } catch {
-            setHasError(true)
-            setErrorMessage(t('taskModal.submitError', '提交失败，请重试'))
-            setIsProcessing(false)
+            modalState.markFailed(t('taskModal.submitError', '提交失败，请重试'))
           }
         }, 2500)
       } catch {
-        setHasError(true)
-        setErrorMessage(t('taskModal.processError', '处理失败，请重试'))
-        setIsProcessing(false)
+        modalState.markFailed(t('taskModal.processError', '处理失败，请重试'))
       }
     },
-    [isProcessing, triggerHaptic, onComplete, progressValue, t],
+    [modalState, triggerHaptic, onComplete, progressValue, t],
   )
 
   // 获取结果信息
   const getResultInfo = () => {
-    if (!task || isCompleted === null) return null
+    if (!task || modalState.isCompleted === null) return null
 
     if (task.type === 'trap') {
       return {
-        success: isCompleted,
-        icon: isCompleted ? 'checkmark-circle' : 'close-circle',
-        color: isCompleted ? '#4CAF50' : '#FF6B6B',
-        bgColor: isCompleted ? '#F1F8F4' : '#FFF5F5',
-        title: isCompleted
+        success: modalState.isCompleted,
+        icon: modalState.isCompleted ? 'checkmark-circle' : 'close-circle',
+        color: modalState.isCompleted ? '#4CAF50' : '#FF6B6B',
+        bgColor: modalState.isCompleted ? '#F1F8F4' : '#FFF5F5',
+        title: modalState.isCompleted
           ? t('taskModal.results.taskCompleted', '任务完成！')
           : t('taskModal.results.taskFailed', '任务失败！'),
-        description: isCompleted
+        description: modalState.isCompleted
           ? t('taskModal.results.trapReward', '获得奖励：前进 3-6 格')
           : t('taskModal.results.trapPenalty', '受到惩罚：后退 3-6 格'),
       }
     } else if (task.type === 'star') {
       return {
-        success: isCompleted,
-        icon: isCompleted ? 'trophy' : 'sad-outline',
-        color: isCompleted ? '#FFB800' : '#FF6B6B',
-        bgColor: isCompleted ? '#FFFBF0' : '#FFF5F5',
-        title: isCompleted
+        success: modalState.isCompleted,
+        icon: modalState.isCompleted ? 'trophy' : 'sad-outline',
+        color: modalState.isCompleted ? '#FFB800' : '#FF6B6B',
+        bgColor: modalState.isCompleted ? '#FFFBF0' : '#FFF5F5',
+        title: modalState.isCompleted
           ? t('taskModal.results.luckyBonus', '幸运加成！')
           : t('taskModal.results.missedChance', '错失机会！'),
-        description: isCompleted
+        description: modalState.isCompleted
           ? t('taskModal.results.starReward', '幸运奖励：前进 3-6 格')
           : t('taskModal.results.starPenalty', '遗憾惩罚：后退 3-6 格'),
       }
     } else if (task.type === 'collision') {
       return {
-        success: isCompleted,
-        icon: isCompleted ? 'shield-checkmark' : 'arrow-back-circle',
-        color: isCompleted ? '#4CAF50' : '#FF6B6B',
-        bgColor: isCompleted ? '#F1F8F4' : '#FFF5F5',
-        title: isCompleted
+        success: modalState.isCompleted,
+        icon: modalState.isCompleted ? 'shield-checkmark' : 'arrow-back-circle',
+        color: modalState.isCompleted ? '#4CAF50' : '#FF6B6B',
+        bgColor: modalState.isCompleted ? '#F1F8F4' : '#FFF5F5',
+        title: modalState.isCompleted
           ? t('taskModal.results.successDefense', '成功防御！')
           : t('taskModal.results.collisionFailed', '碰撞失败！'),
-        description: isCompleted
+        description: modalState.isCompleted
           ? t('taskModal.results.collisionStay', '保持位置不变')
           : t('taskModal.results.collisionStart', '回到起点重新开始'),
       }
@@ -227,7 +216,7 @@ export default function TaskModal({ visible, task, onComplete, onClose }: TaskMo
 
   return (
     <BaseModal visible={visible} onClose={onClose} modalStyle={styles.modal}>
-      {!showResult ? (
+      {!modalState.showResult ? (
         // 任务展示界面
         <>
           {/* 任务类型标签 */}
@@ -318,18 +307,16 @@ export default function TaskModal({ visible, task, onComplete, onClose }: TaskMo
               // 执行者界面
               <>
                 {/* 错误提示 */}
-                {hasError && (
+                {modalState.hasError && (
                   <View style={styles.errorBox}>
                     <Ionicons name="alert-circle" size={18} color="#FF6B6B" />
-                    <Text style={styles.errorText}>{errorMessage}</Text>
+                    <Text style={styles.errorText}>{modalState.errorMessage}</Text>
                     <BaseButton
                       title={t('taskModal.retry', '重试')}
                       variant="secondary"
                       size="small"
                       onPress={() => {
-                        setHasError(false)
-                        setErrorMessage('')
-                        setIsProcessing(false)
+                        modalState.reset()
                       }}
                       textStyle={{ color: colors.primary }}
                     />
@@ -337,7 +324,7 @@ export default function TaskModal({ visible, task, onComplete, onClose }: TaskMo
                 )}
 
                 {/* 进度条 */}
-                {isProcessing && (
+                {modalState.isProcessing && (
                   <View style={styles.progressBox}>
                     <View style={[styles.progressTrack, { backgroundColor: colors.border }]}>
                       <Animated.View
@@ -345,7 +332,7 @@ export default function TaskModal({ visible, task, onComplete, onClose }: TaskMo
                           styles.progressBar,
                           progressStyle,
                           {
-                            backgroundColor: isCompleted ? '#4CAF50' : '#FF6B6B',
+                            backgroundColor: modalState.isCompleted ? '#4CAF50' : '#FF6B6B',
                           },
                         ]}
                       />
@@ -365,8 +352,8 @@ export default function TaskModal({ visible, task, onComplete, onClose }: TaskMo
                     iconName="checkmark-circle"
                     iconPosition="left"
                     onPress={() => handleTaskChoice(true)}
-                    disabled={isProcessing}
-                    loading={isProcessing}
+                    disabled={modalState.isProcessing}
+                    loading={modalState.isProcessing}
                     style={StyleSheet.flatten([
                       styles.actionButton,
                       { backgroundColor: '#4CAF50' },
@@ -380,8 +367,8 @@ export default function TaskModal({ visible, task, onComplete, onClose }: TaskMo
                     iconName="close-circle"
                     iconPosition="left"
                     onPress={() => handleTaskChoice(false)}
-                    disabled={isProcessing}
-                    loading={isProcessing}
+                    disabled={modalState.isProcessing}
+                    loading={modalState.isProcessing}
                     style={StyleSheet.flatten([
                       styles.actionButton,
                       { backgroundColor: '#FF6B6B' },
@@ -478,28 +465,9 @@ export default function TaskModal({ visible, task, onComplete, onClose }: TaskMo
 }
 
 const styles = StyleSheet.create({
-  backdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
   modal: {
     width: Math.min(screenWidth - 40, 420),
     maxHeight: screenHeight * 0.85,
-  },
-  modalContent: {
-    borderRadius: 16,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 5,
   },
 
   // 类型标签

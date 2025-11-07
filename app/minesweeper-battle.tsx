@@ -9,9 +9,7 @@ import { useGameTasks } from '@/hooks/use-game-tasks'
 import MineTaskModal, { MineTaskData } from '@/components/MineTaskModal'
 import VictoryModal from '@/components/VictoryModal'
 import { PlayerAvatar } from '@/components/PlayerAvatar'
-import { PLAYER_COLORS } from '@/types/player'
-import { AvatarGender } from '@/types/settings'
-import { getRandomAvatarByGender } from '@/constants/avatars'
+import { createMinesweeperPlayers, MinesweeperPlayer } from '@/utils/playerFactory'
 import { getWindow } from '@/utils'
 
 const { width: screenWidth, height: screenHeight } = getWindow()
@@ -29,17 +27,6 @@ interface Cell {
   isFlagged: boolean
   neighborMines: number
   revealedBy?: number // 谁揭示的这个格子
-}
-
-// 玩家信息
-interface Player {
-  id: number
-  name: string
-  color: string
-  cellsRevealed: number // 获得的格子数
-  minesHit: number
-  avatarId: string
-  gender: AvatarGender
 }
 
 type Difficulty = keyof typeof DIFFICULTY_CONFIGS
@@ -62,21 +49,15 @@ export default function MinesweeperBattle() {
   const [timer, setTimer] = useState(0)
 
   // 玩家设置
-  const [players] = useState<Player[]>(() => {
-    return Array.from({ length: 2 }, (_, index) => {
-      // 随机分配性别：第一个玩家随机，第二个玩家随机
-      const gender: AvatarGender = index % 2 === 0 ? 'man' : 'woman'
-      const randomAvatar = getRandomAvatarByGender(gender)
-
-      return {
-        id: index + 1,
-        name: t(`minesweeper.players.player${index + 1}`, `玩家${index + 1}`),
-        color: PLAYER_COLORS[index],
-        cellsRevealed: 0,
-        minesHit: 0,
-        avatarId: randomAvatar.id,
-        gender: gender,
-      }
+  const [players] = useState<MinesweeperPlayer[]>(() => {
+    const playerNames = [
+      t('minesweeper.players.player1', '玩家1'),
+      t('minesweeper.players.player2', '玩家2'),
+    ]
+    return createMinesweeperPlayers({
+      count: 2,
+      playerNames,
+      gameType: 'minesweeper',
     })
   })
 
@@ -86,7 +67,7 @@ export default function MinesweeperBattle() {
 
   // 胜利弹窗状态
   const [showVictoryModal, setShowVictoryModal] = useState(false)
-  const [winner, setWinner] = useState<Player | null>(null)
+  const [winner, setWinner] = useState<MinesweeperPlayer | null>(null)
 
   const config = DIFFICULTY_CONFIGS[difficulty]
   // 计算格子大小 - 考虑屏幕高度和布局空间
