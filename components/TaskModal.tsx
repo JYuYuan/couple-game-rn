@@ -35,9 +35,6 @@ export default function TaskModal({ visible, task, onComplete, onClose }: TaskMo
   const { colors } = useTheme()
   const { t } = useTranslation()
 
-  // 使用统一的 Modal 动画 hook
-  const { backdropStyle, modalStyle } = useModalAnimation(visible)
-
   // 使用统一的 Modal 状态管理 hook
   const modalState = useModalState()
 
@@ -216,236 +213,84 @@ export default function TaskModal({ visible, task, onComplete, onClose }: TaskMo
 
   return (
     <BaseModal visible={visible} onClose={onClose} modalStyle={styles.modal}>
-      {!modalState.showResult ? (
-        // 任务展示界面
-        <>
-          {/* 任务类型标签 */}
-          <View style={[styles.typeTag, { backgroundColor: taskTypeInfo.bgColor }]}>
-            <Ionicons
-              name={taskTypeInfo.icon as keyof typeof Ionicons.glyphMap}
-              size={20}
-              color={taskTypeInfo.color}
-            />
-            <Text style={[styles.typeText, { color: taskTypeInfo.color }]}>
-              {taskTypeInfo.title}
-            </Text>
-          </View>
-
-          {/* 任务内容 */}
-          <View style={styles.taskContent}>
-            <View style={styles.taskHeader}>
-              <Text style={[styles.taskTitle, { color: colors.text }]}>{task.title}</Text>
-              <View style={[styles.difficultyTag, { backgroundColor: difficultyInfo.color }]}>
-                <Text style={styles.difficultyText}>{difficultyInfo.text}</Text>
-              </View>
-            </View>
-
-            {task.description && (
-              <Text style={[styles.taskDescription, { color: colors.textSecondary }]}>
-                {task.description}
-              </Text>
-            )}
-          </View>
-
-          {/* 规则说明 */}
-          {'ruleExecutor' in taskTypeInfo && (
-            <View style={[styles.ruleBox, { backgroundColor: taskTypeInfo.bgColor }]}>
-              <View style={styles.ruleRow}>
-                <Ionicons name="person-outline" size={16} color={taskTypeInfo.color} />
-                <Text style={[styles.ruleText, { color: colors.textSecondary }]}>
-                  {taskTypeInfo.ruleExecutor}
-                </Text>
-              </View>
-              <View style={styles.ruleRow}>
-                <Ionicons name="checkmark-circle-outline" size={16} color="#4CAF50" />
-                <Text style={[styles.ruleText, { color: colors.textSecondary }]}>
-                  {taskTypeInfo.ruleReward}
-                </Text>
-              </View>
-              <View style={styles.ruleRow}>
-                <Ionicons name="close-circle-outline" size={16} color="#FF6B6B" />
-                <Text style={[styles.ruleText, { color: colors.textSecondary }]}>
-                  {taskTypeInfo.rulePenalty}
-                </Text>
-              </View>
-            </View>
-          )}
-
-          {/* 执行者信息 */}
-          {task.executors && task.executors.length > 0 && (
-            <View style={styles.executorSection}>
-              <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
-                {task.executors.length > 1
-                  ? t('taskModal.executors', '执行者们')
-                  : t('taskModal.executor', '执行者')}
-              </Text>
-
-              <View style={styles.executorList}>
-                {task.executors.map((executor) => (
-                  <View
-                    key={executor.id}
-                    style={[
-                      styles.executorChip,
-                      { backgroundColor: executor.color + '15', borderColor: executor.color },
-                    ]}
-                  >
-                    <View style={[styles.executorAvatar, { backgroundColor: executor.color }]}>
-                      <PlayerAvatar avatarId={executor.avatarId} color={executor.color} />
-                    </View>
-                    <Text style={[styles.executorName, { color: colors.text }]}>
-                      {executor.name}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-          )}
-
-          {/* 操作区域 */}
-          <View style={styles.actionSection}>
-            {task?.isExecutor ? (
-              // 执行者界面
-              <>
-                {/* 错误提示 */}
-                {modalState.hasError && (
-                  <View style={styles.errorBox}>
-                    <Ionicons name="alert-circle" size={18} color="#FF6B6B" />
-                    <Text style={styles.errorText}>{modalState.errorMessage}</Text>
-                    <BaseButton
-                      title={t('taskModal.retry', '重试')}
-                      variant="secondary"
-                      size="small"
-                      onPress={() => {
-                        modalState.reset()
-                      }}
-                      textStyle={{ color: colors.primary }}
-                    />
-                  </View>
-                )}
-
-                {/* 进度条 */}
-                {modalState.isProcessing && (
-                  <View style={styles.progressBox}>
-                    <View style={[styles.progressTrack, { backgroundColor: colors.border }]}>
-                      <Animated.View
-                        style={[
-                          styles.progressBar,
-                          progressStyle,
-                          {
-                            backgroundColor: modalState.isCompleted ? '#4CAF50' : '#FF6B6B',
-                          },
-                        ]}
-                      />
-                    </View>
-                    <Text style={[styles.progressText, { color: colors.textSecondary }]}>
-                      {t('taskModal.processing', '处理中...')}
-                    </Text>
-                  </View>
-                )}
-
-                {/* 操作按钮 */}
-                <View style={styles.actionButtons}>
-                  <BaseButton
-                    title={t('taskModal.completed', '完成')}
-                    variant="primary"
-                    size="medium"
-                    iconName="checkmark-circle"
-                    iconPosition="left"
-                    onPress={() => handleTaskChoice(true)}
-                    disabled={modalState.isProcessing}
-                    loading={modalState.isProcessing}
-                    style={StyleSheet.flatten([
-                      styles.actionButton,
-                      { backgroundColor: '#4CAF50' },
-                    ])}
-                  />
-
-                  <BaseButton
-                    title={t('taskModal.notCompleted', '未完成')}
-                    variant="primary"
-                    size="medium"
-                    iconName="close-circle"
-                    iconPosition="left"
-                    onPress={() => handleTaskChoice(false)}
-                    disabled={modalState.isProcessing}
-                    loading={modalState.isProcessing}
-                    style={StyleSheet.flatten([
-                      styles.actionButton,
-                      { backgroundColor: '#FF6B6B' },
-                    ])}
-                  />
-                </View>
-              </>
-            ) : (
-              // 观察者界面
-              <View style={styles.observerBox}>
-                <Ionicons name="eye-outline" size={32} color={colors.textSecondary} />
-                <Text style={[styles.observerTitle, { color: colors.text }]}>
-                  {t('taskModal.observerMode', '观察模式')}
-                </Text>
-                <Text style={[styles.observerDescription, { color: colors.textSecondary }]}>
-                  {t('taskModal.observerHint', '等待其他玩家完成任务...')}
-                </Text>
-
-                <BaseButton
-                  title={t('taskModal.closeObserver', '关闭观察')}
-                  variant="secondary"
-                  size="medium"
-                  iconName="eye-off-outline"
-                  iconPosition="left"
-                  onPress={onClose}
-                  style={StyleSheet.flatten([
-                    styles.observerButton,
-                    {
-                      backgroundColor: colors.textSecondary + '15',
-                      borderColor: colors.textSecondary + '30',
-                    },
-                  ])}
-                />
-              </View>
-            )}
-          </View>
-        </>
-      ) : (
-        // 结果展示界面
-        resultInfo && (
-          <View style={styles.resultContainer}>
-            <View style={[styles.resultIconBox, { backgroundColor: resultInfo.bgColor }]}>
+      <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+        {!modalState.showResult ? (
+          // 任务展示界面
+          <>
+            {/* 任务类型标签 */}
+            <View style={[styles.typeTag, { backgroundColor: taskTypeInfo.bgColor }]}>
               <Ionicons
-                name={resultInfo.icon as keyof typeof Ionicons.glyphMap}
-                size={56}
-                color={resultInfo.color}
+                name={taskTypeInfo.icon as keyof typeof Ionicons.glyphMap}
+                size={20}
+                color={taskTypeInfo.color}
               />
+              <Text style={[styles.typeText, { color: taskTypeInfo.color }]}>
+                {taskTypeInfo.title}
+              </Text>
             </View>
 
-            <Text style={[styles.resultTitle, { color: colors.text }]}>{resultInfo.title}</Text>
+            {/* 任务内容 */}
+            <View style={styles.taskContent}>
+              <View style={styles.taskHeader}>
+                <Text style={[styles.taskTitle, { color: colors.text }]}>{task.title}</Text>
+                <View style={[styles.difficultyTag, { backgroundColor: difficultyInfo.color }]}>
+                  <Text style={styles.difficultyText}>{difficultyInfo.text}</Text>
+                </View>
+              </View>
 
-            <Text style={[styles.resultDescription, { color: colors.textSecondary }]}>
-              {resultInfo.description}
-            </Text>
-
-            {/* 受影响的玩家 */}
-            {task.executors && task.executors.length > 0 && (
-              <View style={styles.affectedSection}>
-                <Text style={[styles.affectedLabel, { color: colors.textSecondary }]}>
-                  {t('taskModal.affectedPlayers', '受影响玩家：')}
+              {task.description && (
+                <Text style={[styles.taskDescription, { color: colors.textSecondary }]}>
+                  {task.description}
                 </Text>
-                <View style={styles.affectedList}>
+              )}
+            </View>
+
+            {/* 规则说明 */}
+            {'ruleExecutor' in taskTypeInfo && (
+              <View style={[styles.ruleBox, { backgroundColor: taskTypeInfo.bgColor }]}>
+                <View style={styles.ruleRow}>
+                  <Ionicons name="person-outline" size={16} color={taskTypeInfo.color} />
+                  <Text style={[styles.ruleText, { color: colors.textSecondary }]}>
+                    {taskTypeInfo.ruleExecutor}
+                  </Text>
+                </View>
+                <View style={styles.ruleRow}>
+                  <Ionicons name="checkmark-circle-outline" size={16} color="#4CAF50" />
+                  <Text style={[styles.ruleText, { color: colors.textSecondary }]}>
+                    {taskTypeInfo.ruleReward}
+                  </Text>
+                </View>
+                <View style={styles.ruleRow}>
+                  <Ionicons name="close-circle-outline" size={16} color="#FF6B6B" />
+                  <Text style={[styles.ruleText, { color: colors.textSecondary }]}>
+                    {taskTypeInfo.rulePenalty}
+                  </Text>
+                </View>
+              </View>
+            )}
+
+            {/* 执行者信息 */}
+            {task.executors && task.executors.length > 0 && (
+              <View style={styles.executorSection}>
+                <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
+                  {task.executors.length > 1
+                    ? t('taskModal.executors', '执行者们')
+                    : t('taskModal.executor', '执行者')}
+                </Text>
+
+                <View style={styles.executorList}>
                   {task.executors.map((executor) => (
                     <View
                       key={executor.id}
                       style={[
-                        styles.affectedChip,
-                        {
-                          backgroundColor: executor.color + '15',
-                          borderColor: executor.color,
-                        },
+                        styles.executorChip,
+                        { backgroundColor: executor.color + '15', borderColor: executor.color },
                       ]}
                     >
-                      <View style={[styles.affectedAvatar, { backgroundColor: executor.color }]}>
+                      <View style={[styles.executorAvatar, { backgroundColor: executor.color }]}>
                         <PlayerAvatar avatarId={executor.avatarId} color={executor.color} />
                       </View>
-                      <Text style={[styles.affectedName, { color: executor.color }]}>
+                      <Text style={[styles.executorName, { color: colors.text }]}>
                         {executor.name}
                       </Text>
                     </View>
@@ -454,12 +299,166 @@ export default function TaskModal({ visible, task, onComplete, onClose }: TaskMo
               </View>
             )}
 
-            <Text style={[styles.resultFooter, { color: colors.textSecondary }]}>
-              {t('taskModal.executing', '正在执行中...')}
-            </Text>
-          </View>
-        )
-      )}
+            {/* 操作区域 */}
+            <View style={styles.actionSection}>
+              {task?.isExecutor ? (
+                // 执行者界面
+                <>
+                  {/* 错误提示 */}
+                  {modalState.hasError && (
+                    <View style={styles.errorBox}>
+                      <Ionicons name="alert-circle" size={18} color="#FF6B6B" />
+                      <Text style={styles.errorText}>{modalState.errorMessage}</Text>
+                      <BaseButton
+                        title={t('taskModal.retry', '重试')}
+                        variant="secondary"
+                        size="small"
+                        onPress={() => {
+                          modalState.reset()
+                        }}
+                        textStyle={{ color: colors.primary }}
+                      />
+                    </View>
+                  )}
+
+                  {/* 进度条 */}
+                  {modalState.isProcessing && (
+                    <View style={styles.progressBox}>
+                      <View style={[styles.progressTrack, { backgroundColor: colors.border }]}>
+                        <Animated.View
+                          style={[
+                            styles.progressBar,
+                            progressStyle,
+                            {
+                              backgroundColor: modalState.isCompleted ? '#4CAF50' : '#FF6B6B',
+                            },
+                          ]}
+                        />
+                      </View>
+                      <Text style={[styles.progressText, { color: colors.textSecondary }]}>
+                        {t('taskModal.processing', '处理中...')}
+                      </Text>
+                    </View>
+                  )}
+
+                  {/* 操作按钮 */}
+                  <View style={styles.actionButtons}>
+                    <BaseButton
+                      title={t('taskModal.completed', '完成')}
+                      variant="primary"
+                      size="medium"
+                      iconName="checkmark-circle"
+                      iconPosition="left"
+                      onPress={() => handleTaskChoice(true)}
+                      disabled={modalState.isProcessing}
+                      loading={modalState.isProcessing}
+                      style={StyleSheet.flatten([
+                        styles.actionButton,
+                        { backgroundColor: '#4CAF50' },
+                      ])}
+                    />
+
+                    <BaseButton
+                      title={t('taskModal.notCompleted', '未完成')}
+                      variant="primary"
+                      size="medium"
+                      iconName="close-circle"
+                      iconPosition="left"
+                      onPress={() => handleTaskChoice(false)}
+                      disabled={modalState.isProcessing}
+                      loading={modalState.isProcessing}
+                      style={StyleSheet.flatten([
+                        styles.actionButton,
+                        { backgroundColor: '#FF6B6B' },
+                      ])}
+                    />
+                  </View>
+                </>
+              ) : (
+                // 观察者界面
+                <View style={styles.observerBox}>
+                  <Ionicons name="eye-outline" size={32} color={colors.textSecondary} />
+                  <Text style={[styles.observerTitle, { color: colors.text }]}>
+                    {t('taskModal.observerMode', '观察模式')}
+                  </Text>
+                  <Text style={[styles.observerDescription, { color: colors.textSecondary }]}>
+                    {t('taskModal.observerHint', '等待其他玩家完成任务...')}
+                  </Text>
+
+                  <BaseButton
+                    title={t('taskModal.closeObserver', '关闭观察')}
+                    variant="secondary"
+                    size="medium"
+                    iconName="eye-off-outline"
+                    iconPosition="left"
+                    onPress={onClose}
+                    style={StyleSheet.flatten([
+                      styles.observerButton,
+                      {
+                        backgroundColor: colors.textSecondary + '15',
+                        borderColor: colors.textSecondary + '30',
+                      },
+                    ])}
+                  />
+                </View>
+              )}
+            </View>
+          </>
+        ) : (
+          // 结果展示界面
+          resultInfo && (
+            <View style={styles.resultContainer}>
+              <View style={[styles.resultIconBox, { backgroundColor: resultInfo.bgColor }]}>
+                <Ionicons
+                  name={resultInfo.icon as keyof typeof Ionicons.glyphMap}
+                  size={56}
+                  color={resultInfo.color}
+                />
+              </View>
+
+              <Text style={[styles.resultTitle, { color: colors.text }]}>{resultInfo.title}</Text>
+
+              <Text style={[styles.resultDescription, { color: colors.textSecondary }]}>
+                {resultInfo.description}
+              </Text>
+
+              {/* 受影响的玩家 */}
+              {task.executors && task.executors.length > 0 && (
+                <View style={styles.affectedSection}>
+                  <Text style={[styles.affectedLabel, { color: colors.textSecondary }]}>
+                    {t('taskModal.affectedPlayers', '受影响玩家：')}
+                  </Text>
+                  <View style={styles.affectedList}>
+                    {task.executors.map((executor) => (
+                      <View
+                        key={executor.id}
+                        style={[
+                          styles.affectedChip,
+                          {
+                            backgroundColor: executor.color + '15',
+                            borderColor: executor.color,
+                          },
+                        ]}
+                      >
+                        <View style={[styles.affectedAvatar, { backgroundColor: executor.color }]}>
+                          <PlayerAvatar avatarId={executor.avatarId} color={executor.color} />
+                        </View>
+                        <Text style={[styles.affectedName, { color: executor.color }]}>
+                          {executor.name}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              )}
+
+              <Text style={[styles.resultFooter, { color: colors.textSecondary }]}>
+                {t('taskModal.executing', '正在执行中...')}
+              </Text>
+            </View>
+          )
+        )}
+      </View>
     </BaseModal>
   )
 }
@@ -468,6 +467,12 @@ const styles = StyleSheet.create({
   modal: {
     width: Math.min(screenWidth - 40, 420),
     maxHeight: screenHeight * 0.85,
+    overflow: 'hidden',
+    borderRadius: 20, // 外层圆角
+  },
+  modalContent: {
+    padding: 20,
+    borderRadius: 20, // 内容圆角
   },
 
   // 类型标签

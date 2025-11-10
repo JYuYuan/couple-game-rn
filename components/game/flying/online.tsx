@@ -6,7 +6,7 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Stack, useNavigation, useRouter } from 'expo-router'
-import { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated'
+import { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 import { usePageBase } from '@/hooks/usePageBase'
 import { useAudioManager } from '@/hooks/use-audio-manager'
 import { OnlinePlayer, TaskModalData } from '@/types/online'
@@ -16,6 +16,31 @@ import { useRoomStore, useSettingsStore } from '@/store'
 import { useDeepCompareEffect } from 'ahooks'
 import toast from '@/utils/toast'
 import GameCore from './shared/GameCore'
+
+// 动画延迟常量 - 统一管理所有动画时间
+const ANIMATION_DELAYS = {
+  STEP: 300, // 每步移动延迟（毫秒）
+  DICE_REVEAL: 500, // 骰子显示延迟（毫秒）
+  MOVE_COMPLETE: 200, // 移动完成延迟（毫秒）
+  DICE_ROLL: 1500, // 骰子滚动动画时长（毫秒）
+  DICE_ANIMATION: 300, // 骰子动画时长（毫秒）
+  EXIT_DELAY: 100, // 退出房间延迟（毫秒）
+} as const
+
+// 类型转换辅助函数 - 将在线玩家数据转换为游戏玩家格式
+const convertToGamePlayer = (player: {
+  id: string
+  name: string
+  color: string
+  position?: number
+}): GamePlayer =>
+  ({
+    id: parseInt(player.id),
+    name: player.name,
+    position: player.position || 0,
+    color: player.color,
+    avatarId: '', // 在线模式不使用 avatarId
+  }) as any
 
 export default function FlyingChessGame() {
   const router = useRouter()
@@ -45,6 +70,7 @@ export default function FlyingChessGame() {
   const isLeavingRef = useRef(false)
   const lastTaskIdRef = useRef<string | null>(null)
   const isAnimatingRef = useRef(false)
+  const timersRef = useRef<Set<number>>(new Set()) // 追踪所有活跃的定时器
 
   // 用于动画的本地玩家状态
   const [animatedPlayers, setAnimatedPlayers] = useState<OnlinePlayer[]>(players as OnlinePlayer[])
@@ -61,17 +87,26 @@ export default function FlyingChessGame() {
   const isHost = useMemo(() => room?.hostId === playerId, [room?.hostId, playerId])
   const currentPlayer = useMemo(
     () => players?.find((item) => currentUserId === item.id) || null,
-    [players, currentUserId]
+    [players, currentUserId],
   )
   const currentPlayerIndex = useMemo(
     () => players?.findIndex((item) => currentUserId === item.id) ?? -1,
-    [players, currentUserId]
+    [players, currentUserId],
   )
 
   // 同步 ref
   useEffect(() => {
     animatedPlayersRef.current = animatedPlayers
   }, [animatedPlayers])
+
+  // 清理所有定时器 - 防止内存泄漏
+  useEffect(() => {
+    return () => {
+      console.log('🧹 清理所有活跃的定时器')
+      timersRef.current.forEach((timer) => clearTimeout(timer))
+      timersRef.current.clear()
+    }
+  }, [])
 
   // 初始化和同步 currentUserId
   useEffect(() => {
@@ -136,7 +171,7 @@ export default function FlyingChessGame() {
     playerId: string,
     from: number,
     to: number,
-    onComplete?: () => void
+    onComplete?: () => void,
   ) => {
     const steps = Math.abs(to - from)
     const isForward = to > from
@@ -152,14 +187,21 @@ export default function FlyingChessGame() {
       const nextPosition = isForward ? from + currentStep : from - currentStep
 
       setAnimatedPlayers((prevPlayers) =>
-        prevPlayers.map((p) => (p.id === playerId ? { ...p, position: nextPosition } : p))
+        prevPlayers.map((p) => (p.id === playerId ? { ...p, position: nextPosition } : p)),
       )
 
       if (currentStep % 2 === 0) {
         audioManager.playSoundEffect('step')
       }
 
-      setTimeout(moveOneStep, 300)
+      // 使用定时器追踪系统
+      const timer = setTimeout(moveOneStep, ANIMATION_DELAYS.STEP)
+      timersRef.current.add(timer)
+
+      // 完成后清理定时器
+      if (currentStep >= steps - 1) {
+        timersRef.current.delete(timer)
+      }
     }
 
     moveOneStep()
@@ -175,10 +217,10 @@ export default function FlyingChessGame() {
       console.log('🎲 收到骰子事件:', data)
 
       const isCurrentPlayer = data.playerId === playerId
-      const delay = isCurrentPlayer && isRolling ? 1500 : 0
+      const delay = isCurrentPlayer && isRolling ? ANIMATION_DELAYS.DICE_ROLL : 0
 
-      setTimeout(() => {
-        diceRotation.value = withTiming(0, { duration: 300 })
+      const timer1 = setTimeout(() => {
+        diceRotation.value = withTiming(0, { duration: ANIMATION_DELAYS.DICE_ANIMATION })
         setCurrentDiceValue(data.diceValue)
 
         if (isCurrentPlayer) {
@@ -186,7 +228,7 @@ export default function FlyingChessGame() {
           setIsRolling(false)
         }
 
-        setTimeout(() => {
+        const timer2 = setTimeout(() => {
           const currentPlayer = animatedPlayersRef.current?.find((p) => p.id === data.playerId)
           if (currentPlayer) {
             const currentPos = currentPlayer.position || 0
@@ -209,25 +251,39 @@ export default function FlyingChessGame() {
 
             movePlayerStepByStep(data.playerId, currentPos, targetPos, () => {
               setAnimatedPlayers((prevPlayers) =>
-                prevPlayers.map((p) => (p.id === data.playerId ? { ...p, position: targetPos } : p))
+                prevPlayers.map((p) =>
+                  p.id === data.playerId ? { ...p, position: targetPos } : p,
+                ),
               )
 
               console.log(`✅ 移动动画完成，通知服务端: ${data.playerId} 到达位置 ${targetPos}`)
-              socket.runActions('move_complete', {
-                roomId: room?.id,
-                playerId: data.playerId,
-              })
 
-              setTimeout(() => {
+              try {
+                socket.runActions('move_complete', {
+                  roomId: room?.id,
+                  playerId: data.playerId,
+                })
+              } catch (error) {
+                console.error('通知服务端移动完成失败:', error)
+              }
+
+              const timer3 = setTimeout(() => {
                 setIsMoving(false)
                 isAnimatingRef.current = false
-              }, 200)
+                timersRef.current.delete(timer3)
+              }, ANIMATION_DELAYS.MOVE_COMPLETE)
+              timersRef.current.add(timer3)
             })
           }
-        }, 500)
+          timersRef.current.delete(timer2)
+        }, ANIMATION_DELAYS.DICE_REVEAL)
+        timersRef.current.add(timer2)
+
+        timersRef.current.delete(timer1)
       }, delay)
+      timersRef.current.add(timer1)
     },
-    [playerId, isRolling, diceRotation, audioManager, room?.gameState?.boardSize, socket, room?.id]
+    [playerId, isRolling, diceRotation, audioManager, room?.gameState?.boardSize, socket, room?.id],
   )
 
   // 任务触发事件
@@ -246,7 +302,7 @@ export default function FlyingChessGame() {
       setShowTaskModal(true)
       audioManager.playSoundEffect('step') // 使用step音效替代task
     },
-    [audioManager]
+    [audioManager],
   )
 
   // 任务完成事件
@@ -262,20 +318,14 @@ export default function FlyingChessGame() {
     (data: { winner: { id: string; name: string; color: string } }) => {
       console.log('🏆 收到胜利事件:', data)
 
-      const victoryPlayer: any = {
-        // 使用any避免类型冲突
-        id: parseInt(data.winner.id),
-        name: data.winner.name,
-        position: 0,
-        color: data.winner.color,
-        avatarId: '',
-      }
+      // 使用类型转换函数，确保类型安全
+      const victoryPlayer = convertToGamePlayer(data.winner)
 
       setWinner(victoryPlayer)
       setShowVictoryModal(true)
       audioManager.playSoundEffect('victory')
     },
-    [audioManager]
+    [audioManager],
   )
 
   // 下一个玩家事件
@@ -301,16 +351,18 @@ export default function FlyingChessGame() {
 
       movePlayerStepByStep(data.playerId, currentPos, targetPos, () => {
         setAnimatedPlayers((prevPlayers) =>
-          prevPlayers.map((p) => (p.id === data.playerId ? { ...p, position: targetPos } : p))
+          prevPlayers.map((p) => (p.id === data.playerId ? { ...p, position: targetPos } : p)),
         )
 
-        setTimeout(() => {
+        const timer = setTimeout(() => {
           setIsMoving(false)
           isAnimatingRef.current = false
-        }, 200)
+          timersRef.current.delete(timer)
+        }, ANIMATION_DELAYS.MOVE_COMPLETE)
+        timersRef.current.add(timer)
       })
     },
-    []
+    [],
   )
 
   // 房间销毁事件
@@ -368,7 +420,7 @@ export default function FlyingChessGame() {
     console.log('🎲 请求投掷骰子')
     setIsRolling(true)
     audioManager.playSoundEffect('dice')
-    diceRotation.value = withTiming(360 * 4, { duration: 1500 })
+    diceRotation.value = withTiming(360 * 4, { duration: ANIMATION_DELAYS.DICE_ROLL })
 
     try {
       socket.rollDice({
@@ -377,8 +429,9 @@ export default function FlyingChessGame() {
       })
     } catch (error) {
       console.error('投掷骰子失败:', error)
+      toast.error(t('error.rollDice', '投掷骰子失败，请重试'))
       setIsRolling(false)
-      diceRotation.value = withTiming(0, { duration: 300 })
+      diceRotation.value = withTiming(0, { duration: ANIMATION_DELAYS.DICE_ANIMATION })
     }
   }
 
@@ -389,12 +442,17 @@ export default function FlyingChessGame() {
     console.log(`📋 任务完成反馈: ${completed ? '成功' : '失败'}`)
     audioManager.playSoundEffect(completed ? 'victory' : 'step')
 
-    socket.completeTask({
-      roomId: room?.id,
-      taskId: taskModalData.id,
-      playerId: taskModalData.executors[0]?.id.toString() || '',
-      completed,
-    })
+    try {
+      socket.completeTask({
+        roomId: room?.id,
+        taskId: taskModalData.id,
+        playerId: taskModalData.executors[0]?.id.toString() || '',
+        completed,
+      })
+    } catch (error) {
+      console.error('提交任务完成状态失败:', error)
+      toast.error(t('error.completeTask', '提交任务失败，请重试'))
+    }
 
     setShowTaskModal(false)
     setTaskModalData(null)
@@ -404,7 +462,12 @@ export default function FlyingChessGame() {
   // 重新开始游戏
   const handleRestartGame = () => {
     console.log('🔄 请求重新开始游戏')
-    socket.startGame({ roomId: room?.id })
+    try {
+      socket.startGame({ roomId: room?.id })
+    } catch (error) {
+      console.error('重新开始游戏失败:', error)
+      toast.error(t('error.restartGame', '重新开始失败，请重试'))
+    }
   }
 
   // 离开房间
@@ -412,13 +475,26 @@ export default function FlyingChessGame() {
     console.log('🚪 请求离开房间')
     if (!room?.id) return
 
+    // 防止重复离开
+    if (isLeavingRef.current) {
+      console.warn('已在离开过程中')
+      return
+    }
+
     isLeavingRef.current = true
     clearRoom()
-    socket.leaveRoom()
 
-    setTimeout(() => {
+    try {
+      socket.leaveRoom()
+    } catch (error) {
+      console.error('离开房间失败:', error)
+    }
+
+    const timer = setTimeout(() => {
       router.replace('/')
-    }, 100)
+      timersRef.current.delete(timer)
+    }, ANIMATION_DELAYS.EXIT_DELAY)
+    timersRef.current.add(timer)
   }
 
   return (
@@ -437,7 +513,7 @@ export default function FlyingChessGame() {
         mode="online"
         gameStatus={room?.gameStatus || 'waiting'}
         players={animatedPlayers}
-        currentPlayer={currentPlayer as any} // 类型兼容性转换
+        currentPlayer={currentPlayer ? convertToGamePlayer(currentPlayer as any) : null}
         currentPlayerIndex={currentPlayerIndex}
         boardPath={boardPath}
         diceValue={currentDiceValue || 0}
