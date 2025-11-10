@@ -4,8 +4,8 @@ import { NetworkInfo } from 'react-native-network-info'
 // 房间发现服务
 export class RoomDiscoveryService {
   private static instance: RoomDiscoveryService
-  private discoveryInterval: NodeJS.Timeout | null = null
-  private broadcastInterval: NodeJS.Timeout | null = null
+  private discoveryInterval: ReturnType<typeof setInterval> | null = null
+  private broadcastInterval: ReturnType<typeof setInterval> | null = null
   private listeners: Map<string, Set<Function>> = new Map()
   private discoveredRooms: Map<string, LANRoomDiscovery> = new Map()
   private currentRoom: LANRoom | null = null
@@ -129,7 +129,7 @@ export class RoomDiscoveryService {
       console.log('正在扫描局域网房间...')
 
       // 通过 Socket.IO 获取局域网房间列表
-      const socketService = this.getSocketService()
+      const socketService = this.getSocketService() as any
       if (socketService && socketService.getIsConnected()) {
         // 发送房间列表请求
         socketService.socketEmit('lan:discover')
@@ -179,7 +179,7 @@ export class RoomDiscoveryService {
       console.log('广播房间信息:', broadcastData)
 
       // 通过 Socket.IO 注册房间到服务器
-      const socketService = this.getSocketService()
+      const socketService = this.getSocketService() as any
       if (socketService && socketService.getIsConnected()) {
         socketService.socketEmit('lan:register', broadcastData)
       }
@@ -191,7 +191,7 @@ export class RoomDiscoveryService {
   // 从服务器移除房间
   private async unregisterRoom(roomId: string): Promise<void> {
     try {
-      const socketService = this.getSocketService()
+      const socketService = this.getSocketService() as any
       if (socketService && socketService.getIsConnected()) {
         socketService.socketEmit('lan:unregister', { roomId })
       }

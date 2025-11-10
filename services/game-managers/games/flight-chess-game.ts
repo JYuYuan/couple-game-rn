@@ -8,6 +8,13 @@ import BaseGame from '../base-game'
 import type { BaseRoom, NetworkPlayer, TaskModalData } from '@/types/online'
 import { createBoardPath } from '@/utils/board'
 
+// 🐾 游戏动作类型定义
+type GameAction = {
+  type: 'roll_dice' | 'move_complete' | 'complete_task'
+  completed?: boolean
+  [key: string]: any
+}
+
 class FlightChessGame extends BaseGame {
   constructor(room: BaseRoom, io: MockSocketIO) {
     super(room, io)
@@ -26,7 +33,7 @@ class FlightChessGame extends BaseGame {
       taskSetExists: !!this.room.taskSet,
       taskSetId: this.room.taskSet?.id,
       taskSetName: this.room.taskSet?.name,
-      tasksCount: this.room.tasks.length,
+      tasksCount: this.room.tasks?.length,
     })
 
     // 初始化飞行棋棋盘路径
@@ -111,9 +118,11 @@ class FlightChessGame extends BaseGame {
       return
     }
 
-    console.log('🎮 [FlightChessGame] 处理游戏动作, type:', action.type)
+    // 🐾 类型断言
+    const gameAction = action as GameAction
+    console.log('🎮 [FlightChessGame] 处理游戏动作, type:', gameAction.type)
 
-    switch (action.type) {
+    switch (gameAction.type) {
       case 'roll_dice':
         console.log('🎲 [FlightChessGame] 处理投骰子动作')
         await this._handleDiceRoll(playerId, callback)
@@ -125,11 +134,11 @@ class FlightChessGame extends BaseGame {
         break
       case 'complete_task':
         console.log('📋 [FlightChessGame] 处理任务完成动作')
-        await this._handleTaskComplete(playerId, action)
+        await this._handleTaskComplete(playerId, gameAction)
         callback?.({ success: true })
         break
       default:
-        console.warn('⚠️ [FlightChessGame] 未知的动作类型:', action.type)
+        console.warn('⚠️ [FlightChessGame] 未知的动作类型:', gameAction.type)
     }
 
     console.log('✅ [FlightChessGame] onPlayerAction 执行完成')
@@ -406,7 +415,7 @@ class FlightChessGame extends BaseGame {
     await this.onEnd(this.socket)
   }
 
-  async _handleTaskComplete(playerId: string, action: unknown) {
+  async _handleTaskComplete(playerId: string, action: GameAction) {
     console.log(`📋 处理任务完成: 玩家=${playerId}, 结果=${action.completed}`)
 
     // 获取当前任务信息
@@ -479,7 +488,7 @@ class FlightChessGame extends BaseGame {
 
     // 从任务集中删除已完成的任务
     if (this.room.tasks && currentTask?.description) {
-      this.room.tasks = this.room.tasks.filter((task: string) => task !== currentTask.description)
+      this.room.tasks = this.room.tasks.filter((task) => task !== currentTask.description)
     }
 
     // 清除当前任务和待处理标志

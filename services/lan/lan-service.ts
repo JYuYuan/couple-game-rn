@@ -23,6 +23,7 @@ const DEFAULT_TCP_PORT = 3306 // 默认 TCP 端口
 
 /**
  * LAN Service 类
+ * 🐾 已优化：添加定时器追踪和事件监听器清理，防止内存泄漏
  */
 class LANService {
   private static instance: LANService
@@ -32,7 +33,29 @@ class LANService {
   private eventListeners: Map<string, Set<Function>> = new Map()
   private localIP: string = ''
 
+  // 🐾 定时器追踪系统
+  private timers: Set<ReturnType<typeof setTimeout>> = new Set()
+
+  // 🐾 事件监听器引用，用于cleanup时清理
+  private tcpServerHandlers: Map<string, Function> = new Map()
+  private tcpClientHandlers: Map<string, Function> = new Map()
+
   private constructor() {}
+
+  /**
+   * 🧹 清理所有定时器
+   */
+  private clearAllTimers(): void {
+    console.log(`🧹 [LANService] 清理 ${this.timers.size} 个活跃定时器`)
+    this.timers.forEach((timer) => {
+      try {
+        clearTimeout(timer)
+      } catch (e) {
+        console.warn('清理定时器失败:', e)
+      }
+    })
+    this.timers.clear()
+  }
 
   static getInstance(): LANService {
     if (!LANService.instance) {
@@ -210,15 +233,19 @@ class LANService {
       // 发送加入房间请求
       console.log('📤 [LANService] 发送 room:join 请求...')
       return new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => {
+        // 🐾 30秒超时 - 追踪定时器
+        const joinTimeout = setTimeout(() => {
           console.error('⏱️ [LANService] 加入房间超时 (30秒)')
           reject(new Error('加入房间超时，请检查网络连接或重试'))
+          this.timers.delete(joinTimeout) // 完成后清理
         }, 30000) // 增加到30秒以适应较慢的网络环境
+        this.timers.add(joinTimeout)
 
         console.log('📤 [LANService] 调用 tcpClient.sendEvent...')
         tcpClient.sendEvent('room:join', data, (response: unknown) => {
           console.log('📨 [LANService] 收到 room:join 响应:', JSON.stringify(response))
-          clearTimeout(timeout)
+          clearTimeout(joinTimeout)
+          this.timers.delete(joinTimeout)
 
           const responseObj = response as { error?: string; id?: string } & BaseRoom
           if (responseObj.error) {
@@ -368,6 +395,12 @@ class LANService {
     const roomId = (data as { roomId?: string }).roomId
     console.log('🎮 [LANService] handleGameAction 调用, roomId:', roomId, 'isHost:', this.isHost)
 
+    // 🐾 检查 roomId 是否存在
+    if (!roomId) {
+      console.error('❌ [LANService] roomId 不存在!')
+      throw new Error('roomId 不存在')
+    }
+
     if (this.isHost) {
       // 房主直接处理
       console.log('🎯 [LANService] 房主处理游戏动作...')
@@ -411,12 +444,16 @@ class LANService {
       // 客户端发送到服务器
       console.log('📤 [LANService] 客户端发送游戏动作到服务器...')
       return new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => {
+        // 🐾 10秒超时 - 追踪定时器
+        const actionTimeout = setTimeout(() => {
           reject(new Error('游戏动作超时'))
+          this.timers.delete(actionTimeout) // 完成后清理
         }, 10000)
+        this.timers.add(actionTimeout)
 
         tcpClient.sendEvent('game:action', data, (response: unknown) => {
-          clearTimeout(timeout)
+          clearTimeout(actionTimeout)
+          this.timers.delete(actionTimeout)
 
           const responseObj = response as { error?: string }
           if (responseObj.error) {
@@ -431,15 +468,18 @@ class LANService {
 
   /**
    * 设置 TCP Server 事件监听(房主)
+   * 🐾 已优化：保存事件处理器引用，便于清理
    */
   private setupTCPServerEvents(): void {
     // 客户端连接
-    tcpServer.on('client:connected', (data: { clientId: string }) => {
+    const clientConnectedHandler = (data: { clientId: string }) => {
       console.log('👤 新客户端连接:', data.clientId)
-    })
+    }
+    this.tcpServerHandlers.set('client:connected', clientConnectedHandler)
+    tcpServer.on('client:connected', clientConnectedHandler)
 
     // 客户端断开
-    tcpServer.on('client:disconnected', async (data: { playerId: string }) => {
+    const clientDisconnectedHandler = async (data: { playerId: string }) => {
       console.log('👋 客户端断开:', data.playerId)
 
       // 从房间移除玩家
@@ -467,13 +507,17 @@ class LANService {
           this.emit('room:update', updatedRoom)
         }
       }
-    })
+    }
+    this.tcpServerHandlers.set('client:disconnected', clientDisconnectedHandler)
+    tcpServer.on('client:disconnected', clientDisconnectedHandler)
     console.log('🐛 [DEBUG] 检查 room:join 事件监听器是否存在')
 
     // 加入房间
-    tcpServer.on(
-      'room:join',
-      async (data: { playerId: string; requestId: string; data: JoinRoomData }) => {
+    const roomJoinHandler = async (data: {
+      playerId: string
+      requestId: string
+      data: JoinRoomData
+    }) => {
         try {
           console.log('📨 [TCPServer] 收到 room:join 请求')
           console.log(
@@ -506,7 +550,6 @@ class LANService {
               avatarId: data.data.avatarId || '', // 头像ID
               gender: data.data.gender || 'man', // 性别
               color: this.getRandomColor(), // 随机背景色
-              ...data,
             })
             console.log('✅ [TCPServer] 玩家创建成功')
           } else {
@@ -588,20 +631,19 @@ class LANService {
           tcpServer.sendToClient(data.playerId, {
             type: 'response',
             requestId: data.requestId,
-            data: { error: error.message },
+            data: { error: errorMessage },
           })
         }
-      },
-    )
+      }
+    this.tcpServerHandlers.set('room:join', roomJoinHandler)
+    tcpServer.on('room:join', roomJoinHandler)
 
     // 游戏动作
-    tcpServer.on(
-      'game:action',
-      async (data: {
-        playerId: string
-        requestId: string
-        data: DiceRollData | TaskCompleteData
-      }) => {
+    const gameActionHandler = async (data: {
+      playerId: string
+      requestId: string
+      data: DiceRollData | TaskCompleteData
+    }) => {
         try {
           const result = await this.handleGameAction(data.data)
           tcpServer.sendToClient(data.playerId, {
@@ -610,51 +652,66 @@ class LANService {
             data: result,
           })
         } catch (error: unknown) {
+          const errorMessage = (error as Error)?.message || 'Unknown error'
           tcpServer.sendToClient(data.playerId, {
             type: 'response',
             requestId: data.requestId,
-            data: { error: error.message },
+            data: { error: errorMessage },
           })
         }
-      },
-    )
+      }
+    this.tcpServerHandlers.set('game:action', gameActionHandler)
+    tcpServer.on('game:action', gameActionHandler)
   }
 
   /**
    * 设置 TCP Client 事件监听(客户端)
+   * 🐾 已优化：保存事件处理器引用，便于清理
    */
   private setupTCPClientEvents(): void {
     // 连接成功
-    tcpClient.on('connected', () => {
+    const connectedHandler = () => {
       console.log('✅ TCP 连接成功')
       this.emit('connected', {})
-    })
+    }
+    this.tcpClientHandlers.set('connected', connectedHandler)
+    tcpClient.on('connected', connectedHandler)
 
     // 断开连接
-    tcpClient.on('disconnected', () => {
+    const disconnectedHandler = () => {
       console.log('👋 TCP 连接断开')
       this.emit('disconnected', {})
-    })
+    }
+    this.tcpClientHandlers.set('disconnected', disconnectedHandler)
+    tcpClient.on('disconnected', disconnectedHandler)
 
     // 房间更新
-    tcpClient.on('room:update', (data: BaseRoom) => {
+    const roomUpdateHandler = (data: BaseRoom) => {
       console.log('📨 收到房间更新:', data)
       this.currentRoom = data
       this.emit('room:update', data)
-    })
+    }
+    this.tcpClientHandlers.set('room:update', roomUpdateHandler)
+    tcpClient.on('room:update', roomUpdateHandler)
 
     // 游戏事件
-    tcpClient.on('game:started', (data: { gameType: string }) => {
+    const gameStartedHandler = (data: { gameType: string }) => {
       this.emit('game:started', data)
-    })
+    }
+    this.tcpClientHandlers.set('game:started', gameStartedHandler)
+    tcpClient.on('game:started', gameStartedHandler)
 
-    tcpClient.on('game:stateUpdate', (data: unknown) => {
+    const gameStateUpdateHandler = (data: unknown) => {
       this.emit('game:stateUpdate', data)
-    })
+    }
+    this.tcpClientHandlers.set('game:stateUpdate', gameStateUpdateHandler)
+    tcpClient.on('game:stateUpdate', gameStateUpdateHandler)
 
-    tcpClient.on('game:ended', (data: { winner?: string; reason?: string }) => {
+    const gameEndedHandler = (data: { winner?: string; reason?: string }) => {
       this.emit('game:ended', data)
-    })
+    }
+    this.tcpClientHandlers.set('game:ended', gameEndedHandler)
+    tcpClient.on('game:ended', gameEndedHandler)
   }
 
   /**
@@ -766,10 +823,33 @@ class LANService {
 
   /**
    * 清理所有资源
+   * 🐾 已优化：清理所有定时器和事件监听器，防止内存泄漏
    */
   async cleanup(): Promise<void> {
     console.log('🧹 清理 LAN 服务...')
 
+    // 🐾 清理所有定时器
+    this.clearAllTimers()
+
+    // 🐾 清理 TCP Server 事件监听器
+    if (this.isHost) {
+      console.log(`🧹 移除 ${this.tcpServerHandlers.size} 个 TCP Server 事件监听器`)
+      this.tcpServerHandlers.forEach((handler, event) => {
+        tcpServer.off(event, handler)
+      })
+      this.tcpServerHandlers.clear()
+    }
+
+    // 🐾 清理 TCP Client 事件监听器
+    if (!this.isHost) {
+      console.log(`🧹 移除 ${this.tcpClientHandlers.size} 个 TCP Client 事件监听器`)
+      this.tcpClientHandlers.forEach((handler, event) => {
+        tcpClient.off(event, handler)
+      })
+      this.tcpClientHandlers.clear()
+    }
+
+    // 清理服务
     udpBroadcastService.cleanup()
     await tcpServer.stop()
     tcpClient.disconnect()

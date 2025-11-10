@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { Dimensions, StyleSheet, Text, Vibration, View } from 'react-native'
 import Animated, {
   interpolate,
@@ -40,6 +40,18 @@ export default function TaskModal({ visible, task, onComplete, onClose }: TaskMo
 
   // 进度条动画值（保留，因为这是特定于任务的动画）
   const progressValue = useSharedValue(0)
+
+  // 🐾 定时器追踪系统,防止内存泄漏 (React Native 环境使用 number 类型)
+  const timersRef = useRef<Set<ReturnType<typeof setTimeout>>>(new Set())
+
+  // 🧹 清理所有定时器
+  useEffect(() => {
+    return () => {
+      console.log('🧹 TaskModal: 清理所有活跃的定时器')
+      timersRef.current.forEach((timer) => clearTimeout(timer))
+      timersRef.current.clear()
+    }
+  }, [])
 
   useEffect(() => {
     if (visible) {
@@ -138,18 +150,24 @@ export default function TaskModal({ visible, task, onComplete, onClose }: TaskMo
       try {
         progressValue.value = withTiming(1, { duration: 2000 })
 
-        setTimeout(() => {
+        // 🐾 追踪定时器 1: 800ms 后显示结果
+        const timer1 = setTimeout(() => {
           modalState.setShowResult(true)
+          timersRef.current.delete(timer1) // 完成后清理
         }, 800)
+        timersRef.current.add(timer1)
 
-        setTimeout(() => {
+        // 🐾 追踪定时器 2: 2500ms 后执行回调
+        const timer2 = setTimeout(() => {
           try {
             onComplete(completed)
             modalState.finishProcessing()
           } catch {
             modalState.markFailed(t('taskModal.submitError', '提交失败，请重试'))
           }
+          timersRef.current.delete(timer2) // 完成后清理
         }, 2500)
+        timersRef.current.add(timer2)
       } catch {
         modalState.markFailed(t('taskModal.processError', '处理失败，请重试'))
       }

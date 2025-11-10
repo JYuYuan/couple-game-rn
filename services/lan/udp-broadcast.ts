@@ -23,9 +23,10 @@ export interface RoomBroadcast {
 
 /**
  * UDP 广播服务类
+ * 🐾 已优化：添加定时器追踪系统，防止内存泄漏
  */
 class UDPBroadcastService {
-  private socket: dgram.Socket | null = null
+  private socket: any | null = null
   private broadcastInterval: ReturnType<typeof setInterval> | null = null
   private roomInfo: RoomBroadcast | null = null
   private discoveredRooms: Map<string, RoomBroadcast> = new Map()
@@ -34,6 +35,24 @@ class UDPBroadcastService {
   private broadcastFailureCount: number = 0 // 广播失败计数
   private maxBroadcastFailures: number = 5 // 最大失败次数
   private isSocketHealthy: boolean = true // socket健康状态
+
+  // 🐾 定时器追踪系统
+  private timers: Set<ReturnType<typeof setTimeout>> = new Set()
+
+  /**
+   * 🧹 清理所有定时器
+   */
+  private clearAllTimers(): void {
+    console.log(`🧹 [UDPBroadcast] 清理 ${this.timers.size} 个活跃定时器`)
+    this.timers.forEach((timer) => {
+      try {
+        clearTimeout(timer)
+      } catch (e) {
+        console.warn('清理定时器失败:', e)
+      }
+    })
+    this.timers.clear()
+  }
 
   /**
    * 启动 UDP 监听(用于发现房间)
@@ -108,7 +127,7 @@ class UDPBroadcastService {
     })
 
     this.socket.on('error', (error: Error) => {
-      const errorCode = error?.code || 'UNKNOWN'
+      const errorCode = (error as any)?.code || 'UNKNOWN'
       const errorMessage = error?.message || error?.toString() || '未知错误'
 
       console.error('❌ UDP Socket 错误:', {
@@ -129,12 +148,14 @@ class UDPBroadcastService {
         console.error('💡 建议: 检查设备是否连接到 WiFi 网络')
       }
 
-      // 尝试重新启动监听器
-      setTimeout(() => {
+      // 🐾 尝试重新启动监听器 - 追踪定时器
+      const restartTimer = setTimeout(() => {
         console.log('🔄 尝试重新启动UDP监听器...')
         this.stopListening()
         this.startListening(this.onRoomDiscoveredCallback || undefined)
+        this.timers.delete(restartTimer) // 完成后清理
       }, 3000)
+      this.timers.add(restartTimer)
     })
 
     // 绑定到广播端口
@@ -187,6 +208,9 @@ class UDPBroadcastService {
    */
   stopListening(): void {
     console.log('🛑 停止监听 UDP 广播...')
+
+    // 🧹 清理所有定时器
+    this.clearAllTimers()
 
     // 清理所有超时定时器
     this.roomTimeouts.forEach((timeout) => {
@@ -315,15 +339,17 @@ class UDPBroadcastService {
         }
       })
 
-      // 超时保护（3秒）
-      setTimeout(() => {
+      // 🐾 超时保护（3秒）- 追踪定时器
+      const initTimeout = setTimeout(() => {
         if (!isResolved) {
           isResolved = true
           const error = new Error('UDP 广播 socket 初始化超时')
           console.error('⏱️', error.message)
           reject(error)
         }
+        this.timers.delete(initTimeout) // 完成后清理
       }, 3000)
+      this.timers.add(initTimeout)
     })
   }
 
@@ -332,6 +358,9 @@ class UDPBroadcastService {
    */
   stopBroadcasting(): void {
     console.log('🛑 停止广播房间...')
+
+    // 🧹 清理所有定时器
+    this.clearAllTimers()
 
     // 停止广播定时器
     if (this.broadcastInterval) {
@@ -487,13 +516,15 @@ class UDPBroadcastService {
       console.log('✅ 广播 socket 重建成功')
     } catch (error) {
       console.error('❌ 重建广播 socket 失败:', error)
-      // 延迟后再次尝试
-      setTimeout(() => {
+      // 🐾 延迟后再次尝试 - 追踪定时器
+      const rebuildRetryTimer = setTimeout(() => {
         if (this.broadcastInterval) {
           // 如果还在广播，继续尝试重建
           this.rebuildBroadcastSocket()
         }
+        this.timers.delete(rebuildRetryTimer) // 完成后清理
       }, 5000)
+      this.timers.add(rebuildRetryTimer)
     }
   }
 
@@ -536,17 +567,20 @@ class UDPBroadcastService {
    * 验证房间广播数据格式
    */
   private isValidRoomBroadcast(data: unknown): data is RoomBroadcast {
+    if (!data || typeof data !== 'object') {
+      return false
+    }
+    const obj = data as any
     return (
-      data &&
-      typeof data.roomId === 'string' &&
-      typeof data.roomName === 'string' &&
-      typeof data.hostName === 'string' &&
-      typeof data.hostIP === 'string' &&
-      typeof data.tcpPort === 'number' &&
-      typeof data.maxPlayers === 'number' &&
-      typeof data.currentPlayers === 'number' &&
-      typeof data.gameType === 'string' &&
-      typeof data.timestamp === 'number'
+      typeof obj.roomId === 'string' &&
+      typeof obj.roomName === 'string' &&
+      typeof obj.hostName === 'string' &&
+      typeof obj.hostIP === 'string' &&
+      typeof obj.tcpPort === 'number' &&
+      typeof obj.maxPlayers === 'number' &&
+      typeof obj.currentPlayers === 'number' &&
+      typeof obj.gameType === 'string' &&
+      typeof obj.timestamp === 'number'
     )
   }
 
@@ -634,8 +668,12 @@ class UDPBroadcastService {
             },
           )
 
-          // 超时
-          setTimeout(() => reject(new Error('测试超时')), 2000)
+          // 🐾 超时 - 追踪定时器
+          const diagTimeout = setTimeout(() => {
+            reject(new Error('测试超时'))
+            this.timers.delete(diagTimeout) // 完成后清理
+          }, 2000)
+          this.timers.add(diagTimeout)
         })
       } catch (error: unknown) {
         issues.push(`Socket 测试失败: ${(error as Error).message}`)

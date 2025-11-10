@@ -24,6 +24,7 @@ export interface ClientConnection {
 
 /**
  * TCP Server 类
+ * 🐾 已优化：添加定时器追踪系统，防止内存泄漏
  */
 class TCPServer {
   private server: TcpSocket.Server | null = null
@@ -31,6 +32,24 @@ class TCPServer {
   private port: number = TCP_PORT
   private eventListeners: Map<string, Set<Function>> = new Map()
   private messageBuffer: Map<string, string> = new Map() // 用于处理粘包
+
+  // 🐾 定时器追踪系统
+  private timers: Set<ReturnType<typeof setTimeout>> = new Set()
+
+  /**
+   * 🧹 清理所有定时器
+   */
+  private clearAllTimers(): void {
+    console.log(`🧹 [TCPServer] 清理 ${this.timers.size} 个活跃定时器`)
+    this.timers.forEach((timer) => {
+      try {
+        clearTimeout(timer)
+      } catch (e) {
+        console.warn('清理定时器失败:', e)
+      }
+    })
+    this.timers.clear()
+  }
 
   /**
    * 启动 TCP 服务器（支持端口自动重试）
@@ -58,7 +77,7 @@ class TCPServer {
         // 监听错误
         this.server.on('error', (error: Error) => {
           const errorMessage = error?.message || error?.toString() || JSON.stringify(error)
-          const errorCode = error?.code || 'UNKNOWN'
+          const errorCode = (error as any)?.code || 'UNKNOWN'
           console.error(`TCP Server 错误 (端口 ${currentPort}):`, errorMessage)
           console.error(`错误代码:`, errorCode)
           console.error(`完整错误对象:`, error)
@@ -79,10 +98,12 @@ class TCPServer {
               this.server = null
             }
 
-            // 短暂延迟后尝试新端口
-            setTimeout(() => {
+            // 🐾 短暂延迟后尝试新端口 - 追踪定时器
+            const retryTimer = setTimeout(() => {
               tryStartServer(nextPort)
+              this.timers.delete(retryTimer) // 完成后清理
             }, 200)
+            this.timers.add(retryTimer)
           } else {
             // 为其他错误提供更详细的信息
             const detailedError = new Error(
@@ -122,10 +143,12 @@ class TCPServer {
               this.server = null
             }
 
-            // 短暂延迟后尝试新端口
-            setTimeout(() => {
+            // 🐾 短暂延迟后尝试新端口 - 追踪定时器
+            const retryTimer = setTimeout(() => {
               tryStartServer(nextPort)
+              this.timers.delete(retryTimer) // 完成后清理
             }, 200)
+            this.timers.add(retryTimer)
           } else {
             const detailedError = new Error(
               `TCP Server 启动失败: ${errorMessage} (code: ${errorCode})`,
@@ -145,6 +168,9 @@ class TCPServer {
   stop(): Promise<void> {
     return new Promise((resolve) => {
       console.log('🛑 停止 TCP Server...')
+
+      // 🧹 清理所有定时器
+      this.clearAllTimers()
 
       // 关闭所有客户端连接
       this.clients.forEach((client) => {
@@ -200,14 +226,14 @@ class TCPServer {
     let currentClientId = tempId
 
     // 监听数据
-    socket.on('data', (data: Buffer) => {
+    socket.on('data', (data: any) => {
       // 使用当前的 clientId（可能已经更新）
-      this.handleClientData(currentClientId, data)
+      this.handleClientData(currentClientId, data as Buffer)
     })
 
     // 监听关闭
-    socket.on('close', (error?: Error) => {
-      console.log(`👋 客户端断开: ${clientAddress}`, error ? `错误: ${error}` : '')
+    socket.on('close', (had_error: any) => {
+      console.log(`👋 客户端断开: ${clientAddress}`, had_error ? `错误: ${had_error}` : '')
       this.handleClientDisconnect(currentClientId)
     })
 
@@ -295,8 +321,8 @@ class TCPServer {
         console.log(`🔄 需要更新客户端ID: ${clientId} -> ${message.playerId}`)
 
         // 更新 socket 的 clientId 引用
-        if (client.socket && typeof client.socket.__updateClientId === 'function') {
-          client.socket.__updateClientId(message.playerId)
+        if (client.socket && typeof (client.socket as any).__updateClientId === 'function') {
+          ;(client.socket as any).__updateClientId(message.playerId)
         }
 
         // 移除旧的映射

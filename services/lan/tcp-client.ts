@@ -8,6 +8,7 @@ import type { TCPMessage } from './tcp-server'
 
 /**
  * TCP Client 类
+ * 🐾 已优化：添加定时器追踪系统，防止内存泄漏
  */
 class TCPClient {
   private socket: TcpSocket.Socket | null = null
@@ -24,6 +25,24 @@ class TCPClient {
   private isManualDisconnect: boolean = false // 标记手动断开
   private pendingResolve: ((value: void) => void) | null = null // 保存 Promise resolve
   private pendingReject: ((reason?: unknown) => void) | null = null // 保存 Promise reject
+
+  // 🐾 定时器追踪系统
+  private timers: Set<ReturnType<typeof setTimeout>> = new Set()
+
+  /**
+   * 🧹 清理所有定时器
+   */
+  private clearAllTimers(): void {
+    console.log(`🧹 [TCPClient] 清理 ${this.timers.size} 个活跃定时器`)
+    this.timers.forEach((timer) => {
+      try {
+        clearTimeout(timer)
+      } catch (e) {
+        console.warn('清理定时器失败:', e)
+      }
+    })
+    this.timers.clear()
+  }
 
   /**
    * 连接到房主的 TCP 服务器
@@ -90,15 +109,15 @@ class TCPClient {
       )
 
       // 监听数据
-      this.socket.on('data', (data: Buffer) => {
-        this.handleServerData(data)
+      this.socket.on('data', (data: any) => {
+        this.handleServerData(data as Buffer)
       })
 
       // 监听关闭
-      this.socket.on('close', (error?: Error) => {
+      this.socket.on('close', (had_error: any) => {
         console.log(
           `👋 [${this.playerId.substring(0, 8)}] TCP Socket 关闭`,
-          error ? `错误: ${JSON.stringify(error)}` : '',
+          had_error ? `错误: ${JSON.stringify(had_error)}` : '',
         )
         this.handleDisconnect()
       })
@@ -117,8 +136,8 @@ class TCPClient {
         }
       })
 
-      // 超时处理
-      setTimeout(() => {
+      // 🐾 超时处理 - 追踪定时器
+      const connectTimeout = setTimeout(() => {
         if (!this.isConnected && this.pendingReject) {
           const timeoutError = new Error('连接超时')
           console.error(`⏱️ [${this.playerId.substring(0, 8)}] 连接超时`)
@@ -126,7 +145,9 @@ class TCPClient {
           this.pendingResolve = null
           this.pendingReject = null
         }
+        this.timers.delete(connectTimeout) // 完成后清理
       }, 12000)
+      this.timers.add(connectTimeout)
     })
   }
 
@@ -138,6 +159,9 @@ class TCPClient {
 
     this.isManualDisconnect = true // 标记为手动断开
     this.shouldReconnect = false // 禁止重连
+
+    // 🧹 清理所有定时器
+    this.clearAllTimers()
 
     if (this.reconnectInterval) {
       clearTimeout(this.reconnectInterval)
@@ -237,7 +261,7 @@ class TCPClient {
       wasConnected
     ) {
       // 检查socket状态，如果socket仍然存在且可写，说明连接可能还是正常的
-      if (this.socket && !this.socket.destroyed && this.socket.writable) {
+      if (this.socket && !this.socket.destroyed && (this.socket as any).writable) {
         console.log(`ℹ️ [${this.playerId.substring(0, 8)}] Socket仍然可用，跳过重连`)
         this.isConnected = true // 恢复连接状态
         return
@@ -248,6 +272,7 @@ class TCPClient {
         `🔄 [${this.playerId.substring(0, 8)}] 准备重连 (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`,
       )
 
+      // 🐾 重连定时器 - 追踪
       this.reconnectInterval = setTimeout(() => {
         console.log(
           `🔄 [${this.playerId.substring(0, 8)}] 开始第 ${this.reconnectAttempts} 次重连...`,
@@ -258,7 +283,11 @@ class TCPClient {
             error,
           )
         })
+        if (this.reconnectInterval) {
+          this.timers.delete(this.reconnectInterval)
+        }
       }, 3000) // 固定3秒延迟
+      this.timers.add(this.reconnectInterval)
     } else if (this.reconnectAttempts >= this.maxReconnectAttempts) {
       console.error(`❌ [${this.playerId.substring(0, 8)}] 重连失败,已达到最大重连次数`)
       this.shouldReconnect = false
@@ -308,10 +337,12 @@ class TCPClient {
 
       this.on(`response:${requestId}`, responseHandler)
 
-      // 超时处理
-      setTimeout(() => {
+      // 🐾 超时处理 - 追踪定时器
+      const responseTimeout = setTimeout(() => {
         this.off(`response:${requestId}`, responseHandler)
+        this.timers.delete(responseTimeout) // 完成后清理
       }, 30000) // 30秒超时
+      this.timers.add(responseTimeout)
     }
 
     this.send({

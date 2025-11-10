@@ -129,7 +129,7 @@ class GameInstanceManager {
         '🐛 [GameInstanceManager] 缓存的游戏有 onPlayerAction:',
         typeof cachedGame?.onPlayerAction === 'function',
       )
-      return cachedGame
+      return cachedGame ?? null
     }
 
     console.log('⚠️ [GameInstanceManager] 缓存中没有游戏实例，尝试重建...')

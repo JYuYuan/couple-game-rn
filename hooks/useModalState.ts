@@ -4,7 +4,7 @@
  * 统一管理 Modal 组件的常见状态，消除重复代码
  */
 
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 /**
  * Modal 状态返回值
@@ -156,6 +156,7 @@ export function useModalState(): ModalState {
  * useModalResultState Hook (简化版)
  *
  * 仅包含完成状态和结果显示，用于简单的 Modal 场景
+ * 🐾 已优化：添加定时器清理逻辑，防止内存泄漏
  *
  * @example
  * ```tsx
@@ -185,10 +186,29 @@ export function useModalResultState() {
   const [isCompleted, setIsCompleted] = useState<boolean | null>(null)
   const [showResult, setShowResult] = useState(false)
 
+  // 🐾 定时器追踪，防止内存泄漏
+  const timerRef = useRef<NodeJS.Timeout | null>(null)
+
+  // 🧹 清理定时器
+  const clearTimer = useCallback(() => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current)
+      timerRef.current = null
+    }
+  }, [])
+
+  // 🧹 组件卸载时清理定时器
+  useEffect(() => {
+    return () => {
+      clearTimer()
+    }
+  }, [clearTimer])
+
   const reset = useCallback(() => {
+    clearTimer() // 重置时也清理定时器
     setIsCompleted(null)
     setShowResult(false)
-  }, [])
+  }, [clearTimer])
 
   /**
    * 处理用户选择并延迟执行回调
@@ -198,15 +218,19 @@ export function useModalResultState() {
    */
   const handleChoice = useCallback(
     (completed: boolean, onComplete: (completed: boolean) => void, delay: number = 1500) => {
+      // 清理之前的定时器
+      clearTimer()
+
       setIsCompleted(completed)
       setShowResult(true)
 
       // 延迟执行回调，让用户看到结果
-      setTimeout(() => {
+      timerRef.current = setTimeout(() => {
         onComplete(completed)
+        timerRef.current = null
       }, delay)
     },
-    []
+    [clearTimer]
   )
 
   return {

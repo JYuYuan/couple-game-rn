@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react'
 import { Dimensions, StyleSheet, Text, View } from 'react-native'
-import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated'
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 import { LinearGradient } from 'expo-linear-gradient'
 import { BaseButton, BaseModal } from '@/components/common'
 import { useTheme, useModalAnimation } from '@/hooks'
@@ -41,12 +41,12 @@ export default function VictoryModal({
 
   useEffect(() => {
     if (visible) {
-      // 彩带动画
-      confettiScale.value = 1
+      // 🐾 使用 withTiming 让彩带动画更流畅
+      confettiScale.value = withTiming(1, { duration: 500 })
     } else {
-      confettiScale.value = 0
+      confettiScale.value = withTiming(0, { duration: 200 })
     }
-  }, [visible])
+  }, [visible, confettiScale])
 
   const confettiStyle = useAnimatedStyle(() => ({
     transform: [{ scale: confettiScale.value }],

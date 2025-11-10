@@ -306,12 +306,36 @@ export default function FlyingChessGame() {
   )
 
   // 任务完成事件
-  const handleTaskCompleted = useCallback((data: { playerId: string; completed: boolean }) => {
-    console.log('✅ 收到任务完成事件:', data)
-    setShowTaskModal(false)
-    setTaskModalData(null)
-    lastTaskIdRef.current = null
-  }, [])
+  const handleTaskCompleted = useCallback(
+    (data: { playerId: string; completed: boolean }) => {
+      console.log('✅ 收到任务完成事件:', data)
+
+      // 检查当前玩家是否是观察者
+      const isObserver = taskModalData && !taskModalData.isExecutor
+
+      if (isObserver) {
+        // 观察者模式：显示任务完成提示
+        const resultMessage = data.completed
+          ? t('taskModal.observerCompleted', '任务已完成！玩家获得奖励')
+          : t('taskModal.observerFailed', '任务失败！玩家受到惩罚')
+
+        // 显示不同类型的提示
+        if (data.completed) {
+          toast.success(resultMessage)
+        } else {
+          toast.error(resultMessage)
+        }
+
+        console.log(`👁️ 观察者收到任务完成通知: ${resultMessage}`)
+      }
+
+      // 关闭任务弹窗
+      setShowTaskModal(false)
+      setTaskModalData(null)
+      lastTaskIdRef.current = null
+    },
+    [taskModalData, t],
+  )
 
   // 胜利事件
   const handleGameVictory = useCallback(

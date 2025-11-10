@@ -558,7 +558,7 @@ class SocketService {
   }
 
   rollDice(data: DiceRollData, callback?: (result: DiceRollResult) => void): void {
-    this.runActions('roll_dice', data, callback)
+    this.runActions('roll_dice', data, callback as ((res: unknown) => void) | undefined)
   }
 
   completeTask(data: TaskCompleteData): void {
@@ -568,8 +568,9 @@ class SocketService {
   runActions(type: string, data: unknown, callback?: (res: unknown) => void): void {
     console.log('游戏事件：', type, data)
 
-    // Socket 模式
-    this.socketEmit('game:action', { type, ...data }, callback)
+    // Socket 模式 - 🐾 确保 data 是对象
+    const payload = typeof data === 'object' && data !== null ? { type, ...data as object } : { type, data }
+    this.socketEmit('game:action', payload, callback)
   }
 
   // 便利属性

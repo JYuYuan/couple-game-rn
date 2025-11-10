@@ -1,4 +1,4 @@
-import { TaskSet } from '@/types/tasks'
+import { Task, TaskSet } from '@/types/tasks'
 import { PathCell } from '@/types/game'
 import {
   NetworkPlayer,
@@ -84,6 +84,7 @@ export interface BaseRoom {
   // 统一的游戏状态对象（匹配服务端结构）
   gameState?: GameState
   taskSet?: TaskSet
+  tasks: (string | Task)[] // 🐾 当前可用的任务列表（可以是字符串或 Task 对象）
   // 兼容性字段
   taskSetId?: string
   diceValue?: number // 保留用于向后兼容
