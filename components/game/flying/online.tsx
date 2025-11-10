@@ -132,7 +132,6 @@ export default function FlyingChessGame() {
       })
 
       if (needsUpdate) {
-        console.log('🔄 同步服务端玩家状态到本地动画状态')
         setAnimatedPlayers(players as OnlinePlayer[])
       }
     }
@@ -311,7 +310,8 @@ export default function FlyingChessGame() {
       console.log('✅ 收到任务完成事件:', data)
 
       // 检查当前玩家是否是观察者
-      const isObserver = taskModalData && !taskModalData.isExecutor
+      const isObserver =
+        taskModalData && !taskModalData.executors.find((item) => item.id === playerId)
 
       if (isObserver) {
         // 观察者模式：显示任务完成提示
@@ -400,23 +400,20 @@ export default function FlyingChessGame() {
 
   // 注册 Socket 事件监听
   useEffect(() => {
-    console.log('🎮 注册游戏事件监听器')
-
     socket.on('game:dice', handleDiceRoll)
     socket.on('game:task', handleTaskTrigger)
     socket.on('game:victory', handleGameVictory)
     socket.on('game:next', handleNextPlayer)
-    socket.on('game:position_update', handlePositionUpdate)
+    // socket.on('game:position_update', handlePositionUpdate)
     socket.on('game:task_completed', handleTaskCompleted)
     socket.on('room:destroyed', handleRoomDestroyed)
 
     return () => {
-      console.log('🧹 清理游戏事件监听器')
       socket.off('game:dice', handleDiceRoll)
       socket.off('game:task', handleTaskTrigger)
       socket.off('game:victory', handleGameVictory)
       socket.off('game:next', handleNextPlayer)
-      socket.off('game:position_update', handlePositionUpdate)
+      // socket.off('game:position_update', handlePositionUpdate)
       socket.off('game:task_completed', handleTaskCompleted)
       socket.off('room:destroyed', handleRoomDestroyed)
     }
@@ -477,10 +474,6 @@ export default function FlyingChessGame() {
       console.error('提交任务完成状态失败:', error)
       toast.error(t('error.completeTask', '提交任务失败，请重试'))
     }
-
-    setShowTaskModal(false)
-    setTaskModalData(null)
-    lastTaskIdRef.current = null
   }
 
   // 重新开始游戏

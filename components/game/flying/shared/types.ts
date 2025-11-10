@@ -28,6 +28,7 @@ export interface GameCoreProps {
   players: Player[]
   currentPlayer: Player | null
   currentPlayerIndex: number
+  currentPlayerId?: string // 🐾 当前玩家ID,用于任务模态框判断执行者
 
   // 棋盘数据
   boardPath: PathCell[]
@@ -56,25 +57,25 @@ export interface GameCoreProps {
   t: any // 改为any以支持不同的翻译函数类型
 
   // 可选的模式特定数据
-  isOwnTurn?: boolean  // online模式专用
-  isHost?: boolean     // online模式专用
+  isOwnTurn?: boolean // online模式专用
+  isHost?: boolean // online模式专用
 }
 
 // 游戏逻辑Hook返回值
 export interface GameLogic {
   // 胜利检查
-  checkAndHandleVictory: (playerId: number, finalPosition: number) => boolean
+  checkAndHandleVictory: (playerId: string, finalPosition: number) => boolean
   handleVictory: (player: Player) => void
 
   // 任务处理
-  checkCellAndTriggerTask: (playerId: number, position: number) => boolean
-  triggerTask: (taskType: TaskType, playerId: number) => void
+  checkCellAndTriggerTask: (playerId: string, position: number) => boolean
+  triggerTask: (taskType: TaskType, playerId: string) => void
 
   // 移动逻辑
   movePlayerStepByStep: (
-    playerId: number,
+    playerId: string,
     steps: number,
     isForward: boolean,
-    onComplete?: (playerId: number, finalPosition: number) => void
+    onComplete?: (playerId: number, finalPosition: number) => void,
   ) => void
 }

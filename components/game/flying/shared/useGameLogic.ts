@@ -20,7 +20,7 @@ interface GameTask {
 }
 
 interface RewardInfo {
-  playerId: number
+  playerId: string
   oldPosition: number
   newPosition: number
   moveSteps: number
@@ -32,13 +32,13 @@ export function useGameLogic(
   players: Player[],
   boardPath: PathCell[],
   gameStatus: GameStatus,
-  getOpponentPlayer: (playerId: number) => Player | undefined,
+  getOpponentPlayer: (playerId: string) => Player | undefined,
   getRandomTask: () => GameTask | null,
   calculateTaskReward: (
-    playerId: number,
+    playerId: string,
     taskType: TaskType,
-    completed: boolean
-  ) => RewardInfo | null
+    completed: boolean,
+  ) => RewardInfo | null,
 ) {
   const audioManager = useAudioManager()
 
@@ -46,7 +46,7 @@ export function useGameLogic(
    * 1. 胜利检查和处理
    */
   const checkAndHandleVictory = useCallback(
-    (playerId: number, finalPosition: number) => {
+    (playerId: string, finalPosition: number) => {
       const finishPosition = boardPath.length - 1
 
       if (finalPosition >= finishPosition) {
@@ -58,7 +58,7 @@ export function useGameLogic(
 
       return { hasWinner: false, winner: null }
     },
-    [players, boardPath, gameStatus]
+    [players, boardPath, gameStatus],
   )
 
   const handleVictory = useCallback(
@@ -67,14 +67,14 @@ export function useGameLogic(
       // 返回胜利信息,由调用者处理UI
       return player
     },
-    [audioManager]
+    [audioManager],
   )
 
   /**
    * 2. 格子检查和任务触发
    */
   const checkCellAndTriggerTask = useCallback(
-    (playerId: number, position: number): { hasTask: boolean; taskType?: TaskType } => {
+    (playerId: string, position: number): { hasTask: boolean; taskType?: TaskType } => {
       if (position < 0 || position >= boardPath.length) {
         return { hasTask: false }
       }
@@ -97,18 +97,18 @@ export function useGameLogic(
 
       return { hasTask: false }
     },
-    [players, boardPath]
+    [players, boardPath],
   )
 
   /**
    * 3. 准备任务数据
    */
   const prepareTaskData = useCallback(
-    (taskType: TaskType, triggerPlayerId: number): TaskModalData | null => {
+    (taskType: TaskType, triggerPlayerId: string): TaskModalData | null => {
       const task = getRandomTask()
       if (!task) return null
 
-      let executorPlayerId: number | string
+      let executorPlayerId: string
       if (taskType === 'trap') {
         executorPlayerId = triggerPlayerId
       } else {
@@ -127,20 +127,19 @@ export function useGameLogic(
         category: task.category,
         difficulty: task.difficulty,
         triggerPlayerIds: [triggerPlayerId],
-        isExecutor: true,
       }
     },
-    [players, getRandomTask, getOpponentPlayer]
+    [players, getRandomTask, getOpponentPlayer],
   )
 
   /**
    * 4. 计算任务奖励后的移动
    */
   const calculateTaskMovement = useCallback(
-    (executorPlayerId: number, taskType: TaskType, completed: boolean) => {
+    (executorPlayerId: string, taskType: TaskType, completed: boolean) => {
       return calculateTaskReward(executorPlayerId, taskType, completed)
     },
-    [calculateTaskReward]
+    [calculateTaskReward],
   )
 
   return {

@@ -47,9 +47,7 @@ export default function OfflineGame() {
   const [isMoving, setIsMoving] = useState(false)
   const [showTaskModal, setShowTaskModal] = useState(false)
   const [taskModalData, setTaskModalData] = useState<TaskModalData | null>(null)
-  const [pendingTaskType, setPendingTaskType] = useState<'trap' | 'star' | 'collision' | null>(
-    null,
-  )
+  const [pendingTaskType, setPendingTaskType] = useState<'trap' | 'star' | 'collision' | null>(null)
   const [showVictoryModal, setShowVictoryModal] = useState(false)
   const [winner, setWinner] = useState<GamePlayer | null>(null)
   const [boardPath, setBoardPath] = useState<PathCell[]>([])
@@ -101,40 +99,35 @@ export default function OfflineGame() {
         setIsMoving(true)
         diceRotation.value = 0
 
-        movePlayerStepByStep(
-          currentPlayer.id,
-          newDiceValue,
-          true,
-          (playerId, finalPosition) => {
-            setIsMoving(false)
+        movePlayerStepByStep(currentPlayer.id, newDiceValue, true, (playerId, finalPosition) => {
+          setIsMoving(false)
 
-            // 检查胜利
-            const victoryResult = gameLogic.checkAndHandleVictory(playerId, finalPosition)
-            if (victoryResult.hasWinner && victoryResult.winner) {
-              endGame()
-              gameLogic.handleVictory(victoryResult.winner)
-              setWinner(victoryResult.winner as GamePlayer)
-              setShowVictoryModal(true)
-              return
-            }
+          // 检查胜利
+          const victoryResult = gameLogic.checkAndHandleVictory(playerId, finalPosition)
+          if (victoryResult.hasWinner && victoryResult.winner) {
+            endGame()
+            gameLogic.handleVictory(victoryResult.winner)
+            setWinner(victoryResult.winner as GamePlayer)
+            setShowVictoryModal(true)
+            return
+          }
 
-            // 检查任务
-            const taskResult = gameLogic.checkCellAndTriggerTask(playerId, finalPosition)
-            if (taskResult.hasTask && taskResult.taskType) {
-              const taskData = gameLogic.prepareTaskData(taskResult.taskType, playerId)
-              if (taskData) {
-                setTaskModalData(taskData)
-                setPendingTaskType(taskResult.taskType)
-                setShowTaskModal(true)
-              }
-            } else if (gameStatus === 'playing') {
-              setTimeout(() => {
-                setDiceValue(0)
-                nextPlayer()
-              }, 500)
+          // 检查任务
+          const taskResult = gameLogic.checkCellAndTriggerTask(playerId, finalPosition)
+          if (taskResult.hasTask && taskResult.taskType) {
+            const taskData = gameLogic.prepareTaskData(taskResult.taskType, playerId)
+            if (taskData) {
+              setTaskModalData(taskData)
+              setPendingTaskType(taskResult.taskType)
+              setShowTaskModal(true)
             }
-          },
-        )
+          } else if (gameStatus === 'playing') {
+            setTimeout(() => {
+              setDiceValue(0)
+              nextPlayer()
+            }, 500)
+          }
+        })
       }, 1000)
     }, 1200)
   }

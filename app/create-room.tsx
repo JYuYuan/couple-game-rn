@@ -452,6 +452,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: spacing.lg,
     gap: 8,
+    width: '100%',
+    borderRadius: 12,
   },
   buttonText: {
     color: 'white',

@@ -87,13 +87,11 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     // 1. 如果只开启了局域网
     if (lanMode && !enabled) {
-      console.log('🔧 [SocketContext] 初始化: 仅局域网模式')
       return 'lan'
     }
 
     // 2. 如果只开启了在线（或都没开启）
     if (!lanMode || enabled) {
-      console.log('🔧 [SocketContext] 初始化: 在线模式')
       return 'online'
     }
 
@@ -108,12 +106,6 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // 监听网络设置变化，自动调整连接类型
   useEffect(() => {
     const { enabled, lanMode } = networkSettings
-
-    console.log('🔧 [SocketContext] 网络设置变化:', {
-      enabled,
-      lanMode,
-      currentConnectionType: connectionType,
-    })
 
     // 如果当前是在线模式，但只开启了局域网，切换到局域网
     if (connectionType === 'online' && lanMode && !enabled && !currentRoom) {
@@ -147,7 +139,6 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
 
     const handleCurrentRoomChanged = (room: OnlineRoom | LANRoom | null) => {
-      console.log('SocketProvider: Room changed', room)
       if (!room) return setCurrentRoom(null)
       room.isHost = room.hostId === playerId
       setCurrentRoom(room)
@@ -276,7 +267,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       connectionType,
       (lanService) => lanService.leaveRoom(),
       () => socketService.disconnect(),
-      '断开连接'
+      '断开连接',
     )
   }, [connectionType])
 
@@ -301,7 +292,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       connectionType,
       (lanService) => lanService.leaveRoom(),
       () => socketService.leaveRoom(),
-      '离开房间'
+      '离开房间',
     )
     // 确保清除 roomStore 中的房间状态
     const { useRoomStore } = require('@/store/roomStore')
@@ -513,7 +504,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         connectionType,
         (lanService) => lanService.startGame(data as any),
         () => socketService.startGame(data as any),
-        '开始游戏'
+        '开始游戏',
       )
     },
     [connectionType],
@@ -533,7 +524,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           return lanService.handleGameAction(transformedData).then(callback as any)
         },
         (d) => socketService.rollDice(d as any, callback as any),
-        '掷骰子'
+        '掷骰子',
       )
     },
     [connectionType],
@@ -541,19 +532,15 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const completeTask = useCallback(
     async (data: unknown) => {
-      console.log('📋 [SocketContext] completeTask 调用, connectionType:', connectionType)
-      console.log('🐛 [SocketContext] completeTask data:', JSON.stringify(data))
-
       await withLANServiceTransform(
         connectionType,
         data,
         (d: any) => ({ ...d, type: 'complete_task' }),
         (lanService, transformedData) => {
-          console.log('📤 [SocketContext] 发送完成任务动作:', JSON.stringify(transformedData))
           return lanService.handleGameAction(transformedData)
         },
         (d) => socketService.completeTask(d as any),
-        '完成任务'
+        '完成任务',
       )
     },
     [connectionType],
@@ -579,7 +566,12 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const runActions = useCallback(
     async (event: string, data: unknown, callback?: (res: unknown) => void) => {
-      console.log('🎬 [SocketContext] runActions 调用, event:', event, 'connectionType:', connectionType)
+      console.log(
+        '🎬 [SocketContext] runActions 调用, event:',
+        event,
+        'connectionType:',
+        connectionType,
+      )
       console.log('🐛 [SocketContext] runActions data:', JSON.stringify(data))
 
       await withLANServiceTransform(
@@ -591,7 +583,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           return lanService.handleGameAction(transformedData).then(callback)
         },
         (d) => socketService.runActions(event, d, callback),
-        'runActions'
+        'runActions',
       )
     },
     [connectionType],

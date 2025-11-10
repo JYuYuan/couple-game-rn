@@ -47,7 +47,7 @@ export const useGamePlayers = (initialPlayerCount: number = 2, boardSize: number
 
   // 移动玩家位置
   const movePlayer = useCallback(
-    (playerId: number, newPosition: number) => {
+    (playerId: string, newPosition: number) => {
       const finishPosition = boardSize - 1
       setPlayers((prev) =>
         prev.map((player) =>
@@ -61,7 +61,7 @@ export const useGamePlayers = (initialPlayerCount: number = 2, boardSize: number
   )
 
   // 增加玩家分数
-  const addPlayerScore = useCallback((playerId: number, points: number) => {
+  const addPlayerScore = useCallback((playerId: string, points: number) => {
     setPlayers((prev) =>
       prev.map((player) =>
         player.id === playerId ? { ...player, score: player.score + points } : player,
@@ -70,7 +70,7 @@ export const useGamePlayers = (initialPlayerCount: number = 2, boardSize: number
   }, [])
 
   // 玩家完成任务
-  const completeTask = useCallback((playerId: number, taskId: string, points: number = 0) => {
+  const completeTask = useCallback((playerId: string, taskId: string, points: number = 0) => {
     setPlayers((prev) =>
       prev.map((player) =>
         player.id === playerId
@@ -85,7 +85,7 @@ export const useGamePlayers = (initialPlayerCount: number = 2, boardSize: number
   }, [])
 
   // 添加成就
-  const addAchievement = useCallback((playerId: number, achievement: string) => {
+  const addAchievement = useCallback((playerId: string, achievement: string) => {
     setPlayers((prev) =>
       prev.map((player) =>
         player.id === playerId && !player.achievements.includes(achievement)
@@ -97,7 +97,7 @@ export const useGamePlayers = (initialPlayerCount: number = 2, boardSize: number
 
   // 检查游戏胜利条件
   const checkWinCondition = useCallback(
-    (playerId?: number, currentPosition?: number) => {
+    (playerId?: string, currentPosition?: number) => {
       console.log(
         'Checking win condition, current players:',
         players.map((p) => ({
@@ -187,7 +187,7 @@ export const useGamePlayers = (initialPlayerCount: number = 2, boardSize: number
 
   // 获取玩家统计信息
   const getPlayerStats = useCallback(
-    (playerId: number) => {
+    (playerId: string) => {
       const player = players.find((p) => p.id === playerId)
       if (!player) return null
 
@@ -206,7 +206,7 @@ export const useGamePlayers = (initialPlayerCount: number = 2, boardSize: number
 
   // 任务奖惩机制 - 计算移动信息但不直接移动
   const calculateTaskReward = useCallback(
-    (playerId: number, taskType: 'trap' | 'star' | 'collision', completed: boolean) => {
+    (playerId: string, taskType: 'trap' | 'star' | 'collision', completed: boolean) => {
       const player = players.find((p) => p.id === playerId)
       if (!player) return null
 
@@ -269,7 +269,7 @@ export const useGamePlayers = (initialPlayerCount: number = 2, boardSize: number
 
   // 保留原有的直接移动函数用于其他场景
   const applyTaskReward = useCallback(
-    (playerId: number, taskType: 'trap' | 'star' | 'collision', completed: boolean) => {
+    (playerId: string, taskType: 'trap' | 'star' | 'collision', completed: boolean) => {
       const rewardInfo = calculateTaskReward(playerId, taskType, completed)
       if (!rewardInfo) return null
 
@@ -282,7 +282,7 @@ export const useGamePlayers = (initialPlayerCount: number = 2, boardSize: number
 
   // 获取对手玩家
   const getOpponentPlayer = useCallback(
-    (currentPlayerId: number) => {
+    (currentPlayerId: string) => {
       return players.find((player) => player.id !== currentPlayerId) || null
     },
     [players],

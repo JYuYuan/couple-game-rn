@@ -241,13 +241,7 @@ class FlyingGame extends BaseGame {
     })
 
     this.socket.to(this.room.id).emit('game:task', {
-      task: {
-        id: taskSet?.id || '',
-        title: selectedTask,
-        description: taskSet?.description || '',
-        category: taskSet?.categoryName || 'default',
-        difficulty: taskSet?.difficulty || 'medium',
-      },
+      task: currentTask,
       taskType,
       executorPlayerIds: executorPlayers.map((p) => p.id),
       triggerPlayerIds: [playerId],
@@ -398,28 +392,9 @@ class FlyingGame extends BaseGame {
     const executor = this.room.players.find((p: Player) => p.id === playerId)
     const executorName = executor?.name || '玩家'
 
-    // 广播任务完成事件，通知所有玩家关闭弹窗并显示完成情况
-    this.socket.to(this.room.id).emit('game:task_completed', {
-      playerId,
-      playerName: executorName,
-      taskType,
-      completed,
-      taskTitle: currentTask.title,
-    })
-
     // 根据任务类型和完成状态决定位置变化
     const step = Math.floor(Math.random() * 4) + 3
     let positionChange = completed ? step : -step
-
-    if (taskType === 'star') {
-      console.log(`⭐ 星星任务成功，前进${positionChange}格`)
-    } else if (taskType === 'trap') {
-      console.log(`🕳️ 陷阱任务失败，后退${Math.abs(positionChange)}格`)
-    } else if (taskType === 'collision') {
-      // 碰撞任务不改变位置，只是完成任务
-      console.log(`💥 碰撞任务完成，位置归 0`)
-    }
-
     // 应用位置变化
     if (positionChange !== 0) {
       const currentPos = this.playerPositions[playerId] || 0
@@ -449,6 +424,15 @@ class FlyingGame extends BaseGame {
         reason: `${taskType}_${completed ? 'success' : 'fail'}`,
       })
     }
+
+    // 广播任务完成事件，通知所有玩家关闭弹窗并显示完成情况
+    this.socket.to(this.room.id).emit('game:task_completed', {
+      playerId,
+      playerName: executorName,
+      taskType,
+      completed,
+      taskTitle: currentTask.title,
+    })
 
     // 从任务集中删除已完成的任务
     if (this.room.tasks && currentTask?.description) {

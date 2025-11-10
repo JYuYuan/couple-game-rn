@@ -13,6 +13,7 @@ import { useModalState } from '@/hooks/useModalState'
 import { useTranslation } from 'react-i18next'
 import { TaskModalData } from '@/types/online'
 import { PlayerAvatar } from '@/components/PlayerAvatar'
+import { useSettingsStore } from '@/store'
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window')
 
@@ -24,16 +25,34 @@ interface Player {
 }
 
 interface TaskModalProps {
+  isOnline?: boolean
   visible: boolean
   task: TaskModalData | null
   players: Player[]
+  currentPlayerId?: string // 🐾 当前玩家ID,用于判断是否是执行者
   onComplete: (completed: boolean) => void
   onClose: () => void
 }
 
-export default function TaskModal({ visible, task, onComplete, onClose }: TaskModalProps) {
+export default function TaskModal({
+  isOnline,
+  visible,
+  task,
+  onComplete,
+  onClose,
+}: TaskModalProps) {
   const { colors } = useTheme()
   const { t } = useTranslation()
+  const { playerId } = useSettingsStore()
+
+  // 🐾 判断当前玩家是否是执行者
+  const isCurrentPlayerExecutor = React.useMemo(() => {
+    if (!playerId || !task?.executors || task.executors.length === 0) {
+      return false
+    }
+    // 🐾 处理 ID 类型转换（executor.id 可能是 string 或 number）
+    return task.executors.some((executor) => executor.id.toString() === playerId.toString())
+  }, [playerId, task?.executors])
 
   // 使用统一的 Modal 状态管理 hook
   const modalState = useModalState()
@@ -319,7 +338,7 @@ export default function TaskModal({ visible, task, onComplete, onClose }: TaskMo
 
             {/* 操作区域 */}
             <View style={styles.actionSection}>
-              {task?.isExecutor ? (
+              {isCurrentPlayerExecutor || !isOnline ? (
                 // 执行者界面
                 <>
                   {/* 错误提示 */}
@@ -402,22 +421,6 @@ export default function TaskModal({ visible, task, onComplete, onClose }: TaskMo
                   <Text style={[styles.observerDescription, { color: colors.textSecondary }]}>
                     {t('taskModal.observerHint', '等待其他玩家完成任务...')}
                   </Text>
-
-                  <BaseButton
-                    title={t('taskModal.closeObserver', '关闭观察')}
-                    variant="secondary"
-                    size="medium"
-                    iconName="eye-off-outline"
-                    iconPosition="left"
-                    onPress={onClose}
-                    style={StyleSheet.flatten([
-                      styles.observerButton,
-                      {
-                        backgroundColor: colors.textSecondary + '15',
-                        borderColor: colors.textSecondary + '30',
-                      },
-                    ])}
-                  />
                 </View>
               )}
             </View>

@@ -10,7 +10,7 @@ export interface BasePlayer {
 
 // 本地游戏玩家类型
 export interface LocalPlayer extends BasePlayer {
-  id: number
+  id: string
   color: string
   position: number
   score: number
@@ -69,7 +69,7 @@ export interface ServerPlayer extends OnlinePlayer {
 export interface PlayerInfo {
   name: string
   isHost?: boolean
-  avatar?: string
+  avatarId?: string
   gender?: AvatarGender
 }
 
@@ -109,28 +109,32 @@ export interface GameVictoryData {
 // 常量定义
 export const PLAYER_COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4']
 
-
-
 // 类型守卫函数
 export function isLocalPlayer(player: unknown): player is LocalPlayer {
-  return typeof player === 'object' && 
-         player !== null &&
-         typeof (player as any).id === 'number' && 
-         typeof (player as any).position === 'number' && 
-         typeof (player as any).score === 'number'
+  return (
+    typeof player === 'object' &&
+    player !== null &&
+    typeof (player as any).id === 'number' &&
+    typeof (player as any).position === 'number' &&
+    typeof (player as any).score === 'number'
+  )
 }
 
 export function isNetworkPlayer(player: unknown): player is NetworkPlayer {
-  return typeof player === 'object' && 
-         player !== null &&
-         typeof (player as any).id === 'string' && 
-         typeof (player as any).socketId === 'string'
+  return (
+    typeof player === 'object' &&
+    player !== null &&
+    typeof (player as any).id === 'string' &&
+    typeof (player as any).socketId === 'string'
+  )
 }
 
 export function isOnlinePlayer(player: unknown): player is OnlinePlayer {
-  return isNetworkPlayer(player) && 
-         'roomId' in (player as object) &&
-         typeof (player as any).roomId === 'string'
+  return (
+    isNetworkPlayer(player) &&
+    'roomId' in (player as object) &&
+    typeof (player as any).roomId === 'string'
+  )
 }
 
 // 转换工具函数
@@ -143,13 +147,16 @@ export function localPlayerToNetworkPlayer(localPlayer: LocalPlayer): NetworkPla
     socketId: '',
     isHost: false,
     isConnected: true,
-    playerId: localPlayer.id.toString()
+    playerId: localPlayer.id.toString(),
   }
 }
 
-export function networkPlayerToLocalPlayer(networkPlayer: NetworkPlayer, index: number): LocalPlayer {
+export function networkPlayerToLocalPlayer(
+  networkPlayer: NetworkPlayer,
+  index: number,
+): LocalPlayer {
   return {
-    id: index + 1,
+    id: `${index + 1}`,
     name: networkPlayer.name,
     avatarId: networkPlayer.avatarId,
     gender: networkPlayer.gender,
@@ -158,6 +165,6 @@ export function networkPlayerToLocalPlayer(networkPlayer: NetworkPlayer, index: 
     score: 0,
     completedTasks: [],
     achievements: [],
-    isAI: false
+    isAI: false,
   }
 }

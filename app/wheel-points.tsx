@@ -119,7 +119,7 @@ export default function WheelPointsGame() {
   }
 
   // 触发任务弹窗
-  const triggerTask = (triggerPlayerId: number, wheelResult: WheelResult) => {
+  const triggerTask = (triggerPlayerId: string, wheelResult: WheelResult) => {
     console.log(`触发任务：触发者ID=${triggerPlayerId}, 转盘结果:`, wheelResult)
 
     const task = gameTasks.getRandomTask()

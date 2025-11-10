@@ -239,7 +239,7 @@ class FlightChessGame extends BaseGame {
 
     // 将 NetworkPlayer 转换为 GamePlayer
     const executorPlayers = executorNetworkPlayers.map((networkPlayer) => ({
-      id: parseInt(networkPlayer.id), // 转换 string 为 number
+      id: networkPlayer.id, // 转换 string 为 number
       name: networkPlayer.name || '',
       color: networkPlayer.color || '#FF6B6B',
       position: networkPlayer.position || 0,
@@ -260,7 +260,7 @@ class FlightChessGame extends BaseGame {
       executors: executorPlayers,
       category: taskSet?.categoryName || 'default',
       difficulty: taskSet?.difficulty || 'medium',
-      triggerPlayerIds: [parseInt(playerId)], // 转换为数字数组
+      triggerPlayerIds: [playerId], // 转换为数字数组
     }
 
     // 保存任务到游戏状态，并标记有待处理的任务

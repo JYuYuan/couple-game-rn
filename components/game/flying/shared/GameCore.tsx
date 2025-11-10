@@ -181,6 +181,7 @@ export default function GameCore({
 
       {/* 任务弹窗 */}
       <TaskModal
+        isOnline={mode === 'online'}
         visible={showTaskModal}
         task={taskModalData}
         players={players as any} // 类型兼容性转换
@@ -192,9 +193,7 @@ export default function GameCore({
       <VictoryModal
         visible={showVictoryModal}
         winner={winner as any} // 类型兼容性转换
-        isWinner={
-          mode === 'offline' || winner?.id === parseInt(currentPlayer?.id?.toString() || '0')
-        }
+        isWinner={mode === 'offline' || winner?.id === currentPlayer?.id}
         onRestart={onResetGame}
         onExit={onExit}
         onClose={() => {}} // 由外部控制关闭

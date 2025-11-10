@@ -12,7 +12,7 @@ export function useMovePlayer(
   players: Player[],
   boardPath: PathCell[],
   gameStatus: GameStatus,
-  movePlayerPosition: (playerId: number, position: number) => void
+  movePlayerPosition: (playerId: string, position: number) => void,
 ) {
   const audioManager = useAudioManager()
 
@@ -25,10 +25,10 @@ export function useMovePlayer(
    */
   const movePlayerStepByStep = useCallback(
     (
-      playerId: number,
+      playerId: string,
       steps: number,
       isForward: boolean = true,
-      onComplete?: (playerId: number, finalPosition: number) => void
+      onComplete?: (playerId: string, finalPosition: number) => void,
     ) => {
       const player = players.find((p) => p.id === playerId)
       if (!player || gameStatus !== 'playing') return
@@ -93,7 +93,7 @@ export function useMovePlayer(
 
       moveOneStep()
     },
-    [players, boardPath, gameStatus, movePlayerPosition, audioManager]
+    [players, boardPath, gameStatus, movePlayerPosition, audioManager],
   )
 
   return { movePlayerStepByStep }

@@ -27,14 +27,14 @@ export interface RoomInfo {
   maxPlayers: number
   gameType: 'fly' | 'wheel' | 'minesweeper'
   taskSet?: TaskSet | null
-  avatar?: string
+  avatarId?: string
   gender?: 'man' | 'woman'
 }
 
 export interface JoinData {
   roomId: string
   playerName: string
-  avatar?: string
+  avatarId?: string
   gender?: 'man' | 'woman'
 }
 

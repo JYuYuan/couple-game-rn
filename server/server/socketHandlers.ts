@@ -73,9 +73,9 @@ export default function registerSocketHandlers(io: SocketIOServer) {
       try {
         const player = await playerManager.addPlayer(playerId, {
           playerId,
-          name: playerInfo.name || `Player_${playerId.substring(0, 6)}`,
           roomId: null,
           isHost: false,
+          ...playerInfo,
         })
 
         console.log(`玩家加入:`, player)
@@ -96,15 +96,13 @@ export default function registerSocketHandlers(io: SocketIOServer) {
             name: roomInfo.playerName,
             roomId: null,
             isHost: true,
-            avatarId: roomInfo.avatar || '', // 头像ID
-            gender: roomInfo.gender || 'man', // 性别
             ...roomInfo,
           })
         } else {
           // 更新玩家信息
           player.name = roomInfo.playerName
           player.isHost = true
-          player.avatarId = roomInfo.avatar || ''
+          player.avatarId = roomInfo.avatarId || ''
           player.gender = roomInfo.gender || 'man'
           await playerManager.updatePlayer(player)
         }
@@ -152,15 +150,13 @@ export default function registerSocketHandlers(io: SocketIOServer) {
             playerId,
             name: joinData.playerName || `Player_${playerId.substring(0, 6)}`,
             isHost: false,
-            avatarId: joinData.avatar || '', // 头像ID
-            gender: joinData.gender || 'man', // 性别
             ...joinData,
           })
         } else {
           // 更新玩家信息
           player.name = joinData.playerName || player.name
           player.isHost = false
-          player.avatarId = joinData.avatar || ''
+          player.avatarId = joinData.avatarId || ''
           player.gender = joinData.gender || 'man'
           await playerManager.updatePlayer(player)
         }

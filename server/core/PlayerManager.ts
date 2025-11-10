@@ -32,6 +32,7 @@ class PlayerManager {
       playerId, // 为了兼容性
       ...rest,
     } as Player
+    console.log(player)
     await redis.hset(this.hashKey, player.id, JSON.stringify(player))
     return player
   }

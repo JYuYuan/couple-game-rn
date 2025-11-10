@@ -92,36 +92,24 @@ class SocketService {
     }
     const listeners = this.listeners.get(event)!
     listeners.add(callback)
-    console.log(`SocketService: Registered listener for event: ${event}, total: ${listeners.size}`)
   }
 
   off(event: string, callback: Function): void {
     const eventListeners = this.listeners.get(event)
-    if (eventListeners) {
-      const hadListener = eventListeners.has(callback)
-      eventListeners.delete(callback)
-      if (hadListener) {
-        console.log(
-          `SocketService: Removed listener for event: ${event}, remaining: ${eventListeners.size}`,
-        )
-      }
-    }
+    if (eventListeners) eventListeners.delete(callback)
   }
 
   // 清除特定事件的所有监听器
   offAll(event: string): void {
     const eventListeners = this.listeners.get(event)
     if (eventListeners) {
-      const count = eventListeners.size
       eventListeners.clear()
-      console.log(`SocketService: Cleared all ${count} listeners for event: ${event}`)
     }
   }
 
   private emit(event: string, ...args: unknown[]): void {
     const eventListeners = this.listeners.get(event)
     if (eventListeners && eventListeners.size > 0) {
-      console.log(`SocketService: Emitting event ${event} to ${eventListeners.size} listeners`)
       eventListeners.forEach((callback) => {
         try {
           callback(...args)
@@ -303,32 +291,6 @@ class SocketService {
       this.emit('error', error)
     })
 
-    // 游戏相关事件转发
-    this.socket.on('game:dice', (data) => {
-      this.emit('game:dice', data)
-    })
-
-    this.socket.on('game:task', (data) => {
-      this.emit('game:task', data)
-    })
-
-    this.socket.on('game:victory', (data) => {
-      this.emit('game:victory', data)
-    })
-
-    this.socket.on('game:move', (data) => {
-      this.emit('game:move', data)
-    })
-
-    this.socket.on('game:next', (data) => {
-      this.emit('game:next', data)
-    })
-
-    // 添加通用事件监听器用于调试
-    this.socket.onAny((eventName, ...args) => {
-      console.log(`SocketService: Event received: ${eventName}`, args)
-    })
-
     // 添加连接状态检查的辅助方法
     this.socket.on('ping', () => {
       console.log('SocketService: Ping received')
@@ -345,10 +307,9 @@ class SocketService {
       roomDiscovery.handleRoomList(rooms)
     })
 
-    // 在线房间列表事件
-    this.socket.on('room:list', (rooms: OnlineRoom[]) => {
-      console.log('SocketService: Received online room list:', rooms.length)
-      this.emit('room:list', rooms)
+    // 添加通用事件监听器用于调试
+    this.socket.onAny((eventName, ...args) => {
+      this.emit(eventName, ...args)
     })
   }
 
@@ -569,7 +530,8 @@ class SocketService {
     console.log('游戏事件：', type, data)
 
     // Socket 模式 - 🐾 确保 data 是对象
-    const payload = typeof data === 'object' && data !== null ? { type, ...data as object } : { type, data }
+    const payload =
+      typeof data === 'object' && data !== null ? { type, ...(data as object) } : { type, data }
     this.socketEmit('game:action', payload, callback)
   }
 

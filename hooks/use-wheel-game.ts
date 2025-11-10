@@ -111,7 +111,7 @@ export const useWheelGame = () => {
   }, [players.length])
 
   // 增加/减少玩家分数
-  const updatePlayerScore = useCallback((playerId: number, points: number) => {
+  const updatePlayerScore = useCallback((playerId: string, points: number) => {
     setPlayers((prev) =>
       prev.map((player) =>
         player.id === playerId
@@ -123,7 +123,7 @@ export const useWheelGame = () => {
 
   // 玩家完成任务
   const completeTask = useCallback(
-    (playerId: number, taskId: string, points: number, completed: boolean) => {
+    (playerId: string, taskId: string, points: number, completed: boolean) => {
       const actualPoints = completed ? points : -Math.floor(points / 2) // 失败扣一半分数
 
       setPlayers((prev) =>
@@ -142,7 +142,7 @@ export const useWheelGame = () => {
   )
 
   // 添加成就
-  const addAchievement = useCallback((playerId: number, achievement: string) => {
+  const addAchievement = useCallback((playerId: string, achievement: string) => {
     setPlayers((prev) =>
       prev.map((player) =>
         player.id === playerId && !player.achievements.includes(achievement)
@@ -176,7 +176,7 @@ export const useWheelGame = () => {
 
   // 应用转盘结果 - 现在所有区域都触发任务
   const applyWheelResult = useCallback(
-    (result: WheelResult, playerId: number) => {
+    (result: WheelResult, playerId: string) => {
       const player = players.find((p) => p.id === playerId)
       if (!player) return false
 
@@ -246,7 +246,7 @@ export const useWheelGame = () => {
 
   // 获取玩家统计信息
   const getPlayerStats = useCallback(
-    (playerId: number) => {
+    (playerId: string) => {
       const player = players.find((p) => p.id === playerId)
       if (!player) return null
 
@@ -263,7 +263,7 @@ export const useWheelGame = () => {
 
   // 获取对手玩家
   const getOpponentPlayer = useCallback(
-    (currentPlayerId: number) => {
+    (currentPlayerId: string) => {
       return players.find((player) => player.id !== currentPlayerId) || null
     },
     [players],
