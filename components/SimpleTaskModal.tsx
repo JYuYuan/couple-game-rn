@@ -202,6 +202,8 @@ const styles = StyleSheet.create({
     maxHeight: screenHeight * 0.8,
     overflow: 'hidden',
     padding: 0, // 移除padding，让LinearGradient填满
+    borderRadius: 20, // 添加圆角
+    backgroundColor: 'transparent', // 确保背景透明，让LinearGradient显示
   },
   modalContent: {
     padding: 24,

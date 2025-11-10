@@ -1,9 +1,8 @@
-import React, { ReactNode } from 'react'
-import { Modal, StyleSheet, TouchableWithoutFeedback, View, ViewStyle } from 'react-native'
+import React, { ReactNode, useCallback } from 'react'
+import { Modal, Pressable, StyleSheet, View, ViewStyle } from 'react-native'
+import type { AnimatedStyle } from 'react-native-reanimated'
 import Animated from 'react-native-reanimated'
 import { BlurView } from 'expo-blur'
-import { useTheme } from '@/hooks/useTheme'
-import type { AnimatedStyle } from 'react-native-reanimated'
 
 export interface BaseModalProps {
   /** 是否显示模态框 */
@@ -37,6 +36,7 @@ export interface BaseModalProps {
  * - 点击背景关闭
  * - 自定义样式支持
  * - 主题支持（夜间模式）
+ * - 无障碍性支持
  *
  * @example
  * ```tsx
@@ -50,7 +50,7 @@ export interface BaseModalProps {
  * </BaseModal>
  * ```
  */
-export const BaseModal: React.FC<BaseModalProps> = ({
+const BaseModalComponent: React.FC<BaseModalProps> = ({
   visible,
   onClose,
   children,
@@ -62,42 +62,74 @@ export const BaseModal: React.FC<BaseModalProps> = ({
   backdropStyle,
   modalAnimationStyle,
 }) => {
-  const { colors } = useTheme()
-
-  const handleBackdropPress = () => {
+  // 处理背景点击
+  const handleBackdropPress = useCallback(() => {
     if (closeOnBackdropPress) {
       onClose()
     }
-  }
+  }, [closeOnBackdropPress, onClose])
+
+  // 处理 Android 返回键
+  const handleRequestClose = useCallback(() => {
+    if (closeOnBackdropPress) {
+      onClose()
+    }
+    // Reason: 当 closeOnBackdropPress 为 false 时，不响应 Android 返回键
+    // 这样可以创建强制性模态框（必须通过内部操作关闭）
+  }, [closeOnBackdropPress, onClose])
+
+  // 阻止点击事件冒泡到背景
+  const handleModalPress = useCallback(() => {
+    // Reason: 空函数用于阻止点击事件冒泡，但不触发任何操作
+  }, [])
 
   return (
-    <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
-      {/* 背景层 - 包裹所有内容 */}
-      <TouchableWithoutFeedback onPress={handleBackdropPress}>
-        <Animated.View style={[styles.backdrop, backdropStyle]}>
-          {showBlur && <BlurView intensity={blurIntensity} style={StyleSheet.absoluteFillObject} />}
-        </Animated.View>
-      </TouchableWithoutFeedback>
-
-      {/* 内容容器 - 使用 pointerEvents 让点击穿透到背景 */}
+    <Modal
+      visible={visible}
+      transparent
+      animationType="none"
+      onRequestClose={handleRequestClose}
+      statusBarTranslucent
+      accessible={true}
+      accessibilityViewIsModal={true}
+      accessibilityLabel="模态对话框"
+    >
+      {/* 统一容器 - 包含背景和内容 */}
       <View style={[styles.container, containerStyle]} pointerEvents="box-none">
+        {/* 背景层 - 可点击关闭 */}
+        <Pressable style={StyleSheet.absoluteFill} onPress={handleBackdropPress} accessible={false}>
+          <Animated.View style={[styles.backdrop, backdropStyle]}>
+            {showBlur && (
+              <BlurView
+                intensity={blurIntensity}
+                style={StyleSheet.absoluteFillObject}
+                tint="dark"
+              />
+            )}
+          </Animated.View>
+        </Pressable>
+
         {/* Modal 内容 - 阻止点击穿透 */}
-        <TouchableWithoutFeedback>
-          <Animated.View
-            style={[
-              styles.modal,
-              { backgroundColor: colors.background }, // 使用主题背景色
-              modalStyle,
-              modalAnimationStyle,
-            ]}
+        <Animated.View style={[styles.modal, modalStyle, modalAnimationStyle]}>
+          <Pressable
+            onPress={handleModalPress}
+            accessible={true}
+            accessibilityRole="alert"
+            style={styles.modalInner}
           >
             {children}
-          </Animated.View>
-        </TouchableWithoutFeedback>
+          </Pressable>
+        </Animated.View>
       </View>
     </Modal>
   )
 }
+
+// 添加 displayName 以便调试
+BaseModalComponent.displayName = 'BaseModal'
+
+// 使用 memo 优化性能
+export const BaseModal = React.memo(BaseModalComponent)
 
 const styles = StyleSheet.create({
   backdrop: {
@@ -111,10 +143,11 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   modal: {
-    borderRadius: 20,
-    padding: 20,
-    maxWidth: '90%',
-    maxHeight: '80%',
+    // Reason: 使用 100% 作为默认最大值，不限制宽高
+    // 外部可以通过 modalStyle 传入更具体的限制（如居中对话框的 maxWidth: '90%'）
+    // 对于底部弹出的场景，可以传入 { width: '100%', marginHorizontal: 0 }
+    maxWidth: '100%',
+    maxHeight: '100%',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -123,6 +156,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 20,
     elevation: 10,
+  },
+  modalInner: {
+    // Reason: 让内容自然撑开，不强制占满容器
+    // padding: 20,
   },
 })
 

@@ -1,19 +1,12 @@
 import React, { useEffect, useState } from 'react'
-import {
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from 'react-native'
+import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { useErrorHandler } from '@/constants/commonImports'
 import { useTheme } from '@/hooks'
 import { TaskCategory } from '@/types/tasks'
 import { useTasksStore } from '@/store/tasksStore'
 import { showConfirmDialog } from '@/components/ConfirmDialog'
+import { BaseModal } from '@/components/common/BaseModal'
 
 interface CategoryModalProps {
   visible: boolean
@@ -142,179 +135,183 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
   }
 
   return (
-    <Modal visible={visible} animationType="fade" transparent>
-      <View style={[styles.overlay, { backgroundColor: colors.overlay }]}>
-        <View style={[styles.modal, { backgroundColor: colors.surface }]}>
-          <View style={styles.header}>
-            <Text style={[styles.title, { color: colors.text }]}>
-              {category ? '编辑分类' : '创建分类'}
-            </Text>
-            <TouchableOpacity onPress={onClose}>
-              <Ionicons name="close" size={24} color={colors.textSecondary} />
-            </TouchableOpacity>
+    <BaseModal
+      visible={visible}
+      onClose={onClose}
+      modalStyle={styles.modal}
+      containerStyle={styles.baseContainer}
+    >
+      <View style={[styles.container, { backgroundColor: colors.surface }]}>
+        <View style={styles.header}>
+          <Text style={[styles.title, { color: colors.text }]}>
+            {category ? '编辑分类' : '创建分类'}
+          </Text>
+          <TouchableOpacity onPress={onClose}>
+            <Ionicons name="close" size={24} color={colors.textSecondary} />
+          </TouchableOpacity>
+        </View>
+
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          <View style={styles.section}>
+            <Text style={[styles.label, { color: colors.text }]}>名称</Text>
+            <TextInput
+              style={[
+                styles.input,
+                {
+                  backgroundColor: colors.background,
+                  borderColor: colors.border,
+                  color: colors.text,
+                },
+              ]}
+              value={formData.name}
+              onChangeText={(text) => setFormData((prev) => ({ ...prev, name: text }))}
+              placeholder="输入分类名称"
+              placeholderTextColor={colors.textSecondary}
+            />
           </View>
 
-          <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-            <View style={styles.section}>
-              <Text style={[styles.label, { color: colors.text }]}>名称</Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  {
-                    backgroundColor: colors.background,
-                    borderColor: colors.border,
-                    color: colors.text,
-                  },
-                ]}
-                value={formData.name}
-                onChangeText={(text) => setFormData((prev) => ({ ...prev, name: text }))}
-                placeholder="输入分类名称"
-                placeholderTextColor={colors.textSecondary}
-              />
-            </View>
+          <View style={styles.section}>
+            <Text style={[styles.label, { color: colors.text }]}>描述</Text>
+            <TextInput
+              style={[
+                styles.input,
+                {
+                  backgroundColor: colors.background,
+                  borderColor: colors.border,
+                  color: colors.text,
+                  minHeight: 60,
+                },
+              ]}
+              value={formData.description}
+              onChangeText={(text) => setFormData((prev) => ({ ...prev, description: text }))}
+              placeholder="输入分类描述（可选）"
+              placeholderTextColor={colors.textSecondary}
+              multiline
+              textAlignVertical="top"
+            />
+          </View>
 
-            <View style={styles.section}>
-              <Text style={[styles.label, { color: colors.text }]}>描述</Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  {
-                    backgroundColor: colors.background,
-                    borderColor: colors.border,
-                    color: colors.text,
-                    minHeight: 60,
-                  },
-                ]}
-                value={formData.description}
-                onChangeText={(text) => setFormData((prev) => ({ ...prev, description: text }))}
-                placeholder="输入分类描述（可选）"
-                placeholderTextColor={colors.textSecondary}
-                multiline
-                textAlignVertical="top"
-              />
-            </View>
-
-            <View style={styles.section}>
-              <Text style={[styles.label, { color: colors.text }]}>图标</Text>
-              <View style={styles.optionsGrid}>
-                {ICON_OPTIONS.map((iconName) => (
-                  <TouchableOpacity
-                    key={iconName}
-                    style={[
-                      styles.iconOption,
-                      {
-                        backgroundColor:
-                          formData.icon === iconName ? formData.color + '20' : colors.background,
-                        borderColor: formData.icon === iconName ? formData.color : colors.border,
-                      },
-                    ]}
-                    onPress={() => setFormData((prev) => ({ ...prev, icon: iconName }))}
-                  >
-                    <Ionicons
-                      name={iconName as keyof typeof Ionicons.glyphMap}
-                      size={24}
-                      color={formData.icon === iconName ? formData.color : colors.text}
-                    />
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-
-            <View style={styles.section}>
-              <Text style={[styles.label, { color: colors.text }]}>颜色</Text>
-              <View style={styles.optionsGrid}>
-                {COLOR_OPTIONS.map((colorValue) => (
-                  <TouchableOpacity
-                    key={colorValue}
-                    style={[
-                      styles.colorOption,
-                      {
-                        backgroundColor: colorValue,
-                        borderColor: formData.color === colorValue ? colors.text : 'transparent',
-                        borderWidth: formData.color === colorValue ? 2 : 0,
-                      },
-                    ]}
-                    onPress={() => setFormData((prev) => ({ ...prev, color: colorValue }))}
-                  >
-                    {formData.color === colorValue && (
-                      <Ionicons name="checkmark" size={16} color="white" />
-                    )}
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-
-            <View style={styles.previewSection}>
-              <Text style={[styles.label, { color: colors.text }]}>预览</Text>
-              <View
-                style={[
-                  styles.preview,
-                  {
-                    backgroundColor: colors.background,
-                    borderColor: colors.border,
-                  },
-                ]}
-              >
-                <View style={[styles.previewIcon, { backgroundColor: formData.color + '20' }]}>
+          <View style={styles.section}>
+            <Text style={[styles.label, { color: colors.text }]}>图标</Text>
+            <View style={styles.optionsGrid}>
+              {ICON_OPTIONS.map((iconName) => (
+                <TouchableOpacity
+                  key={iconName}
+                  style={[
+                    styles.iconOption,
+                    {
+                      backgroundColor:
+                        formData.icon === iconName ? formData.color + '20' : colors.background,
+                      borderColor: formData.icon === iconName ? formData.color : colors.border,
+                    },
+                  ]}
+                  onPress={() => setFormData((prev) => ({ ...prev, icon: iconName }))}
+                >
                   <Ionicons
-                    name={formData.icon as keyof typeof Ionicons.glyphMap}
+                    name={iconName as keyof typeof Ionicons.glyphMap}
                     size={24}
-                    color={formData.color}
+                    color={formData.icon === iconName ? formData.color : colors.text}
                   />
-                </View>
-                <View style={styles.previewInfo}>
-                  <Text style={[styles.previewName, { color: colors.text }]}>
-                    {formData.name || '分类名称'}
-                  </Text>
-                  <Text style={[styles.previewDescription, { color: colors.textSecondary }]}>
-                    {formData.description || '分类描述'}
-                  </Text>
-                </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={[styles.label, { color: colors.text }]}>颜色</Text>
+            <View style={styles.optionsGrid}>
+              {COLOR_OPTIONS.map((colorValue) => (
+                <TouchableOpacity
+                  key={colorValue}
+                  style={[
+                    styles.colorOption,
+                    {
+                      backgroundColor: colorValue,
+                      borderColor: formData.color === colorValue ? colors.text : 'transparent',
+                      borderWidth: formData.color === colorValue ? 2 : 0,
+                    },
+                  ]}
+                  onPress={() => setFormData((prev) => ({ ...prev, color: colorValue }))}
+                >
+                  {formData.color === colorValue && (
+                    <Ionicons name="checkmark" size={16} color="white" />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          <View style={styles.previewSection}>
+            <Text style={[styles.label, { color: colors.text }]}>预览</Text>
+            <View
+              style={[
+                styles.preview,
+                {
+                  backgroundColor: colors.background,
+                  borderColor: colors.border,
+                },
+              ]}
+            >
+              <View style={[styles.previewIcon, { backgroundColor: formData.color + '20' }]}>
+                <Ionicons
+                  name={formData.icon as keyof typeof Ionicons.glyphMap}
+                  size={24}
+                  color={formData.color}
+                />
+              </View>
+              <View style={styles.previewInfo}>
+                <Text style={[styles.previewName, { color: colors.text }]}>
+                  {formData.name || '分类名称'}
+                </Text>
+                <Text style={[styles.previewDescription, { color: colors.textSecondary }]}>
+                  {formData.description || '分类描述'}
+                </Text>
               </View>
             </View>
-          </ScrollView>
-
-          <View style={styles.footer}>
-            <TouchableOpacity
-              style={[styles.button, styles.cancelButton, { backgroundColor: colors.background }]}
-              onPress={onClose}
-            >
-              <Text style={[styles.buttonText, { color: colors.textSecondary }]}>取消</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.button, styles.saveButton, { backgroundColor: colors.primary }]}
-              onPress={handleSave}
-              disabled={loading}
-            >
-              <Text style={[styles.buttonText, { color: 'white' }]}>
-                {loading ? '保存中...' : '保存'}
-              </Text>
-            </TouchableOpacity>
           </View>
+        </ScrollView>
+
+        <View style={styles.footer}>
+          <TouchableOpacity
+            style={[styles.button, styles.cancelButton, { backgroundColor: colors.background }]}
+            onPress={onClose}
+          >
+            <Text style={[styles.buttonText, { color: colors.textSecondary }]}>取消</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.button, styles.saveButton, { backgroundColor: colors.primary }]}
+            onPress={handleSave}
+            disabled={loading}
+          >
+            <Text style={[styles.buttonText, { color: 'white' }]}>
+              {loading ? '保存中...' : '保存'}
+            </Text>
+          </TouchableOpacity>
         </View>
       </View>
-    </Modal>
+    </BaseModal>
   )
 }
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-  },
   modal: {
     width: '100%',
-    maxHeight: '90%',
-    borderRadius: 16,
-    paddingVertical: 20,
+    padding: 0,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+  },
+  baseContainer: {
+    padding: 0,
+    justifyContent: 'flex-end', // 底部对齐
+    alignItems: 'stretch', // 拉伸到全宽（这是关键！）
+  },
+  container: {
+    padding: 20,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
     marginBottom: 20,
   },
   title: {
@@ -322,7 +319,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   content: {
-    paddingHorizontal: 20,
     maxHeight: 500,
   },
   section: {
@@ -391,7 +387,6 @@ const styles = StyleSheet.create({
   },
   footer: {
     flexDirection: 'row',
-    paddingHorizontal: 20,
     paddingTop: 20,
     gap: 12,
   },

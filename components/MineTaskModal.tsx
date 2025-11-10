@@ -44,7 +44,13 @@ export default function MineTaskModal({ visible, task, onComplete, onClose }: Mi
   }, [visible])
 
   // 获取结果信息
-  const getResultInfo = () => {
+  const getResultInfo = (): {
+    icon: 'checkmark-circle' | 'close-circle'
+    iconColor: string
+    title: string
+    description: string
+    gradient: [string, string]
+  } | null => {
     if (!task || isCompleted === null) return null
 
     return {
@@ -174,7 +180,7 @@ export default function MineTaskModal({ visible, task, onComplete, onClose }: Mi
                 end={{ x: 1, y: 1 }}
               >
                 <Ionicons
-                  name={resultInfo.icon as any}
+                  name={resultInfo.icon}
                   size={48}
                   color="white"
                   style={styles.resultIcon}
@@ -207,6 +213,8 @@ const styles = StyleSheet.create({
     maxHeight: screenHeight * 0.85,
     overflow: 'hidden',
     padding: 0, // 移除padding，让LinearGradient填满
+    borderRadius: 20, // 添加圆角
+    backgroundColor: 'transparent', // 确保背景透明，让LinearGradient显示
   },
   modalContent: {
     padding: 16,

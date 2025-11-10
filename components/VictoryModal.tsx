@@ -60,7 +60,7 @@ export default function VictoryModal({
       onClose={onClose}
       backdropStyle={backdropStyle}
       modalAnimationStyle={modalStyle}
-      modalStyle={[styles.modalContainer, { backgroundColor: colors.surface }]}
+      modalStyle={StyleSheet.flatten([styles.modalContainer, { backgroundColor: colors.surface }])}
     >
       {/* 庆祝背景 */}
       <Animated.View style={[styles.confettiContainer, confettiStyle]}>
