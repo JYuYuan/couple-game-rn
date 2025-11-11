@@ -58,7 +58,7 @@ interface SocketContextValue {
   resetRoomState: () => void
 
   // 游戏事件
-  startGame: (data: unknown) => void
+  startGame: (data: unknown, callback?: () => void) => void
   rollDice: (data: unknown, callback?: (result: DiceRollResult) => void) => void
   completeTask: (data: unknown) => void
 

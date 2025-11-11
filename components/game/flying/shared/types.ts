@@ -29,6 +29,7 @@ export interface GameCoreProps {
   currentPlayer: Player | null
   currentPlayerIndex: number
   currentPlayerId?: string // 🐾 当前玩家ID,用于任务模态框判断执行者
+  playerId?: string // 🐾 当前登录玩家的ID（在线模式用于判断isWinner）
 
   // 棋盘数据
   boardPath: PathCell[]
@@ -54,6 +55,7 @@ export interface GameCoreProps {
   // 可选的模式特定数据
   isOwnTurn?: boolean // online模式专用
   isHost?: boolean // online模式专用
+  onCloseWinner?: () => void
 }
 
 // 游戏逻辑Hook返回值

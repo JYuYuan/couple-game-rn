@@ -43,11 +43,6 @@ export default function FlyingChessGame() {
       // 局域网模式直接渲染游戏
       return <OnlineGame />
     }
-
-    // 在线模式下检查连接
-    if (!socket.isConnected || socket.connectionError) {
-      return <LoadingScreen />
-    }
   }
 
   return isOnlineMode ? <OnlineGame /> : <OfflineGame />

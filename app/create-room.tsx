@@ -30,7 +30,7 @@ export default function CreateRoomPage() {
   const { showError } = useErrorHandler()
   const params = useLocalSearchParams()
   const socket = useSocket()
-  const { networkSettings } = useSettingsStore()
+  const { networkSettings, playerProfile, setPlayerProfile } = useSettingsStore()
   const { taskSets } = useTasksStore()
   const getGameTypeText = useGameTypeText()
 
@@ -47,13 +47,13 @@ export default function CreateRoomPage() {
         ? 'lan'
         : 'online',
   )
-  const [playerName, setPlayerName] = useState('')
+  const [playerName, setPlayerName] = useState(playerProfile.playerName || '')
   const [roomName, setRoomName] = useState('')
   const [maxPlayers, setMaxPlayers] = useState(2)
   const [isLoading, setIsLoading] = useState(false)
 
   // 头像和性别状态
-  const [selectedGender, setSelectedGender] = useState<AvatarGender>('man')
+  const [selectedGender, setSelectedGender] = useState<AvatarGender>(playerProfile.gender || 'man')
   const [selectedAvatar, setSelectedAvatar] = useState<AvatarOption | null>(null)
 
   // 检查平台是否支持局域网功能
@@ -70,10 +70,28 @@ export default function CreateRoomPage() {
   // 初始化默认头像
   useEffect(() => {
     if (!selectedAvatar) {
-      const defaultAvatar = getRandomAvatarByGender(selectedGender)
-      setSelectedAvatar(defaultAvatar)
+      // 优先从缓存加载头像，如果没有则随机生成
+      if (playerProfile.avatarId) {
+        // 这里可以根据 avatarId 找到对应的头像，暂时先随机生成
+        const defaultAvatar = getRandomAvatarByGender(selectedGender)
+        setSelectedAvatar(defaultAvatar)
+      } else {
+        const defaultAvatar = getRandomAvatarByGender(selectedGender)
+        setSelectedAvatar(defaultAvatar)
+      }
     }
   }, [])
+
+  // 自动保存玩家资料到缓存
+  useEffect(() => {
+    if (playerName && selectedAvatar) {
+      setPlayerProfile({
+        playerName: playerName.trim(),
+        avatarId: selectedAvatar.id,
+        gender: selectedGender,
+      })
+    }
+  }, [playerName, selectedAvatar, selectedGender])
 
   // 监听房间创建成功后跳转
   useEffect(() => {

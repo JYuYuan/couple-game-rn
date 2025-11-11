@@ -258,12 +258,12 @@ class FlyingGame extends BaseGame {
     this.room.tasks = availableTasks
 
     // 构造 TaskModalData
-    const currentTask = {
+    const currentTask: any = {
       id: taskSet.id,
       type: taskType as 'trap' | 'star' | 'collision',
       category: taskSet.categoryName || 'default',
       difficulty: taskSet.difficulty || 'medium',
-      triggerPlayerIds: [parseInt(playerId)],
+      triggerPlayerIds: [playerId],
       executorTasks: executorTasks,
     }
 
@@ -361,7 +361,9 @@ class FlyingGame extends BaseGame {
   }
 
   async _checkWinCondition() {
+    console.log(this.playerPositions)
     for (const [playerId, position] of Object.entries(this.playerPositions)) {
+      console.log(playerId, position)
       if (position >= (this.room.gameState?.boardSize || 0) - 1) {
         await this._endGame(playerId)
         return
@@ -390,6 +392,16 @@ class FlyingGame extends BaseGame {
 
     const winner = this.room.players.find((p: Player) => p.id === winnerId)
 
+    // 🐾 从任务集中随机选择3个任务
+    let victoryTasks: string[] = []
+    if (this.room.taskSet && this.room.taskSet.tasks && this.room.taskSet.tasks.length > 0) {
+      const allTasks = [...this.room.taskSet.tasks]
+      // 随机打乱并取前3个
+      const shuffled = allTasks.sort(() => Math.random() - 0.5)
+      victoryTasks = shuffled.slice(0, Math.min(3, shuffled.length))
+      console.log(`🎯 为胜利者选择了 ${victoryTasks.length} 个任务:`, victoryTasks)
+    }
+
     // 保存胜利信息到游戏状态
     if (this.room.gameState) {
       this.room.gameState.winner = {
@@ -400,10 +412,15 @@ class FlyingGame extends BaseGame {
       }
     }
 
-    // 发送独立的胜利事件
+    // 发送独立的胜利事件给所有玩家（包括获胜者）
     this.socket.to(this.room.id).emit('game:victory', {
-      winnerId,
-      winnerName: winner?.name || '未知玩家',
+      winner: {
+        id: winnerId,
+        name: winner?.name || '未知玩家',
+        color: winner?.color || '#4CAF50',
+        tasks: victoryTasks, // 🐾 随机选择的3个胜利任务
+        ...winner,
+      },
       endTime: Date.now(),
       finalPositions: Object.entries(this.playerPositions),
     })

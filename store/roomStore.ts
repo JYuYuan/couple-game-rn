@@ -104,7 +104,7 @@ export const useRoomStore = (() => {
 
         setCurrentRoom: (room) => {
           const currentRoom = get().currentRoom
-
+          console.log(currentRoom, room)
           // 深度比较，只在数据真正改变时才更新
           if (roomsAreEqual(currentRoom, room)) {
             console.log('🟢 [RoomStore] 房间数据未变化，跳过更新')
@@ -112,8 +112,16 @@ export const useRoomStore = (() => {
           }
 
           console.log('🔄 [RoomStore] 房间数据已变化，执行更新')
-          console.log('🐛 [RoomStore] 旧房间:', currentRoom ? `${currentRoom.id} (${currentRoom.players?.length} 玩家, status: ${currentRoom.gameStatus})` : 'null')
-          console.log('🐛 [RoomStore] 新房间:', room ? `${room.id} (${room.players?.length} 玩家, status: ${room.gameStatus})` : 'null')
+          console.log(
+            '🐛 [RoomStore] 旧房间:',
+            currentRoom
+              ? `${currentRoom.id} (${currentRoom.players?.length} 玩家, status: ${currentRoom.gameStatus})`
+              : 'null',
+          )
+          console.log(
+            '🐛 [RoomStore] 新房间:',
+            room ? `${room.id} (${room.players?.length} 玩家, status: ${room.gameStatus})` : 'null',
+          )
 
           set({ currentRoom: room })
           console.log('✅ [RoomStore] currentRoom 状态已更新')

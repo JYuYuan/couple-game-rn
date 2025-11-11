@@ -94,17 +94,7 @@ export default function WaitingRoomPage() {
       console.log('✅ startGame 调用完成')
 
       // 显示成功提示
-      showSuccess('游戏开始', '正在启动游戏...')
-
-      // 如果5秒后还没有跳转，重置状态
-      // 使用更长的超时时间，给状态更新留足时间
-      setTimeout(() => {
-        if (currentRoom?.gameStatus !== 'playing') {
-          setIsStartingGame(false)
-          console.warn('⚠️ 游戏开始超时，重置状态')
-          showError('游戏启动超时', '请重试或检查网络连接')
-        }
-      }, 5000) // 增加到5秒
+      showSuccess('游戏开始')
     } catch (error) {
       console.error('❌ 开始游戏失败:', error)
       setIsStartingGame(false)

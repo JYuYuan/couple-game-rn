@@ -9,8 +9,7 @@ import { Stack, useNavigation, useRouter } from 'expo-router'
 import { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 import { usePageBase } from '@/hooks/usePageBase'
 import { useAudioManager } from '@/hooks/use-audio-manager'
-import { OnlinePlayer, TaskModalData } from '@/types/online'
-import { GamePlayer } from '@/hooks/use-game-players'
+import { NetworkPlayer, OnlinePlayer, TaskModalData } from '@/types/online'
 import { useSocket } from '@/hooks/use-socket'
 import { useRoomStore, useSettingsStore } from '@/store'
 import { useDeepCompareEffect } from 'ahooks'
@@ -27,21 +26,6 @@ const ANIMATION_DELAYS = {
   DICE_ANIMATION: 300, // 骰子动画时长（毫秒）
   EXIT_DELAY: 100, // 退出房间延迟（毫秒）
 } as const
-
-// 类型转换辅助函数 - 将在线玩家数据转换为游戏玩家格式
-const convertToGamePlayer = (player: {
-  id: string
-  name: string
-  color: string
-  position?: number
-}): GamePlayer =>
-  ({
-    id: parseInt(player.id),
-    name: player.name,
-    position: player.position || 0,
-    color: player.color,
-    avatarId: '', // 在线模式不使用 avatarId
-  }) as any
 
 export default function FlyingChessGame() {
   const router = useRouter()
@@ -65,7 +49,7 @@ export default function FlyingChessGame() {
   const [showObserverModal, setShowObserverModal] = useState(false) // 🐾 新增：观察者弹窗状态
   const [taskModalData, setTaskModalData] = useState<TaskModalData | null>(null)
   const [showVictoryModal, setShowVictoryModal] = useState(false)
-  const [winner, setWinner] = useState<GamePlayer | null>(null)
+  const [winner, setWinner] = useState<any>(null)
   const [currentDiceValue, setCurrentDiceValue] = useState<number | null>(null)
 
   // Refs
@@ -87,14 +71,17 @@ export default function FlyingChessGame() {
   // 计算当前玩家信息
   const isOwnTurn = useMemo(() => currentUserId === playerId, [currentUserId, playerId])
   const isHost = useMemo(() => room?.hostId === playerId, [room?.hostId, playerId])
+
   const currentPlayer = useMemo(
     () => players?.find((item) => currentUserId === item.id) || null,
     [players, currentUserId],
   )
+
   const currentPlayerIndex = useMemo(
     () => players?.findIndex((item) => currentUserId === item.id) ?? -1,
     [players, currentUserId],
   )
+
   const currentExecutorTask = useMemo(
     () =>
       taskModalData?.executorTasks?.find(
@@ -400,21 +387,16 @@ export default function FlyingChessGame() {
       setShowObserverModal(false) // 🐾 同时关闭观察者弹窗
       setTaskModalData(null)
       lastTaskIdRef.current = null
-
-      toast.success(t('taskModal.allCompleted', '所有玩家已完成任务！'))
     },
     [t],
   )
 
   // 胜利事件
   const handleGameVictory = useCallback(
-    (data: { winner: { id: string; name: string; color: string } }) => {
+    (data: { winner: NetworkPlayer }) => {
       console.log('🏆 收到胜利事件:', data)
 
-      // 使用类型转换函数，确保类型安全
-      const victoryPlayer = convertToGamePlayer(data.winner)
-
-      setWinner(victoryPlayer)
+      setWinner(data.winner)
       setShowVictoryModal(true)
       audioManager.playSoundEffect('victory')
     },
@@ -518,6 +500,8 @@ export default function FlyingChessGame() {
     console.log('🔄 请求重新开始游戏')
     try {
       socket.startGame({ roomId: room?.id })
+      setWinner(null)
+      setShowVictoryModal(false)
     } catch (error) {
       console.error('重新开始游戏失败:', error)
       toast.error(t('error.restartGame', '重新开始失败，请重试'))
@@ -567,7 +551,7 @@ export default function FlyingChessGame() {
         mode="online"
         gameStatus={room?.gameStatus || 'waiting'}
         players={animatedPlayers}
-        currentPlayer={currentPlayer ? convertToGamePlayer(currentPlayer as any) : null}
+        currentPlayer={currentPlayer as any}
         currentPlayerIndex={currentPlayerIndex}
         boardPath={boardPath}
         diceValue={currentDiceValue || 0}
@@ -579,6 +563,10 @@ export default function FlyingChessGame() {
         onResetGame={handleRestartGame}
         onExit={handleLeaveRoom}
         colors={colors}
+        onCloseWinner={() => {
+          setWinner(null)
+          setShowVictoryModal(false)
+        }}
         t={t}
         isOwnTurn={isOwnTurn}
         isHost={isHost}

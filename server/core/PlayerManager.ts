@@ -35,7 +35,6 @@ class PlayerManager {
       playerId, // 为了兼容性
       ...rest,
     } as Player
-    console.log(player)
     this.players.set(player.id, player)
     return player
   }

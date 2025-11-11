@@ -11,6 +11,7 @@ import GameBoard from '@/components/GameBoard'
 import VictoryModal from '@/components/VictoryModal'
 import { PlayerAvatar } from '@/components/PlayerAvatar'
 import { GameCoreProps } from './types'
+import { useSettingsStore } from '@/store'
 
 interface GameCorePropsWithAnimation extends GameCoreProps {
   diceAnimatedStyle: any // 动画样式从外部传入
@@ -35,6 +36,7 @@ export default function GameCore({
   onDiceRoll,
   onResetGame,
   onExit,
+  onCloseWinner,
   colors,
   t,
   isOwnTurn = true, // offline默认true, online根据实际情况
@@ -45,6 +47,11 @@ export default function GameCore({
     mode === 'offline'
       ? !isRolling && !isMoving // 离线模式: 只要不在动画中就可以
       : isOwnTurn && !isRolling && !isMoving // 在线模式: 还要检查是否自己的回合
+
+  const { playerId } = useSettingsStore()
+  // 🐾 判断当前登录玩家是否是获胜者
+  const isCurrentPlayerWinner =
+    mode === 'offline' || !!(playerId && winner?.id?.toString() === playerId.toString()) // 在线模式，比较ID
 
   return (
     <View style={[styles.container, { backgroundColor: colors.homeBackground }]}>
@@ -178,10 +185,10 @@ export default function GameCore({
       <VictoryModal
         visible={showVictoryModal}
         winner={winner as any} // 类型兼容性转换
-        isWinner={mode === 'offline' || winner?.id === currentPlayer?.id}
+        isWinner={isCurrentPlayerWinner}
         onRestart={onResetGame}
         onExit={onExit}
-        onClose={() => {}} // 由外部控制关闭
+        onClose={onCloseWinner} // 由外部控制关闭
       />
     </View>
   )
