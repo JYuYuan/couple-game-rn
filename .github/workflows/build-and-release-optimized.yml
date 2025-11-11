@@ -279,30 +279,29 @@ jobs:
 
       - name: Create or update pages branch
         run: |
-          # 检查 pages 分支是否存在
-          if git rev-parse --verify origin/pages >/dev/null 2>&1; then
-            echo "pages 分支已存在，更新内容..."
-            git fetch origin pages:pages
-            git checkout pages
-          else
-            echo "pages 分支不存在，创建新分支..."
-            git checkout --orphan pages
-            git rm -rf .
-          fi
+          # 丢弃所有本地更改
+          git reset --hard HEAD
+          git clean -fd
+
+          # 删除本地 pages 分支（如果存在）
+          git branch -D pages 2>/dev/null || true
+
+          # 创建全新的 orphan 分支
+          git checkout --orphan pages
+
+          # 清空所有内容
+          git rm -rf . 2>/dev/null || true
 
           # 复制构建文件到分支根目录
           cp -r dist/* .
+          cp dist/.nojekyll . 2>/dev/null || true
 
-          # 提交更改
+          # 提交并强制推送
           git add .
+          git commit -m "chore: update pages content from main branch"
+          git push -f origin pages
 
-          if git diff-index --quiet HEAD --; then
-            echo "没有文件变更，跳过提交"
-          else
-            git commit -m "chore: update pages content from main branch"
-            git push -u origin pages
-            echo "成功推送到 pages 分支"
-          fi
+          echo "✅ 成功强制推送到 pages 分支"
 
 
   create-release:
