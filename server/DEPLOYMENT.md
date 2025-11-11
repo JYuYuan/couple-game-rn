@@ -4,20 +4,9 @@
 
 ## 免费部署指南
 
-### 方案：Render.com + Upstash Redis
+### 方案：Render.com（推荐）
 
-#### 步骤 1: 准备 Upstash Redis
-
-1. 访问 [Upstash](https://upstash.com/)
-2. 创建免费账号
-3. 创建一个 Redis 数据库
-4. 获取连接信息：
-   - `REDIS_URL`
-   - `REDIS_HOST`
-   - `REDIS_PORT`
-   - `REDIS_PASSWORD`
-
-#### 步骤 2: 部署到 Render
+#### 步骤 1: 部署到 Render
 
 1. 访问 [Render.com](https://render.com/)
 2. 创建免费账号
@@ -36,23 +25,19 @@
 ```
 NODE_ENV=production
 PORT=3001
-REDIS_URL=<从 Upstash 复制>
-REDIS_HOST=<从 Upstash 复制>
-REDIS_PORT=<从 Upstash 复制>
-REDIS_PASSWORD=<从 Upstash 复制>
 ```
 
 6. 点击 "Create Web Service"
 7. 等待部署完成（约 2-3 分钟）
 
-#### 步骤 3: 获取服务器 URL
+#### 步骤 2: 获取服务器 URL
 
 部署完成后，您会得到一个 URL，例如：
 ```
 https://couple-game-server.onrender.com
 ```
 
-#### 步骤 4: 更新客户端配置
+#### 步骤 3: 更新客户端配置
 
 在 React Native 应用中，更新 Socket.IO 连接地址为 Render 提供的 URL。
 
@@ -114,10 +99,13 @@ npm start
 ### 避免休眠的方法
 可以使用免费的 Uptime 监控服务（如 UptimeRobot）每 14 分钟 ping 一次服务器。
 
-### Upstash Redis 免费限制
-- **命令数**: 10,000 条/天
-- **存储**: 256MB
-- **连接数**: 适合小型应用
+### 数据存储说明
+- **存储方式**: 内存存储（Map）
+- **数据持久化**: 服务器重启后数据清空
+- **适用场景**: 小型应用、情侣游戏（2-4 人）
+- **优势**: 部署简单、无需额外服务、性能高
+
+**重要提示**：由于使用内存存储，服务器重启或休眠唤醒后，游戏房间和玩家数据会丢失。这对于短期游戏会话是可接受的。
 
 ---
 
@@ -127,10 +115,6 @@ npm start
 |--------|------|------|
 | `NODE_ENV` | 运行环境 | `production` |
 | `PORT` | 服务器端口 | `3001` |
-| `REDIS_URL` | Redis 完整连接 URL | `redis://default:xxx@xxx.upstash.io:6379` |
-| `REDIS_HOST` | Redis 主机地址 | `xxx.upstash.io` |
-| `REDIS_PORT` | Redis 端口 | `6379` |
-| `REDIS_PASSWORD` | Redis 密码 | `your-password` |
 
 ---
 
@@ -149,17 +133,17 @@ GET /
 
 如遇问题，请检查：
 1. Render 部署日志
-2. Redis 连接是否正常
-3. 环境变量是否正确配置
+2. 环境变量是否正确配置
+3. Socket.IO 连接是否正常
 
 ---
 
 ## 性能优化建议
 
-1. **启用 Redis 持久化**（如果需要）
-2. **配置 CORS** 限制允许的客户端域名
-3. **添加速率限制** 防止滥用
-4. **监控日志** 使用 Render 提供的日志功能
+1. **配置 CORS** 限制允许的客户端域名
+2. **添加速率限制** 防止滥用
+3. **监控日志** 使用 Render 提供的日志功能
+4. **定期清理** 使用自动清理功能移除不活跃的房间和玩家
 
 ---
 

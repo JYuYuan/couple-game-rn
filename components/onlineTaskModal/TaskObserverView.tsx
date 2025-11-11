@@ -1,6 +1,7 @@
 import React from 'react'
 import { StyleSheet, Text, View, ScrollView } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
+import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated'
 import { TaskModalData } from '@/types/online'
 import { ExecutorTaskCard } from './ExecutorTaskCard'
 import { useTranslation } from 'react-i18next'
@@ -31,6 +32,15 @@ export const TaskObserverView: React.FC<TaskObserverViewProps> = ({ task, colors
   const completedExecutors = task.executorTasks?.filter((et) => et.completed).length || 0
   const completionPercentage = totalExecutors > 0 ? (completedExecutors / totalExecutors) * 100 : 0
 
+  // 🎨 进度条动画样式
+  const progressAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      width: withTiming(`${completionPercentage}%`, {
+        duration: 300,
+      }),
+    }
+  }, [completionPercentage])
+
   return (
     <View style={styles.container}>
       {/* 标题和进度 */}
@@ -54,11 +64,11 @@ export const TaskObserverView: React.FC<TaskObserverViewProps> = ({ task, colors
             </Text>
           </View>
           <View style={[styles.progressTrack, { backgroundColor: colors.border }]}>
-            <View
+            <Animated.View
               style={[
                 styles.progressBar,
+                progressAnimatedStyle,
                 {
-                  width: `${completionPercentage}%`,
                   backgroundColor: completionPercentage === 100 ? '#4CAF50' : colors.primary,
                 },
               ]}
@@ -169,7 +179,8 @@ const styles = StyleSheet.create({
   progressBar: {
     height: '100%',
     borderRadius: 4,
-    transition: 'width 0.3s ease',
+    // ✨ 动画效果已通过 react-native-reanimated 的 useAnimatedStyle 实现
+    // 平滑的宽度过渡动画 (300ms)
   },
 
   // 执行者列表

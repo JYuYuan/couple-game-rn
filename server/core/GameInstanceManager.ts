@@ -1,4 +1,3 @@
-import redis from './redisClient.js'
 import GameRegistry from './GameRegistry.js'
 import roomManager from './RoomManager.js'
 import type { Room, SocketIOServer } from '../typings/socket'
@@ -11,9 +10,13 @@ interface GameData {
   lastActivity: number
 }
 
+/**
+ * 🐾 游戏实例管理器
+ * 使用双层 Map 缓存：localCache 存储游戏实例，games 存储元数据
+ */
 class GameInstanceManager {
-  private hashKey = 'games'
-  private localCache = new Map() // 本地缓存游戏实例
+  private games = new Map<string, GameData>() // 游戏元数据
+  private localCache = new Map<string, BaseGame>() // 本地缓存游戏实例
   private readonly GAME_TTL = 2 * 60 * 60 * 1000 // 2小时过期时间
 
   /**
@@ -25,19 +28,13 @@ class GameInstanceManager {
       throw new Error(`不支持的游戏类型: ${room.gameType}`)
     }
 
-    // 直接使用 room 数据，游戏状态已经在 room.gameState 中
-    await redis.hset(
-      this.hashKey,
-      room.id,
-      JSON.stringify({
-        roomId: room.id,
-        gameType: room.gameType,
-        createdAt: Date.now(),
-        lastActivity: Date.now(),
-      }),
-    )
-
-    await redis.expire(this.hashKey, this.GAME_TTL / 1000)
+    // 保存游戏元数据
+    this.games.set(room.id, {
+      roomId: room.id,
+      gameType: room.gameType,
+      createdAt: Date.now(),
+      lastActivity: Date.now(),
+    })
 
     // 本地缓存游戏实例
     this.localCache.set(room.id, game)
@@ -51,12 +48,12 @@ class GameInstanceManager {
   async getGameInstance(roomId: string, io?: SocketIOServer): Promise<BaseGame | null> {
     // 先从本地缓存查找
     if (this.localCache.has(roomId)) {
-      return this.localCache.get(roomId)
+      return this.localCache.get(roomId) || null
     }
 
-    // 从 Redis 检查游戏是否存在
-    const gameDataStr = await redis.hget(this.hashKey, roomId)
-    if (!gameDataStr) {
+    // 检查游戏元数据是否存在
+    const gameData = this.games.get(roomId)
+    if (!gameData) {
       return null
     }
 
@@ -64,7 +61,7 @@ class GameInstanceManager {
     const room = await roomManager.getRoom(roomId)
     if (!room) {
       // 清理无效的游戏记录
-      await redis.hdel(this.hashKey, roomId)
+      this.games.delete(roomId)
       return null
     }
 
@@ -82,11 +79,10 @@ class GameInstanceManager {
    */
   async updateGameInstance(roomId: string, _game: BaseGame): Promise<void> {
     // 更新游戏实例的最后活动时间
-    const gameData = { roomId, lastActivity: Date.now() }
-    try {
-      await redis.hset(this.hashKey, roomId, JSON.stringify(gameData))
-    } catch (error) {
-      console.warn('Failed to update game instance in Redis:', error)
+    const gameData = this.games.get(roomId)
+    if (gameData) {
+      gameData.lastActivity = Date.now()
+      this.games.set(roomId, gameData)
     }
   }
 
@@ -94,7 +90,7 @@ class GameInstanceManager {
    * 删除游戏实例
    */
   async removeGameInstance(roomId: string): Promise<void> {
-    await redis.hdel(this.hashKey, roomId)
+    this.games.delete(roomId)
     this.localCache.delete(roomId)
   }
 
@@ -102,11 +98,11 @@ class GameInstanceManager {
    * 获取所有活跃游戏
    */
   async getAllActiveGames(): Promise<{ [roomId: string]: GameData }> {
-    const games = await redis.hgetall(this.hashKey)
-    const parsedGames = Object.fromEntries(
-      Object.entries(games).map(([key, value]) => [key, JSON.parse(value)]),
-    )
-    return parsedGames
+    const result: { [roomId: string]: GameData } = {}
+    for (const [roomId, gameData] of this.games.entries()) {
+      result[roomId] = gameData
+    }
+    return result
   }
 
   /**
@@ -148,10 +144,10 @@ class GameInstanceManager {
   /**
    * 获取缓存统计信息
    */
-  getCacheStats(): { localCacheSize: number; redisKey: string } {
+  getCacheStats(): { gamesCount: number; localCacheSize: number } {
     return {
+      gamesCount: this.games.size,
       localCacheSize: this.localCache.size,
-      redisKey: this.hashKey,
     }
   }
 }

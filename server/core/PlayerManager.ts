@@ -1,4 +1,3 @@
-import redis from './redisClient.js'
 import { getRandomColor } from '../utils/index.js'
 import type { Player } from '../typings/socket'
 
@@ -10,8 +9,12 @@ interface AddPlayerParams {
   [key: string]: unknown
 }
 
+/**
+ * 🐾 内存版本的玩家管理器
+ * 使用 Map 替代 Redis，性能更高，部署更简单
+ */
 class PlayerManager {
-  hashKey = 'players'
+  private players = new Map<string, Player>()
 
   async addPlayer(
     socketId: string,
@@ -33,33 +36,31 @@ class PlayerManager {
       ...rest,
     } as Player
     console.log(player)
-    await redis.hset(this.hashKey, player.id, JSON.stringify(player))
+    this.players.set(player.id, player)
     return player
   }
 
   async updatePlayer(player: Player): Promise<Player> {
     if (!player.id) throw new Error('player.id 缺失')
     player.lastSeen = Date.now()
-    await redis.hset(this.hashKey, player.id, JSON.stringify(player))
+    this.players.set(player.id, player)
     return player
   }
 
   async getPlayer(playerId: string): Promise<Player | null> {
-    const data = await redis.hget(this.hashKey, playerId)
-    return data ? JSON.parse(data) : null
+    return this.players.get(playerId) || null
   }
 
   async getAllPlayers(): Promise<Player[]> {
-    const players = await redis.hgetall(this.hashKey)
-    return Object.values(players).map((v: string) => JSON.parse(v))
+    return Array.from(this.players.values())
   }
 
   async removePlayer(playerId: string): Promise<void> {
-    await redis.hdel(this.hashKey, playerId)
+    this.players.delete(playerId)
   }
 
   async clearAll(): Promise<void> {
-    await redis.del(this.hashKey)
+    this.players.clear()
   }
 
   async cleanupInactivePlayers(timeoutMs: number = 10 * 60 * 1000): Promise<void> {
@@ -70,6 +71,13 @@ class PlayerManager {
         this.removePlayer(player.id)
       }
     }
+  }
+
+  /**
+   * 获取当前玩家数（用于监控）
+   */
+  getPlayerCount(): number {
+    return this.players.size
   }
 }
 
