@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+
+  <!-- 首页 -->
+  <url>
+    <loc>https://qqfly.netlib.re/</loc>
+    <lastmod>2024-01-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://qqfly.netlib.re/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://qqfly.netlib.re/en" />
+  </url>
+
+  <!-- 游戏大厅 -->
+  <url>
+    <loc>https://qqfly.netlib.re/games</loc>
+    <lastmod>2024-01-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- 飞行棋 -->
+  <url>
+    <loc>https://qqfly.netlib.re/games/flight</loc>
+    <lastmod>2024-01-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://qqfly.netlib.re/images/games/flight-preview.jpg</image:loc>
+      <image:title>飞行棋游戏</image:title>
+      <image:caption>经典飞行棋双人对战</image:caption>
+    </image:image>
+  </url>
+
+  <!-- 扫雷 -->
+  <url>
+    <loc>https://qqfly.netlib.re/games/minesweeper</loc>
+    <lastmod>2024-01-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://qqfly.netlib.re/images/games/minesweeper-preview.jpg</image:loc>
+      <image:title>扫雷游戏</image:title>
+      <image:caption>经典扫雷智力挑战</image:caption>
+    </image:image>
+  </url>
+
+  <!-- 幸运大转盘 -->
+  <url>
+    <loc>https://qqfly.netlib.re/games/wheel</loc>
+    <lastmod>2024-01-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://qqfly.netlib.re/images/games/wheel-preview.jpg</image:loc>
+      <image:title>幸运大转盘</image:title>
+      <image:caption>幸运大转盘随机惊喜</image:caption>
+    </image:image>
+  </url>
+
+  <!-- 趣味任务 -->
+  <url>
+    <loc>https://qqfly.netlib.re/games/tasks</loc>
+    <lastmod>2024-01-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://qqfly.netlib.re/images/games/tasks-preview.jpg</image:loc>
+      <image:title>趣味任务</image:title>
+      <image:caption>情侣互动任务挑战</image:caption>
+    </image:image>
+  </url>
+
+  <!-- 在线模式 -->
+  <url>
+    <loc>https://qqfly.netlib.re/online</loc>
+    <lastmod>2024-01-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- 局域网模式 -->
+  <url>
+    <loc>https://qqfly.netlib.re/lan</loc>
+    <lastmod>2024-01-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- 使用说明 -->
+  <url>
+    <loc>https://qqfly.netlib.re/help</loc>
+    <lastmod>2024-01-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <!-- 关于我们 -->
+  <url>
+    <loc>https://qqfly.netlib.re/about</loc>
+    <lastmod>2024-01-01</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+  </url>
+
+  <!-- 隐私政策 -->
+  <url>
+    <loc>https://qqfly.netlib.re/privacy</loc>
+    <lastmod>2024-01-01</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.4</priority>
+  </url>
+
+</urlset>

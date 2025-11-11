@@ -34,7 +34,24 @@
           "include": []
         }
       },
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/favicon.png",
+      "name": "情侣游戏合集 | 飞行棋·扫雷·转盘·趣味任务",
+      "shortName": "情侣游戏",
+      "description": "专为情侣设计的多人互动游戏平台！包含经典飞行棋、刺激扫雷、幸运大转盘和趣味18+任务。支持在线联机和局域网对战。",
+      "lang": "zh-CN",
+      "scope": "/",
+      "themeColor": "#ff6b9d",
+      "backgroundColor": "#ffffff",
+      "display": "standalone",
+      "orientation": "portrait",
+      "dir": "ltr",
+      "preferRelatedApplications": false,
+      "barStyle": "black-translucent",
+      "meta": {
+        "apple-mobile-web-app-capable": "yes",
+        "apple-mobile-web-app-status-bar-style": "black-translucent",
+        "apple-mobile-web-app-title": "情侣游戏"
+      }
     },
     "plugins": [
       "expo-router",
