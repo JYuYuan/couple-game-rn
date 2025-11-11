@@ -16,6 +16,7 @@ import { useRoomStore, useSettingsStore } from '@/store'
 import { useDeepCompareEffect } from 'ahooks'
 import toast from '@/utils/toast'
 import GameCore from './shared/GameCore'
+import { ExecutorTaskModal, ObserverTaskModal } from '@/components/onlineTaskModal'
 
 // 动画延迟常量 - 统一管理所有动画时间
 const ANIMATION_DELAYS = {
@@ -61,6 +62,7 @@ export default function FlyingChessGame() {
   const [isRolling, setIsRolling] = useState(false)
   const [isMoving, setIsMoving] = useState(false)
   const [showTaskModal, setShowTaskModal] = useState(false)
+  const [showObserverModal, setShowObserverModal] = useState(false) // 🐾 新增：观察者弹窗状态
   const [taskModalData, setTaskModalData] = useState<TaskModalData | null>(null)
   const [showVictoryModal, setShowVictoryModal] = useState(false)
   const [winner, setWinner] = useState<GamePlayer | null>(null)
@@ -92,6 +94,13 @@ export default function FlyingChessGame() {
   const currentPlayerIndex = useMemo(
     () => players?.findIndex((item) => currentUserId === item.id) ?? -1,
     [players, currentUserId],
+  )
+  const currentExecutorTask = useMemo(
+    () =>
+      taskModalData?.executorTasks?.find(
+        (et) => et.executor.id.toString() === playerId?.toString(),
+      ) || null,
+    [taskModalData, playerId],
   )
 
   // 同步 ref
@@ -139,13 +148,12 @@ export default function FlyingChessGame() {
 
   // 监听返回按钮
   useEffect(() => {
-    const unsubscribe = navigation.addListener('beforeRemove', (_e) => {
+    return navigation.addListener('beforeRemove', (_e) => {
       console.log('🚪 检测到返回操作，清除房间状态')
       isLeavingRef.current = true
       clearRoom()
       if (room?.id) socket.leaveRoom()
     })
-    return unsubscribe
   }, [navigation, room?.id, clearRoom])
 
   // 游戏状态变化处理
@@ -215,18 +223,24 @@ export default function FlyingChessGame() {
     (data: { playerId: string; diceValue: number }) => {
       console.log('🎲 收到骰子事件:', data)
 
-      const isCurrentPlayer = data.playerId === playerId
-      const delay = isCurrentPlayer && isRolling ? ANIMATION_DELAYS.DICE_ROLL : 0
+      // 🔧 FIX: 立即锁定动画状态，防止在延迟期间服务端同步位置导致跳转
+      console.log('🔒 锁定动画状态，防止服务端同步')
+      isAnimatingRef.current = true
+      setIsMoving(true)
 
+      // 🔧 FIX: 收到结果时播放骰子动画（所有玩家都播放相同的动画）
+      console.log('🎲 播放骰子动画')
+      audioManager.playSoundEffect('dice')
+      diceRotation.value = withTiming(360 * 4, { duration: ANIMATION_DELAYS.DICE_ROLL })
+
+      // 等待骰子动画完成
       const timer1 = setTimeout(() => {
+        // 动画完成，停止旋转并显示结果
         diceRotation.value = withTiming(0, { duration: ANIMATION_DELAYS.DICE_ANIMATION })
         setCurrentDiceValue(data.diceValue)
+        setIsRolling(false)
 
-        if (isCurrentPlayer) {
-          audioManager.playSoundEffect('dice')
-          setIsRolling(false)
-        }
-
+        // 延迟一段时间后开始移动玩家
         const timer2 = setTimeout(() => {
           const currentPlayer = animatedPlayersRef.current?.find((p) => p.id === data.playerId)
           if (currentPlayer) {
@@ -244,8 +258,6 @@ export default function FlyingChessGame() {
 
             console.log(`🎯 开始移动动画: ${data.playerId} 从 ${currentPos} 移动到 ${targetPos}`)
 
-            isAnimatingRef.current = true
-            setIsMoving(true)
             audioManager.playSoundEffect('step')
 
             movePlayerStepByStep(data.playerId, currentPos, targetPos, () => {
@@ -269,20 +281,26 @@ export default function FlyingChessGame() {
               const timer3 = setTimeout(() => {
                 setIsMoving(false)
                 isAnimatingRef.current = false
+                console.log('🔓 解锁动画状态')
                 timersRef.current.delete(timer3)
               }, ANIMATION_DELAYS.MOVE_COMPLETE)
               timersRef.current.add(timer3)
             })
+          } else {
+            // 🔧 FIX: 如果没有找到玩家，也要解锁状态
+            console.warn('⚠️ 未找到玩家，解锁动画状态')
+            setIsMoving(false)
+            isAnimatingRef.current = false
           }
           timersRef.current.delete(timer2)
         }, ANIMATION_DELAYS.DICE_REVEAL)
         timersRef.current.add(timer2)
 
         timersRef.current.delete(timer1)
-      }, delay)
+      }, ANIMATION_DELAYS.DICE_ROLL)
       timersRef.current.add(timer1)
     },
-    [playerId, isRolling, diceRotation, audioManager, room?.gameState?.boardSize, socket, room?.id],
+    [diceRotation, audioManager, room?.gameState?.boardSize, socket, room?.id],
   )
 
   // 任务触发事件
@@ -298,43 +316,94 @@ export default function FlyingChessGame() {
 
       lastTaskIdRef.current = data.task.id
       setTaskModalData(data.task)
-      setShowTaskModal(true)
-      audioManager.playSoundEffect('step') // 使用step音效替代task
-    },
-    [audioManager],
-  )
 
-  // 任务完成事件
-  const handleTaskCompleted = useCallback(
-    (data: { playerId: string; completed: boolean }) => {
-      console.log('✅ 收到任务完成事件:', data)
+      // 🐾 判断当前玩家是否是执行者
+      const currentExecutorTask = data.task.executorTasks?.find(
+        (et) => et.executor.id.toString() === playerId?.toString(),
+      )
 
-      // 检查当前玩家是否是观察者
-      const isObserver =
-        taskModalData && !taskModalData.executors.find((item) => item.id === playerId)
-
-      if (isObserver) {
-        // 观察者模式：显示任务完成提示
-        const resultMessage = data.completed
-          ? t('taskModal.observerCompleted', '任务已完成！玩家获得奖励')
-          : t('taskModal.observerFailed', '任务失败！玩家受到惩罚')
-
-        // 显示不同类型的提示
-        if (data.completed) {
-          toast.success(resultMessage)
-        } else {
-          toast.error(resultMessage)
-        }
-
-        console.log(`👁️ 观察者收到任务完成通知: ${resultMessage}`)
+      if (currentExecutorTask && !currentExecutorTask.completed) {
+        // 当前玩家是执行者且未完成 -> 显示执行者弹窗
+        console.log('👤 当前玩家是执行者，显示执行者弹窗')
+        setShowTaskModal(true)
+        setShowObserverModal(false)
+      } else {
+        // 当前玩家不是执行者或已完成 -> 显示观察者弹窗
+        console.log('👁️ 当前玩家是观察者，显示观察者弹窗')
+        setShowTaskModal(false)
+        setShowObserverModal(true)
       }
 
-      // 关闭任务弹窗
+      audioManager.playSoundEffect('step') // 使用step音效替代task
+    },
+    [audioManager, playerId],
+  )
+
+  // 任务完成事件（部分完成）
+  const handleTaskCompleted = useCallback(
+    (data: {
+      playerId: string
+      completed: boolean
+      content: number
+      playerName: string
+      allCompleted: boolean
+      currentTask?: TaskModalData
+    }) => {
+      console.log('✅ 收到任务完成事件:', data)
+
+      // 🐾 更新 taskModalData，显示最新的执行者状态
+      if (data.currentTask) {
+        setTaskModalData(data.currentTask)
+        console.log('📝 更新任务数据，显示最新执行者状态')
+
+        // 🐾 如果当前玩家刚完成任务，切换到观察者弹窗
+        if (data.playerId === playerId) {
+          console.log('🔄 当前玩家完成任务，切换到观察者弹窗')
+          setShowTaskModal(false)
+          setShowObserverModal(true)
+        }
+      }
+
+      // 显示 Toast 提示
+      let resultMessage = data.completed
+        ? t('taskModal.observerCompleted', '任务已完成！玩家获得奖励')
+        : t('taskModal.observerFailed', '任务失败！玩家受到惩罚')
+
+      let content = ''
+      if (data.content === 0) content = t('taskModal.backToStart', '回到起点')
+      else if (data.content > 0) content = t('taskModal.moveForward', `前进${data.content}步`)
+      else content = t('taskModal.moveBackward', `后退${Math.abs(data.content)}步`)
+
+      resultMessage = `${data.playerName}: ${resultMessage}，${content}`
+
+      // 显示不同类型的提示
+      if (data.completed) {
+        toast.success(resultMessage)
+      } else {
+        toast.error(resultMessage)
+      }
+
+      console.log(`📢 任务完成通知: ${resultMessage}`)
+
+      // 🐾 注意：这里不关闭弹窗，等待所有执行者完成
+    },
+    [t, playerId],
+  )
+
+  // 🐾 所有任务完成事件
+  const handleAllTasksCompleted = useCallback(
+    (data: { taskType: string; timestamp: number }) => {
+      console.log('🎉 所有任务已完成:', data)
+
+      // 关闭所有任务弹窗
       setShowTaskModal(false)
+      setShowObserverModal(false) // 🐾 同时关闭观察者弹窗
       setTaskModalData(null)
       lastTaskIdRef.current = null
+
+      toast.success(t('taskModal.allCompleted', '所有玩家已完成任务！'))
     },
-    [taskModalData, t],
+    [t],
   )
 
   // 胜利事件
@@ -359,36 +428,6 @@ export default function FlyingChessGame() {
     setCurrentDiceValue(null)
   }, [])
 
-  // 位置更新事件
-  const handlePositionUpdate = useCallback(
-    (data: { playerId: string; position: number; isForward: boolean }) => {
-      console.log('📍 收到位置更新事件:', data)
-
-      const currentPlayer = animatedPlayersRef.current?.find((p) => p.id === data.playerId)
-      if (!currentPlayer) return
-
-      const currentPos = currentPlayer.position || 0
-      const targetPos = data.position
-
-      isAnimatingRef.current = true
-      setIsMoving(true)
-
-      movePlayerStepByStep(data.playerId, currentPos, targetPos, () => {
-        setAnimatedPlayers((prevPlayers) =>
-          prevPlayers.map((p) => (p.id === data.playerId ? { ...p, position: targetPos } : p)),
-        )
-
-        const timer = setTimeout(() => {
-          setIsMoving(false)
-          isAnimatingRef.current = false
-          timersRef.current.delete(timer)
-        }, ANIMATION_DELAYS.MOVE_COMPLETE)
-        timersRef.current.add(timer)
-      })
-    },
-    [],
-  )
-
   // 房间销毁事件
   const handleRoomDestroyed = useCallback(() => {
     console.log('🚪 房间已销毁')
@@ -404,8 +443,8 @@ export default function FlyingChessGame() {
     socket.on('game:task', handleTaskTrigger)
     socket.on('game:victory', handleGameVictory)
     socket.on('game:next', handleNextPlayer)
-    // socket.on('game:position_update', handlePositionUpdate)
     socket.on('game:task_completed', handleTaskCompleted)
+    socket.on('game:all_tasks_completed', handleAllTasksCompleted) // 🐾 新增：所有任务完成事件
     socket.on('room:destroyed', handleRoomDestroyed)
 
     return () => {
@@ -413,8 +452,8 @@ export default function FlyingChessGame() {
       socket.off('game:task', handleTaskTrigger)
       socket.off('game:victory', handleGameVictory)
       socket.off('game:next', handleNextPlayer)
-      // socket.off('game:position_update', handlePositionUpdate)
       socket.off('game:task_completed', handleTaskCompleted)
+      socket.off('game:all_tasks_completed', handleAllTasksCompleted) // 🐾 新增
       socket.off('room:destroyed', handleRoomDestroyed)
     }
   }, [
@@ -422,8 +461,8 @@ export default function FlyingChessGame() {
     handleTaskTrigger,
     handleGameVictory,
     handleNextPlayer,
-    handlePositionUpdate,
     handleTaskCompleted,
+    handleAllTasksCompleted, // 🐾 新增
     handleRoomDestroyed,
   ])
 
@@ -439,9 +478,8 @@ export default function FlyingChessGame() {
     }
 
     console.log('🎲 请求投掷骰子')
-    setIsRolling(true)
-    audioManager.playSoundEffect('dice')
-    diceRotation.value = withTiming(360 * 4, { duration: ANIMATION_DELAYS.DICE_ROLL })
+    // 🔧 FIX: 只发送请求，不播放动画（动画在收到结果时播放）
+    setIsRolling(true) // 标记为正在投掷，防止重复点击
 
     try {
       socket.rollDice({
@@ -452,7 +490,6 @@ export default function FlyingChessGame() {
       console.error('投掷骰子失败:', error)
       toast.error(t('error.rollDice', '投掷骰子失败，请重试'))
       setIsRolling(false)
-      diceRotation.value = withTiming(0, { duration: ANIMATION_DELAYS.DICE_ANIMATION })
     }
   }
 
@@ -467,7 +504,7 @@ export default function FlyingChessGame() {
       socket.completeTask({
         roomId: room?.id,
         taskId: taskModalData.id,
-        playerId: taskModalData.executors[0]?.id.toString() || '',
+        playerId: playerId,
         completed,
       })
     } catch (error) {
@@ -536,12 +573,9 @@ export default function FlyingChessGame() {
         diceValue={currentDiceValue || 0}
         isRolling={isRolling}
         isMoving={isMoving}
-        showTaskModal={showTaskModal}
-        taskModalData={taskModalData}
         showVictoryModal={showVictoryModal}
         winner={winner}
         onDiceRoll={handleDiceRollClick}
-        onTaskComplete={handleTaskComplete}
         onResetGame={handleRestartGame}
         onExit={handleLeaveRoom}
         colors={colors}
@@ -550,6 +584,27 @@ export default function FlyingChessGame() {
         isHost={isHost}
         diceAnimatedStyle={diceAnimatedStyle}
       />
+
+      {/* 🐾 执行者任务弹窗 */}
+      {taskModalData && showTaskModal && currentExecutorTask && (
+        <ExecutorTaskModal
+          visible={showTaskModal}
+          executorTask={currentExecutorTask}
+          taskType={taskModalData.type}
+          difficulty={taskModalData.difficulty}
+          onComplete={handleTaskComplete}
+          onClose={() => setShowTaskModal(false)}
+        />
+      )}
+
+      {/* 🐾 观察者任务弹窗 */}
+      {taskModalData && showObserverModal && (
+        <ObserverTaskModal
+          visible={showObserverModal}
+          task={taskModalData}
+          onClose={() => setShowObserverModal(false)}
+        />
+      )}
     </>
   )
 }

@@ -184,19 +184,11 @@ class FlyingGame extends BaseGame {
   }
 
   async _triggerTask(playerId: string, taskType: string = 'star') {
-    const roomTasks = this.room.taskSet?.tasks || []
     const taskSet = this.room.taskSet
-    let selectedTask = ''
-
     console.log(`🎯 开始触发任务: 玩家=${playerId}, 类型=${taskType}`)
 
-    if (roomTasks.length > 0) {
-      const randomIndex = Math.floor(Math.random() * roomTasks.length)
-      selectedTask = roomTasks[randomIndex] as string
-      console.log(`🎲 随机选择任务: ${selectedTask} (索引: ${randomIndex})`)
-    } else {
-      console.log(`❌ 没有可用的任务，跳过任务触发`)
-      // 如果没有任务，直接切换到下一个玩家
+    if (!taskSet || !taskSet.tasks || taskSet.tasks.length === 0) {
+      console.log(`❌ 没有可用的任务集，跳过任务触发`)
       await this._nextPlayer()
       return
     }
@@ -214,28 +206,77 @@ class FlyingGame extends BaseGame {
       }
     }
 
+    if (executorPlayers.length === 0) {
+      console.log(`❌ 没有执行者，跳过任务触发`)
+      await this._nextPlayer()
+      return
+    }
+
+    // 🐾 为每个执行者分配不同的任务
+    const executorTasks: {
+      executor: Player
+      task: { title: string; description?: string }
+      completed: boolean
+    }[] = []
+
+    // 当前可用任务池（this.room.tasks）
+    let availableTasks = [...(this.room.tasks || [])]
+    const allTasksInSet = taskSet.tasks || []
+
+    console.log(
+      `📋 任务分配: 执行者数量=${executorPlayers.length}, 可用任务池=${availableTasks.length}, 任务集总数=${allTasksInSet.length}`,
+    )
+
+    for (const executor of executorPlayers) {
+      let selectedTask: string
+
+      if (availableTasks.length > 0) {
+        // 从任务池中随机抽取一个任务
+        const randomIndex = Math.floor(Math.random() * availableTasks.length)
+        selectedTask = availableTasks[randomIndex] as string
+        // 从任务池中移除已分配的任务
+        availableTasks.splice(randomIndex, 1)
+        console.log(`🎲 从任务池分配任务给 ${executor.name}: ${selectedTask}`)
+      } else {
+        // 任务池为空，从 taskSet 中随机抽取
+        const randomIndex = Math.floor(Math.random() * allTasksInSet.length)
+        selectedTask = allTasksInSet[randomIndex] as string
+        console.log(`🔄 任务池为空，从任务集随机抽取给 ${executor.name}: ${selectedTask}`)
+      }
+
+      executorTasks.push({
+        executor: executor,
+        task: {
+          title: selectedTask,
+          ...(taskSet.description ? { description: taskSet.description } : {}),
+        },
+        completed: false,
+      })
+    }
+
+    // 更新 room.tasks（移除已分配的任务）
+    this.room.tasks = availableTasks
+
     // 构造 TaskModalData
-    const currentTask: TaskModalData = {
-      id: taskSet?.id || '',
-      title: selectedTask,
-      description: taskSet?.description || '',
+    const currentTask = {
+      id: taskSet.id,
       type: taskType as 'trap' | 'star' | 'collision',
-      executors: executorPlayers,
-      category: taskSet?.categoryName || 'default',
-      difficulty: taskSet?.difficulty || 'medium',
-      triggerPlayerIds: [parseInt(playerId)], // 转换为数字数组
+      category: taskSet.categoryName || 'default',
+      difficulty: taskSet.difficulty || 'medium',
+      triggerPlayerIds: [parseInt(playerId)],
+      executorTasks: executorTasks,
     }
 
     // 保存任务到游戏状态，并标记有待处理的任务
     if (this.room.gameState) {
       this.room.gameState.currentTask = currentTask
-      this.room.gameState.hasPendingTask = true // 标记有待处理的任务
+      this.room.gameState.hasPendingTask = true
     }
 
     // 发送独立的任务事件
     console.log(`📤 发送任务事件到房间 ${this.room.id}:`, {
-      task: selectedTask,
       taskType,
+      executorCount: executorTasks.length,
       executorPlayerIds: executorPlayers.map((p) => p.id),
       triggerPlayerIds: [playerId],
     })
@@ -250,7 +291,7 @@ class FlyingGame extends BaseGame {
     // 只更新房间基础状态，不发送gameState
     await this.updateRoomAndNotify()
 
-    console.log(`⏸️ 任务已触发，等待玩家完成任务...`)
+    console.log(`⏸️ 任务已触发，等待所有执行者完成任务...`)
   }
 
   async _handleMoveComplete(playerId: string) {
@@ -378,8 +419,23 @@ class FlyingGame extends BaseGame {
 
     // 获取当前任务信息
     const currentTask = this.room.gameState?.currentTask
-    if (!currentTask) {
+    if (!currentTask || !currentTask.executorTasks) {
       console.log(`❌ 没有找到当前任务`)
+      return
+    }
+
+    // 🐾 找到当前玩家对应的 ExecutorTask
+    const executorTask = currentTask.executorTasks.find(
+      (et: { executor: Player }) => et.executor.id === playerId,
+    )
+
+    if (!executorTask) {
+      console.log(`❌ 当前玩家不是执行者: ${playerId}`)
+      return
+    }
+
+    if (executorTask.completed) {
+      console.log(`⚠️ 该玩家已经完成过任务: ${playerId}`)
       return
     }
 
@@ -395,6 +451,7 @@ class FlyingGame extends BaseGame {
     // 根据任务类型和完成状态决定位置变化
     const step = Math.floor(Math.random() * 4) + 3
     let positionChange = completed ? step : -step
+
     // 应用位置变化
     if (positionChange !== 0) {
       const currentPos = this.playerPositions[playerId] || 0
@@ -409,50 +466,73 @@ class FlyingGame extends BaseGame {
       newPos = Math.max(0, newPos)
 
       if (taskType === 'collision' && !completed) newPos = 0
+
       // 使用统一的位置更新方法
       this.updatePlayerPosition(playerId, newPos)
 
       console.log(
         `📍 任务后位置更新: ${playerId} 从 ${currentPos} 移动到 ${newPos} (变化: ${positionChange})`,
       )
-
-      // 发送位置更新事件到客户端
-      this.socket.to(this.room.id).emit('game:position_update', {
-        playerId,
-        fromPosition: currentPos,
-        toPosition: newPos,
-        reason: `${taskType}_${completed ? 'success' : 'fail'}`,
-      })
     }
 
-    // 广播任务完成事件，通知所有玩家关闭弹窗并显示完成情况
+    // 🐾 标记该 ExecutorTask 为已完成，并保存结果
+    executorTask.completed = true
+    executorTask.result = {
+      completed: completed || false,
+      content: taskType === 'collision' && !completed ? 0 : positionChange,
+      timestamp: Date.now(),
+    }
+
+    console.log(`✅ 玩家 ${executorName} 完成任务，结果已保存`)
+
+    // 🐾 广播该玩家的任务完成事件（部分完成）
     this.socket.to(this.room.id).emit('game:task_completed', {
       playerId,
       playerName: executorName,
       taskType,
       completed,
-      taskTitle: currentTask.title,
+      taskTitle: executorTask.task.title,
+      content: executorTask.result.content,
+      allCompleted: false, // 标记不是所有人都完成
+      currentTask: currentTask, // 发送更新后的任务数据
     })
-
-    // 从任务集中删除已完成的任务
-    if (this.room.tasks && currentTask?.description) {
-      this.room.tasks = this.room.tasks.filter((task: string) => task !== currentTask.description)
-    }
-
-    // 清除当前任务和待处理标志
-    if (this.room.gameState) {
-      delete this.room.gameState.currentTask
-      this.room.gameState.hasPendingTask = false // 清除待处理任务标志
-    }
 
     await this.updateRoomAndNotify()
 
     // 检查胜利条件
     await this._checkWinCondition()
 
-    // 任务完成后切换到下一个玩家
-    console.log(`✅ 任务处理完成，切换到下一个玩家`)
-    await this._nextPlayer()
+    // 🐾 检查是否所有执行者都已完成
+    const allCompleted = currentTask.executorTasks.every(
+      (et: { completed: boolean }) => et.completed,
+    )
+
+    if (allCompleted) {
+      console.log(`🎉 所有执行者都已完成任务，准备清除任务并切换玩家`)
+
+      // 清除当前任务和待处理标志
+      if (this.room.gameState) {
+        delete this.room.gameState.currentTask
+        this.room.gameState.hasPendingTask = false
+      }
+
+      // 🐾 广播所有任务完成事件
+      this.socket.to(this.room.id).emit('game:all_tasks_completed', {
+        taskType,
+        timestamp: Date.now(),
+      })
+
+      await this.updateRoomAndNotify()
+
+      // 任务完成后切换到下一个玩家
+      console.log(`✅ 任务处理完成，切换到下一个玩家`)
+      await this._nextPlayer()
+    } else {
+      const remainingCount = currentTask.executorTasks.filter(
+        (et: { completed: boolean }) => !et.completed,
+      ).length
+      console.log(`⏳ 还有 ${remainingCount} 个执行者未完成任务，继续等待...`)
+    }
   }
 
   async onEnd(_io?: SocketIOServer) {

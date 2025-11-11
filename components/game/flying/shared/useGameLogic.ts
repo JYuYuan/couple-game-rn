@@ -7,7 +7,7 @@ import { useCallback } from 'react'
 import { useAudioManager } from '@/hooks/use-audio-manager'
 import { Player, TaskType, GameStatus } from './types'
 import { PathCell } from '@/types/game'
-import { TaskModalData } from '@/types/online'
+import { OfflineTaskModalData } from '@/types/online'
 
 // 定义GameTask类型(与use-game-tasks.ts保持一致)
 interface GameTask {
@@ -101,10 +101,10 @@ export function useGameLogic(
   )
 
   /**
-   * 3. 准备任务数据
+   * 3. 准备任务数据（离线模式）
    */
   const prepareTaskData = useCallback(
-    (taskType: TaskType, triggerPlayerId: string): TaskModalData | null => {
+    (taskType: TaskType, triggerPlayerId: string): OfflineTaskModalData | null => {
       const task = getRandomTask()
       if (!task) return null
 
@@ -127,6 +127,7 @@ export function useGameLogic(
         category: task.category,
         difficulty: task.difficulty,
         triggerPlayerIds: [triggerPlayerId],
+        isExecutor: true, // 🐾 离线模式下总是执行者
       }
     },
     [players, getRandomTask, getOpponentPlayer],

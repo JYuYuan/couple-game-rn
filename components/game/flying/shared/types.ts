@@ -3,7 +3,7 @@
  */
 
 import { GamePlayer } from '@/hooks/use-game-players'
-import { OnlinePlayer, TaskModalData } from '@/types/online'
+import { OnlinePlayer, TaskModalData, OfflineTaskModalData } from '@/types/online'
 import { PathCell } from '@/types/game'
 
 // 统一的玩家类型
@@ -38,17 +38,12 @@ export interface GameCoreProps {
   isRolling: boolean
   isMoving: boolean
 
-  // 任务状态
-  showTaskModal: boolean
-  taskModalData: TaskModalData | null
-
   // 胜利状态
   showVictoryModal: boolean
   winner: Player | null
 
   // 事件回调
   onDiceRoll: () => void
-  onTaskComplete: (completed: boolean) => void
   onResetGame: () => void
   onExit: () => void
 

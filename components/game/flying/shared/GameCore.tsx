@@ -4,11 +4,10 @@
  */
 
 import React from 'react'
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native'
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient'
 import Animated from 'react-native-reanimated'
 import GameBoard from '@/components/GameBoard'
-import TaskModal from '@/components/TaskModal'
 import VictoryModal from '@/components/VictoryModal'
 import { PlayerAvatar } from '@/components/PlayerAvatar'
 import { GameCoreProps } from './types'
@@ -31,18 +30,14 @@ export default function GameCore({
   diceValue,
   isRolling,
   isMoving,
-  showTaskModal,
-  taskModalData,
   showVictoryModal,
   winner,
   onDiceRoll,
-  onTaskComplete,
   onResetGame,
   onExit,
   colors,
   t,
   isOwnTurn = true, // offline默认true, online根据实际情况
-  isHost = true, // offline默认true, online根据实际情况
   diceAnimatedStyle,
 }: GameCorePropsWithAnimation) {
   // 判断是否可以投骰子
@@ -178,16 +173,6 @@ export default function GameCore({
           />
         </View>
       </ScrollView>
-
-      {/* 任务弹窗 */}
-      <TaskModal
-        isOnline={mode === 'online'}
-        visible={showTaskModal}
-        task={taskModalData}
-        players={players as any} // 类型兼容性转换
-        onComplete={onTaskComplete}
-        onClose={() => {}} // 由外部控制关闭
-      />
 
       {/* 胜利弹窗 */}
       <VictoryModal

@@ -14,8 +14,9 @@ import { createBoardPath } from '@/utils/board'
 import GameCore from './shared/GameCore'
 import { useGameLogic } from './shared/useGameLogic'
 import { useMovePlayer } from './shared/useMovePlayer'
-import { TaskModalData } from '@/types/online'
+import { OfflineTaskModalData } from '@/types/online'
 import { PathCell } from '@/types/game'
+import TaskModal from '@/components/TaskModal'
 
 export default function OfflineGame() {
   const router = useRouter()
@@ -46,7 +47,7 @@ export default function OfflineGame() {
   const [isRolling, setIsRolling] = useState(false)
   const [isMoving, setIsMoving] = useState(false)
   const [showTaskModal, setShowTaskModal] = useState(false)
-  const [taskModalData, setTaskModalData] = useState<TaskModalData | null>(null)
+  const [taskModalData, setTaskModalData] = useState<OfflineTaskModalData | null>(null)
   const [pendingTaskType, setPendingTaskType] = useState<'trap' | 'star' | 'collision' | null>(null)
   const [showVictoryModal, setShowVictoryModal] = useState(false)
   const [winner, setWinner] = useState<GamePlayer | null>(null)
@@ -226,17 +227,22 @@ export default function OfflineGame() {
         diceValue={diceValue}
         isRolling={isRolling}
         isMoving={isMoving}
-        showTaskModal={showTaskModal}
-        taskModalData={taskModalData}
         showVictoryModal={showVictoryModal}
         winner={winner}
         onDiceRoll={handleDiceRoll}
-        onTaskComplete={handleTaskComplete}
         onResetGame={handleResetGame}
         onExit={() => router.back()}
         colors={colors}
         t={t}
         diceAnimatedStyle={diceAnimatedStyle}
+      />
+      <TaskModal
+        isOnline={false}
+        visible={showTaskModal}
+        task={taskModalData}
+        players={players as any} // 类型兼容性转换
+        onComplete={handleTaskComplete}
+        onClose={() => {}} // 由外部控制关闭
       />
     </>
   )

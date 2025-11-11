@@ -21,16 +21,43 @@ export {
   GameVictoryData,
 }
 
-// 服务端TaskModalData接口（从服务端同步）
-export interface TaskModalData {
+// 🐾 执行者任务信息（每个执行者有独立的任务）
+export interface ExecutorTask {
+  executor: GamePlayer // 执行者信息
+  task: {
+    title: string // 任务标题
+    description?: string // 任务描述
+  }
+  completed: boolean // 是否已完成
+  result?: {
+    // 完成结果（如果已完成）
+    completed: boolean // 成功/失败
+    content: number // 位置变化（正数=前进，负数=后退，0=回到起点）
+    timestamp: number // 完成时间戳
+  }
+}
+
+// 🐾 离线模式任务数据（旧格式，用于离线模式）
+export interface OfflineTaskModalData {
   id: string
-  title: string
-  description: string
+  title: string // 任务标题
+  description?: string // 任务描述
   type: 'trap' | 'star' | 'collision'
-  executors: GamePlayer[]
   category: string
   difficulty: string
   triggerPlayerIds: string[]
+  executors: GamePlayer[] // 执行者列表（旧格式）
+  isExecutor?: boolean // 可选：标记当前玩家是否是执行者
+}
+
+// 服务端TaskModalData接口（从服务端同步，用于在线模式）
+export interface TaskModalData {
+  id: string // 任务集ID
+  type: 'trap' | 'star' | 'collision'
+  category: string
+  difficulty: string
+  triggerPlayerIds: string[]
+  executorTasks: ExecutorTask[] // 执行者任务列表（每个执行者有独立的任务）
 }
 
 // 游戏状态接口（匹配服务端结构）
