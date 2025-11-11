@@ -1,0 +1,198 @@
+name: Build and Deploy Web
+
+on:
+  # 方式一：push commit 到 main 分支时触发
+  push:
+    branches:
+      - main
+    paths:
+      - 'app/**'
+      - 'components/**'
+      - 'constants/**'
+      - 'hooks/**'
+      - 'i18n/**'
+      - 'services/**'
+      - 'store/**'
+      - 'types/**'
+      - 'public/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/build-and-deploy-web.yml'
+  # 方式二：手动触发
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  packages: write
+  pages: write
+  id-token: write
+
+jobs:
+  build-web:
+    runs-on: ubuntu-latest
+    env:
+      EXPO_NO_DOTENV: 1
+      CI: false
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Show environment info
+        run: ./.github/scripts/show-env-info.sh
+
+      - name: Install dependencies
+        run: ./.github/scripts/install-deps.sh
+
+      - name: Setup Expo
+        run: |
+          if [ -n "${{ secrets.EXPO_TOKEN }}" ]; then
+            npx expo login --non-interactive -u ${{ secrets.EXPO_USERNAME }} || true
+          fi
+
+      - name: Build Web
+        run: ./.github/scripts/build-web.sh
+
+      - name: Copy SEO files to dist
+        run: |
+          echo "📋 Copying SEO files to dist..."
+
+          # 确保 dist 目录存在
+          if [ ! -d "dist" ]; then
+            echo "❌ Error: dist directory not found!"
+            exit 1
+          fi
+
+          # 复制 robots.txt
+          if [ -f "public/robots.txt" ]; then
+            cp public/robots.txt dist/robots.txt
+            echo "✅ Copied robots.txt"
+          else
+            echo "⚠️  robots.txt not found"
+          fi
+
+          # 复制 sitemap.xml
+          if [ -f "public/sitemap.xml" ]; then
+            cp public/sitemap.xml dist/sitemap.xml
+            echo "✅ Copied sitemap.xml"
+          else
+            echo "⚠️  sitemap.xml not found"
+          fi
+
+          # 复制 manifest.json (如果 Expo 没有自动生成)
+          if [ -f "public/manifest.json" ] && [ ! -f "dist/manifest.json" ]; then
+            cp public/manifest.json dist/manifest.json
+            echo "✅ Copied manifest.json"
+          fi
+
+          # 复制 Open Graph 图片
+          if [ -f "public/og-image.png" ]; then
+            cp public/og-image.png dist/og-image.png
+            echo "✅ Copied og-image.png"
+          fi
+
+          if [ -f "public/twitter-card.png" ]; then
+            cp public/twitter-card.png dist/twitter-card.png
+            echo "✅ Copied twitter-card.png"
+          fi
+
+          # 复制其他图标
+          for file in public/favicon-*.png public/apple-touch-icon.png; do
+            if [ -f "$file" ]; then
+              cp "$file" "dist/$(basename $file)"
+              echo "✅ Copied $(basename $file)"
+            fi
+          done
+
+          # 创建 .nojekyll 文件
+          touch dist/.nojekyll
+          echo "✅ Created .nojekyll"
+
+          echo "🎉 All SEO files copied successfully!"
+
+      - name: Upload Web artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-build
+          path: dist/
+          retention-days: 30
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist/
+
+  deploy-pages:
+    needs: build-web
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  push-to-pages-branch:
+    needs: [build-web, deploy-pages]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: ./.github/scripts/install-deps.sh
+
+      - name: Build Web
+        run: ./.github/scripts/build-web.sh
+
+      - name: Configure git
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+
+      - name: Create or update pages branch
+        run: |
+          # 丢弃所有本地更改
+          git reset --hard HEAD
+          git clean -fd
+
+          # 删除本地 pages 分支（如果存在）
+          git branch -D pages 2>/dev/null || true
+
+          # 创建全新的 orphan 分支
+          git checkout --orphan pages
+
+          # 清空所有内容
+          git rm -rf . 2>/dev/null || true
+
+          # 复制构建文件到分支根目录
+          cp -r dist/* .
+          cp dist/.nojekyll . 2>/dev/null || true
+
+          # 提交并强制推送
+          git add .
+          git commit -m "chore: update pages content from main branch"
+          git push -f origin pages
+
+          echo "✅ 成功强制推送到 pages 分支"
