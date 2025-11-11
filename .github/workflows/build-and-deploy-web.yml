@@ -124,24 +124,8 @@ jobs:
           path: dist/
           retention-days: 30
 
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: dist/
-
-  deploy-pages:
-    needs: build-web
-    runs-on: ubuntu-latest
-    permissions:
-      pages: write
-      id-token: write
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
-
   push-to-pages-branch:
-    needs: [build-web, deploy-pages]
+    needs: build-web
     runs-on: ubuntu-latest
     permissions:
       contents: write
