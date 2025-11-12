@@ -3,7 +3,7 @@
   "name": "couple-game-rn",
   "builds": [
     {
-      "src": "index.html",
+      "src": "**",
       "use": "@vercel/static"
     }
   ],
