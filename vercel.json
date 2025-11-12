@@ -2,7 +2,16 @@
   "version": 2,
   "name": "couple-game-rn",
   "builds": [
-    { "src": "dist/**", "use": "@vercel/static" }
+    {
+      "src": "index.html",
+      "use": "@vercel/static"
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
   ],
   "routes": [
     {
@@ -35,7 +44,8 @@
     },
     {
       "src": "/(.*)",
-      "dest": "/index.html"
+      "dest": "/index.html",
+      "continue": true
     }
   ],
   "headers": [
