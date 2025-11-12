@@ -1,5 +1,13 @@
 import React, { useEffect, useState } from 'react'
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
+import {
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { useErrorHandler } from '@/constants/commonImports'
 import { useTheme } from '@/hooks'
@@ -49,7 +57,6 @@ const COLOR_OPTIONS = [
   '#F8C471',
   '#82E0AA',
   '#F1948A',
-  '#85C1E9',
   '#D2B4DE',
   '#AED6F1',
   '#A3E4D7',
@@ -296,17 +303,26 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
 const styles = StyleSheet.create({
   modal: {
     width: '100%',
+    maxWidth: '100%',
     padding: 0,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
+    overflow: 'hidden', // 确保圆角生效
   },
   baseContainer: {
     padding: 0,
-    justifyContent: 'flex-end', // 底部对齐
-    alignItems: 'stretch', // 拉伸到全宽（这是关键！）
+    justifyContent: 'flex-end',
+    alignItems: 'stretch',
   },
   container: {
     padding: 20,
+    borderTopLeftRadius: 20, // 添加圆角
+    borderTopRightRadius: 20, // 添加圆角
+    // Web 端确保圆角生效
+    ...(Platform.OS === 'web' &&
+      ({
+        overflow: 'hidden',
+      } as any)),
   },
   header: {
     flexDirection: 'row',

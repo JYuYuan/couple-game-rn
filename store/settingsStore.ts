@@ -19,7 +19,7 @@ const defaultSoundSettings: SoundSettings = {
 
 const defaultNetworkSettings: NetworkSettings = {
   enabled: false,
-  socketUrl: 'http://localhost:3001',
+  socketUrl: 'http://localhost:8871',
   lanMode: false,
   lanIP: '',
   lanPort: 8080,

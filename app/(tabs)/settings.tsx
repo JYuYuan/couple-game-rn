@@ -546,7 +546,7 @@ const Settings: React.FC = () => {
               <Text style={[styles.modalDescription, { color: secondaryText }]}>
                 {t(
                   'settings.network.socketUrlDescription',
-                  '请输入 Socket 服务器地址（例如: http://192.168.1.100:3001）',
+                  '请输入 Socket 服务器地址（例如: http://192.168.1.100:8871）',
                 )}
               </Text>
               <TextInput

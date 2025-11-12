@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import {
   Modal,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -198,8 +199,8 @@ export const TaskSetModal: React.FC<TaskSetModalProps> = ({ visible, onClose, ta
   }
 
   return (
-    <Modal visible={visible} animationType="fade" transparent>
-      <View style={[styles.overlay, { backgroundColor: colors.modalOverlay }]}>
+    <Modal visible={visible} animationType="slide" transparent>
+      <View style={styles.overlay}>
         <View style={[styles.modal, { backgroundColor: colors.modalBackground }]}>
           <View style={styles.header}>
             <Text style={[styles.title, { color: colors.settingsText }]}>
@@ -214,7 +215,13 @@ export const TaskSetModal: React.FC<TaskSetModalProps> = ({ visible, onClose, ta
             </TouchableOpacity>
           </View>
 
-          <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          <ScrollView
+            style={styles.content}
+            contentContainerStyle={styles.contentContainer}
+            showsVerticalScrollIndicator={false}
+            bounces={true}
+            nestedScrollEnabled={Platform.OS === 'web'}
+          >
             <View style={styles.section}>
               <Text style={[styles.label, { color: colors.settingsText }]}>
                 {t('taskSetModal.name', '名称')}
@@ -397,15 +404,19 @@ export const TaskSetModal: React.FC<TaskSetModalProps> = ({ visible, onClose, ta
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 20,
+    justifyContent: 'flex-end',
   },
   modal: {
     width: '100%',
     maxHeight: '90%',
-    borderRadius: 16,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     paddingVertical: 20,
+    // Web 端确保圆角生效
+    ...(Platform.OS === 'web' &&
+      ({
+        overflow: 'hidden',
+      } as any)),
   },
   header: {
     flexDirection: 'row',
@@ -420,7 +431,10 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: 20,
-    maxHeight: 400,
+    maxHeight: 500,
+  },
+  contentContainer: {
+    paddingBottom: 20,
   },
   section: {
     marginBottom: 16,

@@ -11,7 +11,7 @@ import {
 } from '@/types/online'
 import { showError } from '@/utils/toast'
 
-const DEFAULT_SOCKET_URL = __DEV__ ? 'http://localhost:3001' : 'https://your-production-server.com'
+const DEFAULT_SOCKET_URL = __DEV__ ? 'http://localhost:8871' : 'https://your-production-server.com'
 
 // 单例 Socket 服务
 class SocketService {
