@@ -175,14 +175,6 @@ jobs:
           cp -r dist/* .
           cp dist/.nojekyll . 2>/dev/null || true
 
-          # 复制 vercel.json 到根目录
-          if [ -f "vercel.json" ]; then
-            cp vercel.json .
-            echo "✅ Copied vercel.json"
-          else
-            echo "⚠️  vercel.json not found"
-          fi
-
           # 提交并强制推送
           git add .
           git commit -m "chore: update pages content from main branch"

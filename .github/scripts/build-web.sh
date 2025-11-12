@@ -29,6 +29,16 @@ else
   exit 1
 fi
 
+# 复制 vercel.json 到 dist 目录
+echo ""
+echo "Copying configuration files..."
+if [ -f "vercel.json" ]; then
+  cp vercel.json dist/vercel.json
+  echo "✅ Copied vercel.json to dist/"
+else
+  echo "⚠️  vercel.json not found, skipping"
+fi
+
 # 修复资源路径（将字体从 node_modules 移动到 fonts 目录）
 echo ""
 echo "Fixing assets path..."
