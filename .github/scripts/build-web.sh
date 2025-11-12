@@ -29,6 +29,15 @@ else
   exit 1
 fi
 
+# 修复资源路径（将字体从 node_modules 移动到 fonts 目录）
+echo ""
+echo "Fixing assets path..."
+if [ -f ".github/scripts/fix-assets-path.sh" ]; then
+  bash .github/scripts/fix-assets-path.sh
+else
+  echo "⚠️  Warning: fix-assets-path.sh not found, skipping asset path fix"
+fi
+
 echo "========================================"
 
 echo "Web Build Complete!"
