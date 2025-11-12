@@ -4,20 +4,11 @@ services:
     name: couple-game-server
     runtime: node
     plan: free
+    region: oregon  # 或 singapore（离中国近）
     buildCommand: npm install && npm run build
     startCommand: npm start
-    healthCheckPath: /
+    healthCheckPath: /health
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: 3001
-      # Redis 配置 - 从 Upstash 获取
-      - key: REDIS_URL
-        sync: false  # 需要在 Render Dashboard 手动设置
-      - key: REDIS_HOST
-        sync: false
-      - key: REDIS_PORT
-        sync: false
-      - key: REDIS_PASSWORD
-        sync: false
+
