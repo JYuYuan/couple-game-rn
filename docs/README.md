@@ -102,21 +102,13 @@ npm run web
 
 ### 服务器部署
 
-详细部署指南请查看：[📖 部署指南](./DEPLOYMENT_GUIDE.md)
-
-**快速部署到 Render.com（免费）：**
-
-```bash
-cd server
-chmod +x deploy.sh
-./deploy.sh
-```
+详细部署指南请查看：[📖 部署指南](https://github.com/JYuYuan/coupon-game-server/blob/main/README.md)
 
 ## 📦 下载安装
 
 ### 从 GitHub Releases 下载
 
-前往 [Releases](https://github.com/yourusername/couple-game-rn/releases) 页面下载最新版本：
+前往 [Releases](https://github.com/JYuYuan/couple-game-rn/releases) 页面下载最新版本：
 
 - **Android**: `couple-game.apk`
 - **iOS**: `couple-game-unsigned.ipa` (需要签名工具安装)
@@ -124,7 +116,7 @@ chmod +x deploy.sh
 
 ### Web 在线体验
 
-访问：`https://yourusername.github.io/couple-game-rn/`
+访问：`https://qq.cpflying.top`
 
 ## 🛠 技术栈
 
@@ -199,7 +191,7 @@ MIT License
 ## 📞 联系方式
 
 如有问题或建议，请通过以下方式联系：
-- GitHub Issues: [创建 Issue](https://github.com/yourusername/couple-game-rn/issues)
+- GitHub Issues: [创建 Issue](https://github.com/JYuYuan/couple-game-rn/issues)
 
 ---
 
