@@ -1,0 +1,3 @@
+[submodule "game-server"]
+	path = game-server
+	url = https://github.com/JYuYuan/coupon-game-server.git
