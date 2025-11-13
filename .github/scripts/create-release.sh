@@ -57,7 +57,7 @@ CHANGELOG=""
 # 直接获取最后一条commit信息作为更新日志
 echo "获取最新 commit 信息..."
 
-LATEST_COMMIT=$(git log -1 --pretty=format:"%s" 2>/dev/null || echo "")
+LATEST_COMMIT=$(git log -1 --pretty=format:"%B" 2>/dev/null || echo "")
 
 if [ -n "$LATEST_COMMIT" ]; then
     CHANGELOG="$(printf "%s" "$LATEST_COMMIT")"
