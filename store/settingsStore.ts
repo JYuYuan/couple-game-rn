@@ -19,7 +19,7 @@ const defaultSoundSettings: SoundSettings = {
 
 const defaultNetworkSettings: NetworkSettings = {
   enabled: false,
-  socketUrl: 'http://localhost:8871',
+  socketUrl: 'https://qqfly.netlib.re',
   lanMode: false,
   lanIP: '',
   lanPort: 8080,
