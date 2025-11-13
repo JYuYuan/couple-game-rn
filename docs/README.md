@@ -167,9 +167,9 @@ couple-game-rn/
 
 ## 📖 文档
 
-- [部署指南](./DEPLOYMENT_GUIDE.md) - 服务器和客户端部署
-- [服务器文档](./server/DEPLOYMENT.md) - 服务器配置详情
-- [服务器 README](./server/README.md) - 游戏模拟器使用
+- [部署指南](https://github.com/JYuYuan/coupon-game-server/blob/main/DEPLOYMENT.md) - 服务器和客户端部署
+- [服务器文档](https://github.com/JYuYuan/coupon-game-server/blob/main/DEPLOYMENT.md) - 服务器配置详情
+- [服务器 README](https://github.com/JYuYuan/coupon-game-server/blob/main/README.md) - 游戏模拟器使用
 
 ## 🤝 贡献
 
