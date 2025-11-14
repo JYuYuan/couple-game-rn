@@ -1,0 +1,44 @@
+# robots.txt for Couple Games Web
+# 情侣游戏合集 - 搜索引擎爬虫配置
+
+# 允许所有搜索引擎访问
+User-agent: *
+Allow: /
+
+# 特别允许主要搜索引擎
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Baiduspider
+Allow: /
+
+User-agent: Sogou web spider
+Allow: /
+
+User-agent: 360Spider
+Allow: /
+
+# 禁止访问的目录（根据实际情况调整）
+Disallow: /api/
+Disallow: /admin/
+Disallow: /*.json$
+Disallow: /private/
+Disallow: /temp/
+
+# 允许抓取资源文件
+Allow: /assets/
+Allow: /images/
+Allow: /css/
+Allow: /js/
+
+# Sitemap位置
+Sitemap: https://qqfly.netlib.re/sitemap.xml
+
+# 爬虫访问频率限制（可选）
+# Crawl-delay: 1
+
+# 禁止抓取敏感内容（18+任务相关页面可选择性控制）
+# Disallow: /games/tasks/adult/
