@@ -35,7 +35,7 @@ Allow: /css/
 Allow: /js/
 
 # Sitemap位置
-Sitemap: https://qqfly.netlib.re/sitemap.xml
+Sitemap: https://qq.cpflying.top/sitemap.xml
 
 # 爬虫访问频率限制（可选）
 # Crawl-delay: 1

@@ -129,7 +129,7 @@ export const structuredData = {
   name: '情侣游戏合集',
   alternateName: 'Couple Games Collection',
   description: '专为情侣设计的多人互动游戏平台，包含飞行棋、扫雷、幸运大转盘和趣味任务',
-  url: 'https://qqfly.netlib.re',
+  url: 'https://qq.cpflying.top',
   applicationCategory: 'Game',
   operatingSystem: 'Web Browser',
   offers: {
@@ -154,10 +154,10 @@ export const structuredData = {
     '多人游戏模式',
   ],
   screenshot: [
-    'https://qqfly.netlib.re/screenshots/flight.png',
-    'https://qqfly.netlib.re/screenshots/minesweeper.png',
-    'https://qqfly.netlib.re/screenshots/wheel.png',
-    'https://qqfly.netlib.re/screenshots/tasks.png',
+    'https://qq.cpflying.top/screenshots/flight.png',
+    'https://qq.cpflying.top/screenshots/minesweeper.png',
+    'https://qq.cpflying.top/screenshots/wheel.png',
+    'https://qq.cpflying.top/screenshots/tasks.png',
   ],
   author: {
     '@type': 'Organization',
