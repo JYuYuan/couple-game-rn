@@ -24,6 +24,7 @@ const routeConfig: Record<string, string> = {
   fly: '/flying-chess',
   wheel: '/wheel-points',
   minesweeper: '/minesweeper-battle',
+  'draw-guess': '/draw-guess',
 }
 
 export default function GameMode() {
@@ -43,6 +44,7 @@ export default function GameMode() {
     fly: { hasOnline: true },
     wheel: { hasOnline: false },
     minesweeper: { hasOnline: false },
+    'draw-guess': { hasOnline: false },
   }
 
   // 检查当前游戏类型是否支持在线模式
@@ -88,6 +90,8 @@ export default function GameMode() {
         return t('gameMode.wheel', '大转盘')
       case 'minesweeper':
         return t('gameMode.minesweeper', '扫雷对战')
+      case 'draw-guess':
+        return t('gameMode.drawGuess', '你画我猜')
       default:
         return t('gameMode.default', '任务选择')
     }

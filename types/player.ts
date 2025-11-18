@@ -51,6 +51,12 @@ export interface LANPlayer extends NetworkPlayer {
   port: number
 }
 
+// 你画我猜玩家类型
+export interface DrawGuessPlayer extends LocalPlayer {
+  correctGuesses: number // 猜对次数
+  drawingCount: number // 画图次数
+}
+
 // 游戏玩家类型（别名，用于飞行棋和转盘游戏）
 export type GamePlayer = LocalPlayer
 export type WheelPlayer = LocalPlayer

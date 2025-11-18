@@ -17,7 +17,7 @@ export interface PlayerInitConfig {
   /** 玩家名称列表（可选） */
   playerNames?: string[]
   /** 游戏类型（用于特殊字段） */
-  gameType?: 'flying' | 'wheel' | 'minesweeper'
+  gameType?: 'flying' | 'wheel' | 'minesweeper' | 'draw-guess'
   /** 性别分配策略（默认交替：man/woman/man/woman...） */
   genderStrategy?: 'alternate' | 'random' | AvatarGender[]
 }
@@ -74,18 +74,14 @@ function assignGender(index: number, strategy: PlayerInitConfig['genderStrategy'
  * })
  */
 export function createLocalPlayers(config: PlayerInitConfig): LocalPlayer[] {
-  const {
-    count,
-    playerNames = [],
-    genderStrategy = 'alternate',
-  } = config
+  const { count, playerNames = [], genderStrategy = 'alternate' } = config
 
   return Array.from({ length: count }, (_, index) => {
     const gender = assignGender(index, genderStrategy)
     const randomAvatar = getRandomAvatarByGender(gender)
 
     return {
-      id: index + 1,
+      id: `${index + 1}`,
       name: playerNames[index] || `玩家${index + 1}`,
       color: PLAYER_COLORS[index] || PLAYER_COLORS[0],
       position: 0,
@@ -112,11 +108,7 @@ export function createLocalPlayers(config: PlayerInitConfig): LocalPlayer[] {
  * })
  */
 export function createMinesweeperPlayers(config: PlayerInitConfig): MinesweeperPlayer[] {
-  const {
-    count,
-    playerNames = [],
-    genderStrategy = 'alternate',
-  } = config
+  const { count, playerNames = [], genderStrategy = 'alternate' } = config
 
   return Array.from({ length: count }, (_, index) => {
     const gender = assignGender(index, genderStrategy)
@@ -160,7 +152,7 @@ export function createPlayers(config: PlayerInitConfig): LocalPlayer[] | Mineswe
  */
 export function resetPlayerGameData<T extends LocalPlayer | MinesweeperPlayer>(
   players: T[],
-  resetAvatar: boolean = false
+  resetAvatar: boolean = false,
 ): T[] {
   return players.map((player) => {
     const baseReset = {

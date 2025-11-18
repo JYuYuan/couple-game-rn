@@ -76,6 +76,17 @@ export default function Home() {
       accentColor: '#10B981',
       hasOnline: false,
     },
+    {
+      key: 'draw-guess',
+      title: t('home.drawGuess.title', '你画我猜'),
+      subtitle: t('home.drawGuess.subtitle', '创意涂鸦'),
+      description: t('home.drawGuess.description', '发挥想象力,画出你的创意让对方猜'),
+      icon: 'brush' as const,
+      href: '/game-mode?type=draw-guess',
+      gradient: ['#F59E0B', '#FBBF24'],
+      accentColor: '#F59E0B',
+      hasOnline: false,
+    },
   ]
 
   // 游戏选项类型定义
