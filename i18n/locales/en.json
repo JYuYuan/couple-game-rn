@@ -418,6 +418,8 @@
     "taskList": "Task List",
     "addTask": "Add Task",
     "paste": "Paste",
+    "aiGenerated": "AI Generate",
+    "aiGenerating": "Generating...",
     "taskPlaceholder": "Task {{index}}",
     "namePlaceholder": "Enter task set name",
     "descriptionPlaceholder": "Enter task set description (optional)",
@@ -453,6 +455,29 @@
         "title": "Error",
         "message": "Paste failed, please try again"
       }
+    },
+    "aiGenerate": {
+      "disabled": {
+        "title": "AI Not Enabled",
+        "message": "Please configure and enable AI in settings first"
+      },
+      "confirm": {
+        "title": "AI Generate Tasks",
+        "message": "Will use AI to generate 50 tasks for \"{{name}}\". This will replace the current task list. Continue?",
+        "yes": "Start Generating"
+      },
+      "failed": {
+        "title": "Generation Failed",
+        "message": "AI task generation failed. Please check network connection or try again later"
+      },
+      "success": {
+        "title": "Generation Successful",
+        "message": "Successfully generated {{count}} tasks!"
+      },
+      "error": {
+        "title": "Error Occurred",
+        "message": "An error occurred while generating tasks. Please try again"
+      }
     }
   },
   "defaultCategories": {
@@ -485,5 +510,27 @@
     "achievements": "🌟 Achievements: {{count}}",
     "restart": "Restart",
     "exitGame": "Exit Game"
+  },
+  "aiService": {
+    "drawGuess": {
+      "categories": {
+        "random": "Random",
+        "animal": "Animal",
+        "food": "Food",
+        "item": "Item",
+        "nature": "Nature",
+        "building": "Building",
+        "emotion": "Emotion",
+        "sport": "Sport",
+        "profession": "Profession",
+        "transport": "Transport",
+        "plant": "Plant"
+      },
+      "validation": {
+        "empty": "Word cannot be empty",
+        "tooLong": "Word is too long for the game",
+        "noNumbers": "Word should not contain numbers"
+      }
+    }
   }
 }

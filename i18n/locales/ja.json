@@ -418,6 +418,8 @@
     "taskList": "タスクリスト",
     "addTask": "タスクを追加",
     "paste": "ペースト",
+    "aiGenerated": "AI生成",
+    "aiGenerating": "生成中...",
     "taskPlaceholder": "タスク{{index}}",
     "namePlaceholder": "タスクセットの名前を入力してください",
     "descriptionPlaceholder": "タスクセットの説明を入力してください（任意）",
@@ -453,6 +455,29 @@
         "title": "エラー",
         "message": "ペーストに失敗しました。再試行してください"
       }
+    },
+    "aiGenerate": {
+      "disabled": {
+        "title": "AI未有効",
+        "message": "先に設定でAI機能を設定して有効にしてください"
+      },
+      "confirm": {
+        "title": "AIタスク生成",
+        "message": "「{{name}}」に対して50件のタスクをAIで生成します。現在のタスクリストが置き換えられます。続行しますか？",
+        "yes": "生成を開始"
+      },
+      "failed": {
+        "title": "生成失敗",
+        "message": "AIタスク生成に失敗しました。ネットワーク接続を確認するか、しばらくしてから再試行してください"
+      },
+      "success": {
+        "title": "生成成功",
+        "message": "{{count}}件のタスクを正常に生成しました！"
+      },
+      "error": {
+        "title": "エラー発生",
+        "message": "タスク生成中にエラーが発生しました。再試行してください"
+      }
     }
   },
   "defaultCategories": {
@@ -485,5 +510,27 @@
     "achievements": "🌟 獲得実績: {{count}} 個",
     "restart": "再開始",
     "exitGame": "ゲーム終了"
+  },
+  "aiService": {
+    "drawGuess": {
+      "categories": {
+        "random": "ランダム",
+        "animal": "動物",
+        "food": "食べ物",
+        "item": "物品",
+        "nature": "自然",
+        "building": "建物",
+        "emotion": "感情",
+        "sport": "スポーツ",
+        "profession": "職業",
+        "transport": "交通",
+        "plant": "植物"
+      },
+      "validation": {
+        "empty": "単語を空にすることはできません",
+        "tooLong": "単語が長すぎてゲームに適していません",
+        "noNumbers": "単語に数字を含めることはできません"
+      }
+    }
   }
 }

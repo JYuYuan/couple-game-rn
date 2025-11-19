@@ -4,6 +4,7 @@ import { createLocalPlayers } from '@/utils/playerFactory'
 import { DrawGuessPlayer } from '@/types/player'
 import { useAIConfig } from '@/hooks/useAIConfig'
 import { drawGuessWordService } from '@/server'
+import { useSettingsStore } from '@/store'
 
 // 重新导出玩家类型
 export type { DrawGuessPlayer } from '@/types/player'
@@ -136,7 +137,7 @@ export type WordDifficulty = keyof typeof FALLBACK_WORD_CATEGORIES
 export const useDrawGuessGame = () => {
   const { t } = useTranslation()
   const { isAIEnabled } = useAIConfig()
-
+  const { languageMode } = useSettingsStore()
   // 词语缓存池
   const [wordPool, setWordPool] = useState<Map<WordDifficulty, string[]>>(new Map())
   // 获取国际化的玩家名称
@@ -186,7 +187,7 @@ export const useDrawGuessGame = () => {
         const words = await drawGuessWordService.generateWords({
           difficulty,
           count,
-          language: 'zh',
+          language: languageMode,
         })
         setWordPool((prev) => {
           const newPool = new Map(prev)
@@ -311,7 +312,9 @@ export const useDrawGuessGame = () => {
     setRounds([firstRound])
     setGameStatus('playing')
 
-    console.log(isAIEnabled ? '🚀 Starting game with AI words' : '📚 Starting game with fallback words')
+    console.log(
+      isAIEnabled ? '🚀 Starting game with AI words' : '📚 Starting game with fallback words',
+    )
   }, [createNewRound, isAIEnabled])
 
   // 获取当前轮次

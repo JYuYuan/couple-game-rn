@@ -8,6 +8,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  ActivityIndicator,
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { TaskSet } from '@/types/tasks'
@@ -15,6 +16,10 @@ import { useTasksStore } from '@/store/tasksStore'
 import * as Clipboard from 'expo-clipboard'
 import toast from '@/utils/toast'
 import { usePageBase } from '@/hooks/usePageBase'
+import { gameModeTaskService } from '@/server'
+import { useAIConfig } from '@/hooks/useAIConfig'
+import { showConfirmDialog } from '@/components/ConfirmDialog'
+import { useSettingsStore } from '@/store'
 
 interface TaskSetModalProps {
   visible: boolean
@@ -25,7 +30,7 @@ interface TaskSetModalProps {
 export const TaskSetModal: React.FC<TaskSetModalProps> = ({ visible, onClose, taskSet = null }) => {
   const { colors, t, colorScheme } = usePageBase()
   const { categories, addTaskSet, updateTaskSet } = useTasksStore()
-
+  const { isAIEnabled, isLoading: aiLoading } = useAIConfig()
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -34,6 +39,8 @@ export const TaskSetModal: React.FC<TaskSetModalProps> = ({ visible, onClose, ta
   })
 
   const [loading, setLoading] = useState(false)
+  const [isGenerating, setIsGenerating] = useState(false)
+  const { languageMode } = useSettingsStore()
 
   useEffect(() => {
     if (taskSet) {
@@ -198,6 +205,89 @@ export const TaskSetModal: React.FC<TaskSetModalProps> = ({ visible, onClose, ta
     }
   }
 
+  // AI 生成任务
+  const handleAIGenerate = async () => {
+    // 检查名称和描述
+    if (!formData.name.trim()) {
+      toast.error(
+        t('taskSetModal.alerts.nameRequired.title', '提示'),
+        t('taskSetModal.alerts.nameRequired.message', '请先输入任务集名称'),
+      )
+      return
+    }
+
+    // 检查 AI 是否启用
+    if (!isAIEnabled) {
+      await showConfirmDialog({
+        title: t('taskSetModal.aiGenerate.disabled.title', 'AI 未启用'),
+        message: t('taskSetModal.aiGenerate.disabled.message', '请先在设置中配置并启用 AI 功能'),
+        confirmText: t('common.ok', '确定'),
+        cancelText: false,
+        icon: 'alert-circle-outline',
+        iconColor: '#FF9500',
+      })
+      return
+    }
+
+    // 确认对话框
+    const confirm = await showConfirmDialog({
+      title: t('taskSetModal.aiGenerate.confirm.title', 'AI 生成任务'),
+      message: t(
+        'taskSetModal.aiGenerate.confirm.message',
+        '将使用 AI 为"{{name}}"生成 50 个任务。这将替换当前的任务列表，是否继续？',
+        { name: formData.name },
+      ),
+      confirmText: t('taskSetModal.aiGenerate.confirm.yes', '开始生成'),
+      cancelText: t('common.cancel', '取消'),
+      icon: 'sparkles-outline',
+      iconColor: '#F59E0B',
+    })
+
+    if (!confirm) return
+
+    // 开始生成
+    setIsGenerating(true)
+    try {
+      const tasks = await gameModeTaskService.generateTasks({
+        name: formData.name,
+        description: formData.description || '',
+        count: 50,
+        language: languageMode,
+        difficulty: 'normal',
+      })
+
+      if (tasks.length === 0) {
+        toast.error(
+          t('taskSetModal.aiGenerate.failed.title', '生成失败'),
+          t('taskSetModal.aiGenerate.failed.message', 'AI 生成任务失败，请检查网络连接或稍后重试'),
+        )
+        return
+      }
+
+      // 更新任务列表
+      setFormData((prev) => ({
+        ...prev,
+        tasks,
+      }))
+
+      // 成功提示
+      toast.success(
+        t('taskSetModal.aiGenerate.success.title', '生成成功'),
+        t('taskSetModal.aiGenerate.success.message', '成功生成 {{count}} 个任务！', {
+          count: tasks.length,
+        }),
+      )
+    } catch (error) {
+      console.error('AI generation error:', error)
+      toast.error(
+        t('taskSetModal.aiGenerate.error.title', '发生错误'),
+        t('taskSetModal.aiGenerate.error.message', '生成任务时发生错误，请重试'),
+      )
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
   return (
     <Modal visible={visible} animationType="slide" transparent>
       <View style={styles.overlay}>
@@ -318,6 +408,28 @@ export const TaskSetModal: React.FC<TaskSetModalProps> = ({ visible, onClose, ta
                   {t('taskSetModal.taskList', '任务列表')}
                 </Text>
                 <View style={styles.taskHeaderButtons}>
+                  {/* AI 生成按钮 */}
+                  <TouchableOpacity
+                    style={[
+                      styles.aiButton,
+                      { backgroundColor: '#F59E0B' + '20' },
+                      isGenerating && styles.buttonDisabled,
+                    ]}
+                    onPress={handleAIGenerate}
+                    disabled={isGenerating || aiLoading}
+                  >
+                    {isGenerating ? (
+                      <ActivityIndicator size="small" color="#F59E0B" />
+                    ) : (
+                      <Ionicons name="sparkles" size={20} color="#F59E0B" />
+                    )}
+                    <Text style={[styles.aiButtonText, { color: '#F59E0B' }]}>
+                      {isGenerating
+                        ? t('taskSetModal.aiGenerating', '生成中...')
+                        : t('taskSetModal.aiGenerated', 'AI 生成')}
+                    </Text>
+                  </TouchableOpacity>
+
                   <TouchableOpacity
                     style={[styles.addButton, { backgroundColor: colors.settingsAccent + '20' }]}
                     onPress={addTask}
@@ -475,14 +587,30 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   taskHeader: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: 12,
   },
   taskHeaderButtons: {
     flexDirection: 'row',
     gap: 8,
+    flexWrap: 'wrap',
+  },
+  aiButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    gap: 4,
+  },
+  aiButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  buttonDisabled: {
+    opacity: 0.5,
   },
   addButton: {
     flexDirection: 'row',
