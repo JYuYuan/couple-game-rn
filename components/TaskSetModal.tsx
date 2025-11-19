@@ -409,26 +409,28 @@ export const TaskSetModal: React.FC<TaskSetModalProps> = ({ visible, onClose, ta
                 </Text>
                 <View style={styles.taskHeaderButtons}>
                   {/* AI 生成按钮 */}
-                  <TouchableOpacity
-                    style={[
-                      styles.aiButton,
-                      { backgroundColor: '#F59E0B' + '20' },
-                      isGenerating && styles.buttonDisabled,
-                    ]}
-                    onPress={handleAIGenerate}
-                    disabled={isGenerating || aiLoading}
-                  >
-                    {isGenerating ? (
-                      <ActivityIndicator size="small" color="#F59E0B" />
-                    ) : (
-                      <Ionicons name="sparkles" size={20} color="#F59E0B" />
-                    )}
-                    <Text style={[styles.aiButtonText, { color: '#F59E0B' }]}>
-                      {isGenerating
-                        ? t('taskSetModal.aiGenerating', '生成中...')
-                        : t('taskSetModal.aiGenerated', 'AI 生成')}
-                    </Text>
-                  </TouchableOpacity>
+                  {isAIEnabled && (
+                    <TouchableOpacity
+                      style={[
+                        styles.aiButton,
+                        { backgroundColor: '#F59E0B' + '20' },
+                        isGenerating && styles.buttonDisabled,
+                      ]}
+                      onPress={handleAIGenerate}
+                      disabled={isGenerating || aiLoading}
+                    >
+                      {isGenerating ? (
+                        <ActivityIndicator size="small" color="#F59E0B" />
+                      ) : (
+                        <Ionicons name="sparkles" size={20} color="#F59E0B" />
+                      )}
+                      <Text style={[styles.aiButtonText, { color: '#F59E0B' }]}>
+                        {isGenerating
+                          ? t('taskSetModal.aiGenerating', '生成中...')
+                          : t('taskSetModal.aiGenerated', 'AI 生成')}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
 
                   <TouchableOpacity
                     style={[styles.addButton, { backgroundColor: colors.settingsAccent + '20' }]}
