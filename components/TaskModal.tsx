@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef } from 'react'
+import React, { useCallback, useEffect } from 'react'
 import { Dimensions, StyleSheet, Text, Vibration, View } from 'react-native'
 import Animated, {
   interpolate,
