@@ -11,7 +11,7 @@ on:
       - 'constants/**'
       - 'hooks/**'
       - 'i18n/**'
-      - 'services/**'
+      - '../../sockets/**'
       - 'store/**'
       - 'types/**'
       - 'public/**'

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { createLocalPlayers } from '@/utils/playerFactory'
 import { DrawGuessPlayer } from '@/types/player'
 import { useAIConfig } from '@/hooks/useAIConfig'
-import { drawGuessWordService } from '@/server/ai/draw-guess-service'
+import { drawGuessWordService } from '@/services/ai/draw-guess-service'
 import { useSettingsStore } from '@/store'
 
 // 重新导出玩家类型

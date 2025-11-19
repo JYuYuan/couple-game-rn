@@ -4,7 +4,7 @@
  */
 
 import { ConnectionType } from '@/types/online'
-import { getLANService } from '@/services/lan'
+import { getLANService } from '@/sockets/lan'
 
 /**
  * 根据连接类型执行不同的操作
@@ -31,7 +31,7 @@ export async function withLANService<T>(
   connectionType: ConnectionType,
   lanOperation: (lanService: any) => T | Promise<T>,
   onlineOperation: () => T | Promise<T>,
-  errorContext: string = 'LAN操作'
+  errorContext: string = 'LAN操作',
 ): Promise<T> {
   if (connectionType === 'lan') {
     try {
@@ -54,7 +54,7 @@ export function withLANServiceSync<T>(
   connectionType: ConnectionType,
   lanOperation: (lanService: any) => T,
   onlineOperation: () => T,
-  errorContext: string = 'LAN操作'
+  errorContext: string = 'LAN操作',
 ): T {
   if (connectionType === 'lan') {
     try {
@@ -86,7 +86,7 @@ export async function withLANServiceTransform<TInput, TOutput>(
   dataTransformer: ((data: TInput) => any) | undefined,
   lanOperation: (lanService: any, transformedData: any) => TOutput | Promise<TOutput>,
   onlineOperation: (data: TInput) => TOutput | Promise<TOutput>,
-  errorContext: string = 'LAN操作'
+  errorContext: string = 'LAN操作',
 ): Promise<TOutput> {
   if (connectionType === 'lan') {
     try {
@@ -115,7 +115,7 @@ export function withEventListener(
   event: string,
   callback: Function,
   action: 'on' | 'off',
-  onlineService: any
+  onlineService: any,
 ): void {
   if (connectionType === 'lan') {
     try {

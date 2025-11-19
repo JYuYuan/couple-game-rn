@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react'
-import { socketService } from '@/services/socket-service'
+import { socketService } from '@/sockets/socket-service'
 import {
   ConnectionType,
   CreateLANRoomData,
@@ -19,7 +19,7 @@ import {
   loadLANModules,
   isLANModulesLoaded,
   type RoomBroadcast,
-} from '@/services/lan'
+} from '@/sockets/lan'
 import { withLANService, withLANServiceTransform, withEventListener } from '@/utils/lan-helper'
 
 interface SocketContextValue {

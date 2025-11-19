@@ -12,7 +12,7 @@ import { AppState, Platform } from 'react-native'
 import { ConfirmDialogProvider } from '@/components/ConfirmDialog'
 import { ToastProvider } from '@/components/Toast'
 import { SocketProvider } from '@/contexts/SocketContext'
-import { getLANService, isLANAvailable } from '@/services/lan'
+import { getLANService, isLANAvailable } from '@/sockets/lan'
 import { AIConfigInitializer } from '@/components/AIConfigInitializer'
 
 // 防止启动屏自动隐藏

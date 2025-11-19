@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useSettingsStore } from '@/store'
-import { aiClient } from '@/server'
+import { aiClient } from '@/services'
 
 /**
  * AI 配置 Hook
