@@ -139,7 +139,16 @@ export function ConfirmDialogProvider() {
                   onPress={handleCancel}
                   activeOpacity={0.8}
                 >
-                  <View style={[styles.buttonContent, { backgroundColor: cancelColor + '15' }]}>
+                  <View
+                    style={[
+                      styles.buttonContent,
+                      styles.cancelButtonContent,
+                      {
+                        backgroundColor: colors.homeCardBackground,
+                        borderColor: cancelColor,
+                      },
+                    ]}
+                  >
                     <Text style={[styles.buttonText, { color: cancelColor }]}>{cancelText}</Text>
                   </View>
                 </TouchableOpacity>
@@ -245,6 +254,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 12,
+  },
+  cancelButtonContent: {
+    borderWidth: 2,
   },
   buttonText: {
     fontSize: 16,

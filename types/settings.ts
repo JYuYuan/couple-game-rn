@@ -24,6 +24,13 @@ export interface PlayerProfile {
   gender: AvatarGender // 性别
 }
 
+export interface AISettings {
+  enabled: boolean // 是否启用AI功能
+  apiUrl: string // AI API 地址
+  apiKey: string // AI API Key
+  apiModel: string // AI 模型
+}
+
 export interface SettingsState {
   playerId: string
   themeMode: ThemeMode
@@ -31,10 +38,12 @@ export interface SettingsState {
   soundSettings: SoundSettings
   networkSettings: NetworkSettings
   playerProfile: PlayerProfile
+  aiSettings: AISettings
   setThemeMode: (mode: ThemeMode) => void
   setLanguageMode: (mode: LanguageMode) => void
   setSoundSettings: (settings: Partial<SoundSettings>) => void
   setNetworkSettings: (settings: Partial<NetworkSettings>) => void
   setPlayerProfile: (profile: Partial<PlayerProfile>) => void
+  setAISettings: (settings: Partial<AISettings>) => void
   reset: () => void
 }

@@ -7,6 +7,7 @@ import {
   ScrollView,
   Modal,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import { LinearGradient } from 'expo-linear-gradient'
@@ -21,6 +22,7 @@ import { DrawGuessTaskModal, DrawGuessTaskData } from '@/components/DrawGuessTas
 import { PhaseTransitionModal } from '@/components/PhaseTransitionModal'
 import { useGameTasks } from '@/hooks/use-game-tasks'
 import { useDrawGuessGame, WORD_CATEGORIES, WordDifficulty } from '@/hooks/use-draw-guess-game'
+import { showConfirmDialog } from '@/components/ConfirmDialog'
 
 const { width: screenWidth } = Dimensions.get('window')
 
@@ -150,6 +152,33 @@ export default function DrawGuess() {
   const handleSkip = () => {
     if (!game.currentRound || game.currentRound.phase !== 'guessing') return
     game.skipRound(timer)
+  }
+
+  // 处理开始游戏
+  const handleStartGame = async () => {
+    // 如果 AI 正在生成词语，弹出确认对话框
+    if (game.isLoadingWords) {
+      const result = await showConfirmDialog({
+        title: t('drawGuess.aiGenerating.title', 'AI 题词生成中'),
+        message: t(
+          'drawGuess.aiGenerating.message',
+          'AI 正在生成题词，请稍候。是否使用本地题词立即开始游戏？',
+        ),
+        confirmText: t('drawGuess.aiGenerating.useLocal', '使用本地题词'),
+        cancelText: t('drawGuess.aiGenerating.wait', '等待 AI'),
+        icon: 'time-outline',
+        iconColor: '#F59E0B',
+      })
+
+      // 用户选择等待 AI，不做任何操作
+      if (!result) {
+        return
+      }
+      // 用户选择使用本地题词，继续开始游戏
+    }
+
+    // 开始游戏
+    game.startGame()
   }
 
   // 格式化时间
@@ -301,10 +330,25 @@ export default function DrawGuess() {
                 </View>
               </View>
 
+              {/* AI 词语生成状态提示 */}
+              {game.isLoadingWords && (
+                <View
+                  style={[
+                    styles.aiLoadingCard,
+                    { backgroundColor: colors.homeCardBackground + 'CC' },
+                  ]}
+                >
+                  <ActivityIndicator size="small" color="#F59E0B" />
+                  <Text style={[styles.aiLoadingText, { color: colors.homeCardDescription }]}>
+                    AI 题词生成中...
+                  </Text>
+                </View>
+              )}
+
               {/* 开始按钮 */}
               <TouchableOpacity
                 style={[styles.startButton]}
-                onPress={game.startGame}
+                onPress={handleStartGame}
                 activeOpacity={0.8}
               >
                 <LinearGradient
@@ -668,6 +712,24 @@ const styles = StyleSheet.create({
   },
   difficultyPoints: {
     fontSize: 13,
+    fontWeight: '600',
+  },
+  aiLoadingCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    padding: spacing.md,
+    borderRadius: 12,
+    marginTop: spacing.md,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  aiLoadingText: {
+    fontSize: 14,
     fontWeight: '600',
   },
   startButton: {

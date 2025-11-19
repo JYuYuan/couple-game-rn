@@ -1,14 +1,10 @@
 import React, { useState } from 'react'
 import {
   ActivityIndicator,
-  Linking,
-  Modal,
-  Platform,
   ScrollView,
   StyleSheet,
   Switch,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native'
@@ -16,14 +12,16 @@ import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useSettingsStore } from '@/store'
 import { useTranslation } from 'react-i18next'
-import { LanguageMode, ThemeMode } from '@/types/settings'
-import { checkForUpdates, getAppInfo } from '@/utils/app-info'
-import { getLocalIP } from '@/utils'
-import { useRequest } from 'ahooks'
-import * as Clipboard from 'expo-clipboard'
-import { showConfirmDialog } from '@/components/ConfirmDialog'
-import toast from '@/utils/toast'
 import { usePageBase } from '@/hooks/usePageBase'
+import { useSettingsSections } from '@/hooks/useSettingsSections'
+import {
+  AIConfigModal,
+  LanguageModal,
+  ThemeModal,
+  SocketUrlModal,
+  LanConfigModal,
+} from '@/components/settings'
+import type { LanguageMode, ThemeMode } from '@/types/settings'
 
 interface SettingItem {
   icon: keyof typeof Ionicons.glyphMap
@@ -42,25 +40,22 @@ const Settings: React.FC = () => {
     languageMode,
     soundSettings,
     networkSettings,
+    aiSettings,
     setThemeMode,
     setLanguageMode,
     setSoundSettings,
     setNetworkSettings,
+    setAISettings,
   } = useSettingsStore()
   const { i18n } = useTranslation()
+  const { colors, t } = usePageBase()
+
+  // Modal visibility states
   const [showLanguageModal, setShowLanguageModal] = useState(false)
   const [showThemeModal, setShowThemeModal] = useState(false)
   const [showSocketUrlModal, setShowSocketUrlModal] = useState(false)
   const [showLanConfigModal, setShowLanConfigModal] = useState(false)
-  const [isCheckingUpdate, setIsCheckingUpdate] = useState(false)
-  const [socketUrlInput, setSocketUrlInput] = useState(networkSettings.socketUrl)
-  const [lanPortInput, setLanPortInput] = useState((networkSettings.lanPort || 8080).toString())
-
-  // 获取应用信息
-  const appInfo = getAppInfo()
-  const fetchIp = useRequest(getLocalIP)
-
-  const { colors, t } = usePageBase()
+  const [showAIConfigModal, setShowAIConfigModal] = useState(false)
 
   const backgroundColor = colors.settingsBackground
   const cardBackground = colors.settingsCardBackground
@@ -68,9 +63,16 @@ const Settings: React.FC = () => {
   const textColor = colors.settingsText
   const secondaryText = colors.settingsSecondaryText
   const accentColor = colors.settingsAccent
-  const modalOverlay = colors.modalOverlay
-  const modalBg = colors.modalBackground
-  const modalSelected = colors.modalSelected
+
+  const modalColors = {
+    modalOverlay: colors.modalOverlay,
+    modalBackground: colors.modalBackground,
+    modalSelected: colors.modalSelected,
+    textColor,
+    secondaryText,
+    accentColor,
+    cardBorder,
+  }
 
   const getLanguageDisplay = (lang: LanguageMode) => {
     return t(`settings.language.config.${lang}`)
@@ -89,240 +91,26 @@ const Settings: React.FC = () => {
   const handleThemeChange = (theme: ThemeMode) => {
     setThemeMode(theme)
     setShowThemeModal(false)
-    // 注意：在React Native中，Appearance.setColorScheme 主要用于监听系统主题变化
-    // 实际的主题切换应该通过应用内的状态管理来实现
   }
 
-  const handleAboutPress = async (type: string) => {
-    switch (type) {
-      case 'update':
-        setIsCheckingUpdate(true)
-        try {
-          const updateInfo = await checkForUpdates()
-
-          if (updateInfo.hasUpdate) {
-            const confirmed = await showConfirmDialog({
-              title: t('settings.updateCheck.alertTitle', '检查更新'),
-              message:
-                updateInfo.message ||
-                t('settings.updateCheck.hasUpdate', '发现新版本 {{version}}！', {
-                  version: updateInfo.latestVersion,
-                }),
-              confirmText: t('settings.updateCheck.update', '立即更新'),
-              cancelText: t('settings.updateCheck.later', '稍后更新'),
-              icon: 'download-outline',
-              iconColor: '#4CAF50',
-            })
-
-            if (confirmed && updateInfo.updateUrl) {
-              Linking.openURL(updateInfo.updateUrl)
-            }
-          } else {
-            await showConfirmDialog({
-              title: t('settings.updateCheck.alertTitle', '检查更新'),
-              message: updateInfo.message || t('settings.updateCheck.noUpdate', '当前已是最新版本'),
-              confirmText: t('common.ok', '确定'),
-              cancelText: false,
-              icon: 'checkmark-circle-outline',
-              iconColor: '#4CAF50',
-            })
-          }
-        } catch {
-          await showConfirmDialog({
-            title: t('settings.updateCheck.alertTitle', '检查更新'),
-            message: t('settings.updateCheck.error', '检查更新失败，请稍后再试'),
-            confirmText: t('common.ok', '确定'),
-            cancelText: false,
-            icon: 'alert-circle-outline',
-            iconColor: '#FF6B6B',
-          })
-        } finally {
-          setIsCheckingUpdate(false)
-        }
-        break
-      case 'privacy':
-        await showConfirmDialog({
-          title: t('settings.privacyPolicy.alertTitle', '隐私政策'),
-          message: t(
-            'settings.privacyPolicy.alertMessage',
-            '我们重视您的隐私，所有数据均存储在本地，不会上传到服务器。',
-          ),
-          confirmText: t('common.ok', '确定'),
-          cancelText: false,
-          icon: 'shield-checkmark-outline',
-          iconColor: '#4CAF50',
-        })
-        break
-      case 'terms':
-        await showConfirmDialog({
-          title: t('settings.userAgreement.alertTitle', '用户协议'),
-          message: t(
-            'settings.userAgreement.alertMessage',
-            '感谢使用我们的应用，请合理使用本应用的各项功能。',
-          ),
-          confirmText: t('common.ok', '确定'),
-          cancelText: false,
-          icon: 'document-text-outline',
-          iconColor: '#4CAF50',
-        })
-        break
-    }
-  }
-
-  const settingsSections = [
-    {
-      title: t('settings.sections.general', '通用'),
-      items: [
-        {
-          icon: 'language',
-          label: t('settings.language.label'),
-          value: getLanguageDisplay(languageMode),
-          onPress: () => setShowLanguageModal(true),
-        },
-        {
-          icon: 'moon',
-          label: t('settings.theme.label'),
-          value: getThemeDisplay(themeMode),
-          onPress: () => setShowThemeModal(true),
-        },
-      ],
-    },
-    {
-      title: t('settings.sections.network', '网络设置'),
-      items: [
-        {
-          icon: 'cloud',
-          label: t('settings.network.enabled', '网络模式'),
-          value: '',
-          type: 'switch',
-          switchValue: networkSettings.enabled,
-          onPress: () => {
-            setNetworkSettings({ enabled: !networkSettings.enabled })
-          },
-        },
-        ...(networkSettings.enabled
-          ? [
-              {
-                icon: 'server',
-                label: t('settings.network.socketUrl', 'Socket 地址'),
-                value: networkSettings.socketUrl,
-                onPress: () => {
-                  setSocketUrlInput(networkSettings.socketUrl)
-                  setShowSocketUrlModal(true)
-                },
-              },
-            ]
-          : []),
-        // Web 端不支持局域网模式，隐藏此设置
-        ...(Platform.OS !== 'web'
-          ? [
-              {
-                icon: 'wifi',
-                label: t('settings.network.lanMode', '局域网模式'),
-                value: '',
-                type: 'switch',
-                switchValue: networkSettings.lanMode,
-                onPress: () => {
-                  setNetworkSettings({ lanMode: !networkSettings.lanMode })
-                },
-              },
-              ...(networkSettings.lanMode
-                ? [
-                    {
-                      icon: 'information-circle',
-                      label: t('settings.lan.label', '本机IP地址'),
-                      disabled: fetchIp.loading || !fetchIp.data,
-                      value: fetchIp.loading
-                        ? t('settings.lan.loading', '获取中...')
-                        : fetchIp.error
-                          ? t('settings.lan.error', '获取失败')
-                          : fetchIp.data || t('settings.lan.unavailable', '不可用'),
-                      onPress: async () => {
-                        if (!fetchIp.data) {
-                          toast.error(
-                            t('settings.lan.error', '获取失败'),
-                            t('settings.lan.errorMessage', '无法获取本机 IP 地址，请检查网络连接'),
-                          )
-                          return
-                        }
-                        await Clipboard.setStringAsync(fetchIp.data)
-
-                        toast.success(
-                          t('common.success', '成功'),
-                          t('settings.lan.copied', 'IP地址已复制到剪贴板'),
-                        )
-                      },
-                    },
-                    {
-                      icon: 'settings-outline',
-                      label: t('settings.lan.port', '局域网端口'),
-                      value: (networkSettings.lanPort || 8080).toString(),
-                      onPress: () => {
-                        setLanPortInput((networkSettings.lanPort || 8080).toString())
-                        setShowLanConfigModal(true)
-                      },
-                    },
-                  ]
-                : []),
-            ]
-          : []),
-      ],
-    },
-    {
-      title: t('settings.sections.gameSettings', '游戏设置'),
-      items: [
-        {
-          icon: 'musical-notes',
-          label: t('settings.sound.label', '声音设置'),
-          value: '',
-          type: 'switch',
-          switchValue: !soundSettings.globalMute,
-          onPress: () => {
-            setSoundSettings({ globalMute: !soundSettings.globalMute })
-          },
-        },
-        {
-          icon: 'volume-high',
-          label: t('settings.sound.bgm', '背景音乐'),
-          value: '',
-          type: 'switch',
-          switchValue: soundSettings.bgmEnabled,
-          onPress: () => {
-            setSoundSettings({ bgmEnabled: !soundSettings.bgmEnabled })
-          },
-        },
-      ],
-    },
-    {
-      title: t('settings.sections.about', '关于'),
-      items: [
-        {
-          icon: 'information-circle',
-          label: t('settings.version.label', '版本信息'),
-          value: appInfo.version,
-        },
-        {
-          icon: 'refresh',
-          label: t('settings.updateCheck.label', '检查更新'),
-          value: isCheckingUpdate ? t('settings.updateCheck.checking', '检查中...') : '',
-          onPress: isCheckingUpdate ? undefined : () => handleAboutPress('update'),
-          disabled: isCheckingUpdate,
-        },
-        {
-          icon: 'document-text',
-          label: t('settings.userAgreement.label', '用户协议'),
-          value: '',
-          onPress: () => handleAboutPress('terms'),
-        },
-        {
-          icon: 'shield-checkmark',
-          label: t('settings.privacyPolicy.label', '隐私政策'),
-          value: '',
-          onPress: () => handleAboutPress('privacy'),
-        },
-      ],
-    },
-  ]
+  const { settingsSections, fetchIp } = useSettingsSections({
+    themeMode,
+    languageMode,
+    soundSettings,
+    networkSettings,
+    aiSettings,
+    setSoundSettings,
+    setNetworkSettings,
+    setAISettings,
+    getLanguageDisplay,
+    getThemeDisplay,
+    onShowLanguageModal: () => setShowLanguageModal(true),
+    onShowThemeModal: () => setShowThemeModal(true),
+    onShowSocketUrlModal: () => setShowSocketUrlModal(true),
+    onShowLanConfigModal: () => setShowLanConfigModal(true),
+    onShowAIConfigModal: () => setShowAIConfigModal(true),
+    t,
+  })
 
   return (
     <View style={[styles.container, { backgroundColor }]}>
@@ -332,6 +120,7 @@ const Settings: React.FC = () => {
         showsVerticalScrollIndicator={false}
       >
         <Text style={[styles.pageTitle, { color: textColor }]}>{t('settings.title')}</Text>
+
         {settingsSections.map((section, sectionIndex) => (
           <View key={sectionIndex} style={styles.section}>
             <Text style={[styles.sectionTitle, { color: secondaryText }]}>{section.title}</Text>
@@ -366,7 +155,7 @@ const Settings: React.FC = () => {
                   >
                     <View style={styles.settingItemLeft}>
                       <View style={[styles.iconContainer, { backgroundColor: `${accentColor}20` }]}>
-                        {item.icon === 'refresh' && isCheckingUpdate ? (
+                        {item.icon === 'refresh' && fetchIp.loading ? (
                           <ActivityIndicator size="small" color={accentColor} />
                         ) : (
                           <Ionicons
@@ -413,306 +202,62 @@ const Settings: React.FC = () => {
         ))}
       </ScrollView>
 
-      {/* 语言选择模态框 */}
-      <Modal
+      {/* Language Modal */}
+      <LanguageModal
         visible={showLanguageModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowLanguageModal(false)}
-      >
-        <TouchableOpacity
-          style={[styles.modalOverlay, { backgroundColor: modalOverlay }]}
-          activeOpacity={1}
-          onPress={() => setShowLanguageModal(false)}
-        >
-          <View style={[styles.modalContent, { backgroundColor: modalBg }]}>
-            <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: textColor }]}>
-                {t('settings.language.modalTitle', '选择语言')}
-              </Text>
-              <TouchableOpacity
-                onPress={() => setShowLanguageModal(false)}
-                style={styles.modalCloseButton}
-              >
-                <Ionicons name="close" size={24} color={secondaryText} />
-              </TouchableOpacity>
-            </View>
-            {(['zh', 'en', 'ja'] as LanguageMode[]).map((lang) => (
-              <TouchableOpacity
-                key={lang}
-                style={[
-                  styles.modalOption,
-                  languageMode === lang && { backgroundColor: modalSelected },
-                ]}
-                onPress={() => handleLanguageChange(lang)}
-                activeOpacity={0.7}
-              >
-                <Text
-                  style={[
-                    styles.modalOptionText,
-                    { color: textColor },
-                    languageMode === lang && { color: accentColor, fontWeight: '600' },
-                  ]}
-                >
-                  {getLanguageDisplay(lang)}
-                </Text>
-                {languageMode === lang && (
-                  <Ionicons name="checkmark" size={20} color={accentColor} />
-                )}
-              </TouchableOpacity>
-            ))}
-          </View>
-        </TouchableOpacity>
-      </Modal>
+        currentLanguage={languageMode}
+        colors={modalColors}
+        onClose={() => setShowLanguageModal(false)}
+        onSelect={handleLanguageChange}
+        getLanguageDisplay={getLanguageDisplay}
+        t={t}
+      />
 
-      {/* 主题选择模态框 */}
-      <Modal
+      {/* Theme Modal */}
+      <ThemeModal
         visible={showThemeModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowThemeModal(false)}
-      >
-        <TouchableOpacity
-          style={[styles.modalOverlay, { backgroundColor: modalOverlay }]}
-          activeOpacity={1}
-          onPress={() => setShowThemeModal(false)}
-        >
-          <View style={[styles.modalContent, { backgroundColor: modalBg }]}>
-            <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: textColor }]}>
-                {t('settings.theme.modalTitle', '选择主题')}
-              </Text>
-              <TouchableOpacity
-                onPress={() => setShowThemeModal(false)}
-                style={styles.modalCloseButton}
-              >
-                <Ionicons name="close" size={24} color={secondaryText} />
-              </TouchableOpacity>
-            </View>
-            {(['system', 'light', 'dark'] as ThemeMode[]).map((theme) => (
-              <TouchableOpacity
-                key={theme}
-                style={[
-                  styles.modalOption,
-                  themeMode === theme && { backgroundColor: modalSelected },
-                ]}
-                onPress={() => handleThemeChange(theme)}
-                activeOpacity={0.7}
-              >
-                <Text
-                  style={[
-                    styles.modalOptionText,
-                    { color: textColor },
-                    themeMode === theme && { color: accentColor, fontWeight: '600' },
-                  ]}
-                >
-                  {getThemeDisplay(theme)}
-                </Text>
-                {themeMode === theme && <Ionicons name="checkmark" size={20} color={accentColor} />}
-              </TouchableOpacity>
-            ))}
-          </View>
-        </TouchableOpacity>
-      </Modal>
+        currentTheme={themeMode}
+        colors={modalColors}
+        onClose={() => setShowThemeModal(false)}
+        onSelect={handleThemeChange}
+        getThemeDisplay={getThemeDisplay}
+        t={t}
+      />
 
-      {/* Socket URL 设置模态框 */}
-      <Modal
+      {/* Socket URL Modal */}
+      <SocketUrlModal
         visible={showSocketUrlModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowSocketUrlModal(false)}
-      >
-        <TouchableOpacity
-          style={[styles.modalOverlay, { backgroundColor: modalOverlay }]}
-          activeOpacity={1}
-          onPress={() => setShowSocketUrlModal(false)}
-        >
-          <View
-            style={[styles.modalContent, { backgroundColor: modalBg }]}
-            onStartShouldSetResponder={() => true}
-          >
-            <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: textColor }]}>
-                {t('settings.network.socketUrl', 'Socket 地址')}
-              </Text>
-              <TouchableOpacity
-                onPress={() => setShowSocketUrlModal(false)}
-                style={styles.modalCloseButton}
-              >
-                <Ionicons name="close" size={24} color={secondaryText} />
-              </TouchableOpacity>
-            </View>
-            <View style={styles.modalBody}>
-              <Text style={[styles.modalDescription, { color: secondaryText }]}>
-                {t(
-                  'settings.network.socketUrlDescription',
-                  '请输入 Socket 服务器地址（例如: http://192.168.1.100:8871）',
-                )}
-              </Text>
-              <TextInput
-                style={[styles.input, { color: textColor, borderColor: cardBorder }]}
-                value={socketUrlInput}
-                onChangeText={setSocketUrlInput}
-                placeholder="http://localhost:3001"
-                placeholderTextColor={secondaryText}
-                autoCapitalize="none"
-                autoCorrect={false}
-                keyboardType="url"
-              />
-            </View>
-            <View style={styles.modalFooter}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.modalButtonCancel, { borderColor: cardBorder }]}
-                onPress={() => setShowSocketUrlModal(false)}
-              >
-                <Text style={[styles.modalButtonText, { color: secondaryText }]}>
-                  {t('common.cancel', '取消')}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.modalButton,
-                  styles.modalButtonConfirm,
-                  { backgroundColor: accentColor },
-                ]}
-                onPress={async () => {
-                  setNetworkSettings({ socketUrl: socketUrlInput })
-                  setShowSocketUrlModal(false)
-                  await showConfirmDialog({
-                    title: t('common.success', '成功'),
-                    message: t('settings.network.socketUrlSaved', 'Socket 地址已保存'),
-                    confirmText: t('common.ok', '确定'),
-                    cancelText: false,
-                    icon: 'checkmark-circle-outline',
-                    iconColor: '#4CAF50',
-                  })
-                }}
-              >
-                <Text style={[styles.modalButtonText, { color: '#fff' }]}>
-                  {t('common.confirm', '确认')}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </TouchableOpacity>
-      </Modal>
+        currentUrl={networkSettings.socketUrl}
+        colors={modalColors}
+        onClose={() => setShowSocketUrlModal(false)}
+        onSave={(url) => setNetworkSettings({ socketUrl: url })}
+        t={t}
+      />
 
-      {/* 局域网配置模态框 */}
-      <Modal
+      {/* LAN Config Modal */}
+      <LanConfigModal
         visible={showLanConfigModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowLanConfigModal(false)}
-      >
-        <TouchableOpacity
-          style={[styles.modalOverlay, { backgroundColor: modalOverlay }]}
-          activeOpacity={1}
-          onPress={() => setShowLanConfigModal(false)}
-        >
-          <View
-            style={[styles.modalContent, { backgroundColor: modalBg }]}
-            onStartShouldSetResponder={() => true}
-          >
-            <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: textColor }]}>
-                {t('settings.lan.port', '局域网端口')}
-              </Text>
-              <TouchableOpacity
-                onPress={() => setShowLanConfigModal(false)}
-                style={styles.modalCloseButton}
-              >
-                <Ionicons name="close" size={24} color={secondaryText} />
-              </TouchableOpacity>
-            </View>
-            <View style={styles.modalBody}>
-              <Text style={[styles.modalDescription, { color: secondaryText }]}>
-                {t(
-                  'settings.lan.portDescription',
-                  '设置局域网服务端口。其他玩家可以使用本机IP和此端口连接到您的房间。',
-                )}
-              </Text>
+        currentPort={networkSettings.lanPort || 8080}
+        localIP={fetchIp.data}
+        colors={modalColors}
+        onClose={() => setShowLanConfigModal(false)}
+        onSave={(port, ip) => setNetworkSettings({ lanIP: ip, lanPort: port })}
+        t={t}
+      />
 
-              <Text style={[styles.label, { color: textColor, marginTop: 16 }]}>
-                {t('settings.lan.port', '端口号')}
-              </Text>
-              <TextInput
-                style={[styles.input, { color: textColor, borderColor: cardBorder }]}
-                value={lanPortInput}
-                onChangeText={setLanPortInput}
-                placeholder="8080"
-                placeholderTextColor={secondaryText}
-                autoCapitalize="none"
-                autoCorrect={false}
-                keyboardType="number-pad"
-              />
-
-              <Text
-                style={[
-                  styles.modalDescription,
-                  { color: secondaryText, marginTop: 12, fontSize: 12 },
-                ]}
-              >
-                {t(
-                  'settings.lan.portHint',
-                  '端口范围：1024-65535。创建房间时，系统会使用此端口启动服务。',
-                )}
-              </Text>
-            </View>
-            <View style={styles.modalFooter}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.modalButtonCancel, { borderColor: cardBorder }]}
-                onPress={() => setShowLanConfigModal(false)}
-              >
-                <Text style={[styles.modalButtonText, { color: secondaryText }]}>
-                  {t('common.cancel', '取消')}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.modalButton,
-                  styles.modalButtonConfirm,
-                  { backgroundColor: accentColor },
-                ]}
-                onPress={async () => {
-                  const port = parseInt(lanPortInput, 10)
-                  if (isNaN(port) || port < 1024 || port > 65535) {
-                    await showConfirmDialog({
-                      title: t('common.error', '错误'),
-                      message: t('settings.lan.invalidPort', '端口号必须在 1024-65535 之间'),
-                      confirmText: t('common.ok', '确定'),
-                      cancelText: false,
-                      icon: 'alert-circle-outline',
-                      iconColor: '#FF6B6B',
-                    })
-                    return
-                  }
-
-                  setNetworkSettings({
-                    lanIP: fetchIp.data || '',
-                    lanPort: port,
-                  })
-                  setShowLanConfigModal(false)
-                  await showConfirmDialog({
-                    title: t('common.success', '成功'),
-                    message: t('settings.lan.portSaved', '局域网端口已保存'),
-                    confirmText: t('common.ok', '确定'),
-                    cancelText: false,
-                    icon: 'checkmark-circle-outline',
-                    iconColor: '#4CAF50',
-                  })
-                }}
-              >
-                <Text style={[styles.modalButtonText, { color: '#fff' }]}>
-                  {t('common.confirm', '确认')}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </TouchableOpacity>
-      </Modal>
+      {/* AI Config Modal */}
+      <AIConfigModal
+        visible={showAIConfigModal}
+        aiSettings={aiSettings}
+        colors={modalColors}
+        onClose={() => setShowAIConfigModal(false)}
+        onSave={(settings) => setAISettings(settings)}
+        t={t}
+      />
     </View>
   )
 }
+
 export default Settings
 
 const styles = StyleSheet.create({
@@ -795,95 +340,5 @@ const styles = StyleSheet.create({
   settingValue: {
     fontSize: 15,
     marginRight: 8,
-  },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-  },
-  modalContent: {
-    borderRadius: 16,
-    width: '100%',
-    maxWidth: 320,
-    paddingBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.25,
-    shadowRadius: 25,
-    elevation: 10,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  modalCloseButton: {
-    padding: 4,
-  },
-  modalOption: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 0.5,
-    borderBottomColor: '#E5E5E5',
-  },
-  modalOptionText: {
-    fontSize: 16,
-  },
-  modalBody: {
-    padding: 20,
-  },
-  modalDescription: {
-    fontSize: 14,
-    lineHeight: 20,
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  input: {
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 15,
-  },
-  modalFooter: {
-    flexDirection: 'row',
-    gap: 12,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-  },
-  modalButton: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  modalButtonCancel: {
-    borderWidth: 1,
-  },
-  modalButtonConfirm: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  modalButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
   },
 })

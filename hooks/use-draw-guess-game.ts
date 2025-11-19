@@ -1,7 +1,9 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { createLocalPlayers } from '@/utils/playerFactory'
 import { DrawGuessPlayer } from '@/types/player'
+import { useAIConfig } from '@/hooks/useAIConfig'
+import { drawGuessWordService } from '@/server'
 
 // 重新导出玩家类型
 export type { DrawGuessPlayer } from '@/types/player'
@@ -26,8 +28,8 @@ export interface GameRound {
   drawingConfirmed: boolean // 画画是否已确认
 }
 
-// 词库难度配置
-export const WORD_CATEGORIES = {
+// 备用词库配置（当 AI 不可用时使用）
+export const FALLBACK_WORD_CATEGORIES = {
   easy: {
     name: '简单',
     words: [
@@ -126,11 +128,17 @@ export const WORD_CATEGORIES = {
   },
 }
 
-export type WordDifficulty = keyof typeof WORD_CATEGORIES
+// 保持向后兼容
+export const WORD_CATEGORIES = FALLBACK_WORD_CATEGORIES
+
+export type WordDifficulty = keyof typeof FALLBACK_WORD_CATEGORIES
 
 export const useDrawGuessGame = () => {
   const { t } = useTranslation()
+  const { isAIEnabled } = useAIConfig()
 
+  // 词语缓存池
+  const [wordPool, setWordPool] = useState<Map<WordDifficulty, string[]>>(new Map())
   // 获取国际化的玩家名称
   const getPlayerNames = useCallback(
     () => [t('players.names.player1', '玩家1'), t('players.names.player2', '玩家2')],
@@ -161,14 +169,84 @@ export const useDrawGuessGame = () => {
   const [difficulty, setDifficulty] = useState<WordDifficulty>('medium')
   const [rounds, setRounds] = useState<GameRound[]>([])
   const [usedWords, setUsedWords] = useState<Set<string>>(new Set())
+  const [isLoadingWords, setIsLoadingWords] = useState(false)
 
   const WINNING_SCORE = 100 // 胜利条件分数
   const TOTAL_ROUNDS = 6 // 总轮数
+  const WORD_POOL_MIN_SIZE = 5 // 词池最小数量，低于此值时自动补充
 
-  // 获取随机词语
+  // 预取 AI 词语到词池
+  const prefetchWords = useCallback(
+    async (difficulty: WordDifficulty, count: number = 20) => {
+      if (!isAIEnabled) return
+
+      setIsLoadingWords(true)
+      try {
+        console.log(`🤖 Prefetching ${count} words for ${difficulty}...`)
+        const words = await drawGuessWordService.generateWords({
+          difficulty,
+          count,
+          language: 'zh',
+        })
+        setWordPool((prev) => {
+          const newPool = new Map(prev)
+          const existingWords = newPool.get(difficulty) || []
+          const newWords = words.map((w) => w.word).filter((w) => !usedWords.has(w))
+          newPool.set(difficulty, [...existingWords, ...newWords])
+          console.log(
+            `✅ Word pool updated: ${difficulty} now has ${existingWords.length + newWords.length} words`,
+          )
+          return newPool
+        })
+      } catch (error) {
+        console.log('⚠️ Failed to prefetch AI words, will use fallback:', error)
+      } finally {
+        setIsLoadingWords(false)
+      }
+    },
+    [isAIEnabled, usedWords],
+  )
+
+  // 检查并补充词池
+  const checkAndRefillWordPool = useCallback(
+    async (difficulty: WordDifficulty) => {
+      const cachedWords = wordPool.get(difficulty) || []
+      if (cachedWords.length < WORD_POOL_MIN_SIZE) {
+        console.log(`🔄 Word pool low (${cachedWords.length}/${WORD_POOL_MIN_SIZE}), refilling...`)
+        await prefetchWords(difficulty, 15)
+      }
+    },
+    [wordPool, prefetchWords],
+  )
+
+  // 获取随机词语 - 优先使用 AI 生成的词语，回退到静态词库
   const getRandomWord = useCallback(
     (difficulty: WordDifficulty): string => {
-      const category = WORD_CATEGORIES[difficulty]
+      // 1. 尝试从 AI 词池获取
+      const cachedWords = wordPool.get(difficulty)
+      if (cachedWords && cachedWords.length > 0) {
+        const word = cachedWords[Math.floor(Math.random() * cachedWords.length)]
+
+        // 从词池中移除已使用的词
+        setWordPool((prev) => {
+          const newPool = new Map(prev)
+          const remaining = cachedWords.filter((w) => w !== word)
+          newPool.set(difficulty, remaining)
+          return newPool
+        })
+
+        // 标记为已使用
+        setUsedWords((prev) => new Set([...prev, word]))
+        console.log(`🎯 Using AI word: ${word} (${cachedWords.length - 1} remaining in pool)`)
+
+        // 异步检查并补充词池
+        checkAndRefillWordPool(difficulty)
+
+        return word
+      }
+
+      // 2. 回退到静态词库
+      const category = FALLBACK_WORD_CATEGORIES[difficulty]
       const availableWords = category.words.filter((word) => !usedWords.has(word))
 
       if (availableWords.length === 0) {
@@ -179,9 +257,10 @@ export const useDrawGuessGame = () => {
 
       const word = availableWords[Math.floor(Math.random() * availableWords.length)]
       setUsedWords((prev) => new Set([...prev, word]))
+      console.log(`📚 Using fallback word: ${word}`)
       return word
     },
-    [usedWords],
+    [wordPool, usedWords, checkAndRefillWordPool],
   )
 
   // 创建新的游戏轮次
@@ -224,13 +303,16 @@ export const useDrawGuessGame = () => {
       })),
     )
     setUsedWords(new Set())
+    // 注意：不清空词池，保留已预取的 AI 词语
     setCurrentRoundIndex(0)
 
     // 创建第一轮
     const firstRound = createNewRound(0)
     setRounds([firstRound])
     setGameStatus('playing')
-  }, [createNewRound])
+
+    console.log(isAIEnabled ? '🚀 Starting game with AI words' : '📚 Starting game with fallback words')
+  }, [createNewRound, isAIEnabled])
 
   // 获取当前轮次
   const getCurrentRound = useCallback((): GameRound | null => {
@@ -403,6 +485,7 @@ export const useDrawGuessGame = () => {
       })),
     )
     setUsedWords(new Set())
+    setWordPool(new Map()) // 清空词池
     setCurrentRoundIndex(0)
     setRounds([])
     setGameStatus('waiting')
@@ -416,6 +499,7 @@ export const useDrawGuessGame = () => {
   // 设置游戏难度
   const setGameDifficulty = useCallback((newDifficulty: WordDifficulty) => {
     setDifficulty(newDifficulty)
+    // 注意：难度变化时，useEffect 会自动预取新难度的词语
   }, [])
 
   // 获取玩家排名
@@ -436,6 +520,20 @@ export const useDrawGuessGame = () => {
 
     return winner
   }, [gameStatus, getPlayerRanking])
+
+  // 页面进入时预取词语
+  useEffect(() => {
+    if (isAIEnabled && gameStatus === 'waiting') {
+      const currentWordPool = wordPool.get(difficulty) || []
+      // 只有当词池为空时才预取，避免重复调用
+      if (currentWordPool.length === 0) {
+        console.log('🚀 Page loaded, prefetching AI words for', difficulty)
+        prefetchWords(difficulty, 20).catch((error) => {
+          console.log('⚠️ Initial prefetch failed:', error)
+        })
+      }
+    }
+  }, [isAIEnabled, difficulty, gameStatus, wordPool, prefetchWords])
 
   return {
     // 状态
@@ -468,5 +566,6 @@ export const useDrawGuessGame = () => {
     isGameEnded: gameStatus === 'ended',
     isGamePaused: gameStatus === 'paused',
     isGameWaiting: gameStatus === 'waiting',
+    isLoadingWords,
   }
 }

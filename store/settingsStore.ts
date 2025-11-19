@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import {
+  AISettings,
   LanguageMode,
   NetworkSettings,
   PlayerProfile,
@@ -31,6 +32,13 @@ const defaultPlayerProfile: PlayerProfile = {
   gender: 'man',
 }
 
+const defaultAISettings: AISettings = {
+  enabled: false,
+  apiUrl: 'https://api.siliconflow.cn/v1/chat/completions',
+  apiKey: '',
+  apiModel: 'Qwen/QwQ-32B',
+}
+
 type SettingsStoreType = () => SettingsState
 let settingsStoreInstance: SettingsStoreType | null = null
 
@@ -48,6 +56,7 @@ export const useSettingsStore = (() => {
         soundSettings: defaultSoundSettings,
         networkSettings: defaultNetworkSettings,
         playerProfile: defaultPlayerProfile,
+        aiSettings: defaultAISettings,
         setThemeMode: (themeMode: ThemeMode) => set({ themeMode }),
         setLanguageMode: (languageMode: LanguageMode) => set({ languageMode }),
         setSoundSettings: (settings: Partial<SoundSettings>) =>
@@ -62,6 +71,10 @@ export const useSettingsStore = (() => {
           set((state) => ({
             playerProfile: { ...state.playerProfile, ...profile },
           })),
+        setAISettings: (settings: Partial<AISettings>) =>
+          set((state) => ({
+            aiSettings: { ...state.aiSettings, ...settings },
+          })),
         reset: () =>
           set({
             themeMode: 'system' as ThemeMode,
@@ -69,6 +82,7 @@ export const useSettingsStore = (() => {
             soundSettings: defaultSoundSettings,
             networkSettings: defaultNetworkSettings,
             playerProfile: defaultPlayerProfile,
+            aiSettings: defaultAISettings,
           }),
       }),
       {
@@ -81,6 +95,7 @@ export const useSettingsStore = (() => {
           soundSettings: state.soundSettings,
           networkSettings: state.networkSettings,
           playerProfile: state.playerProfile,
+          aiSettings: state.aiSettings,
         }),
       },
     ),

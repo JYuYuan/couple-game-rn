@@ -13,6 +13,7 @@ import { ConfirmDialogProvider } from '@/components/ConfirmDialog'
 import { ToastProvider } from '@/components/Toast'
 import { SocketProvider } from '@/contexts/SocketContext'
 import { getLANService, isLANAvailable } from '@/services/lan'
+import { AIConfigInitializer } from '@/components/AIConfigInitializer'
 
 // 防止启动屏自动隐藏
 SplashScreen.preventAutoHideAsync()
@@ -124,6 +125,7 @@ export default function RootLayout() {
   const content = (
     <ToastProvider>
       <ConfirmDialogProvider />
+      <AIConfigInitializer />
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false, title: '主页' }} />
       </Stack>
