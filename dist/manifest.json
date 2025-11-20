@@ -1,0 +1,130 @@
+{
+  "name": "情侣游戏合集",
+  "short_name": "情侣游戏",
+  "description": "专为情侣设计的多人互动游戏平台，包含飞行棋、扫雷、幸运大转盘和趣味任务",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ff6b9d",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "zh-CN",
+  "dir": "ltr",
+  "categories": ["games", "entertainment", "lifestyle"],
+  "icons": [
+    {
+      "src": "/icons/icon-72x72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-128x128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-152x152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-384x384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/home.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "label": "游戏主界面"
+    },
+    {
+      "src": "/screenshots/flight.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "label": "飞行棋游戏"
+    },
+    {
+      "src": "/screenshots/minesweeper.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "label": "扫雷游戏"
+    },
+    {
+      "src": "/screenshots/wheel.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "label": "幸运大转盘"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "飞行棋",
+      "short_name": "飞行棋",
+      "description": "开始飞行棋游戏",
+      "url": "/games/flight",
+      "icons": [
+        {
+          "src": "/icons/shortcut-flight.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "扫雷",
+      "short_name": "扫雷",
+      "description": "开始扫雷游戏",
+      "url": "/games/minesweeper",
+      "icons": [
+        {
+          "src": "/icons/shortcut-minesweeper.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "幸运转盘",
+      "short_name": "转盘",
+      "description": "开始幸运大转盘",
+      "url": "/games/wheel",
+      "icons": [
+        {
+          "src": "/icons/shortcut-wheel.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false
+}
