@@ -1,93 +1,134 @@
-# 卿轻游 - 情侣互动游戏
+# Couple Game - Interactive Games for Couples
 
-> ⚠️ **18+ 内容提示**
-> 本应用包含成人向互动内容，建议成年情侣使用。部分任务和游戏内容可能涉及亲密互动。
+[English](README.md) | [中文](README.zh.md) | [日本語](README.ja.md)
 
-一款为情侣设计的多人互动游戏应用，支持飞行棋、大转盘、扫雷等多种游戏模式，提供**在线联机**和**局域网本地**两种游戏方式。通过趣味游戏和任务系统，增进情侣间的互动与默契。
+> ⚠️ **18+ Content Warning**
+> This application contains adult-oriented interactive content and is recommended for adult couples. Some tasks and game content may involve intimate interactions.
 
-## ✨ 功能特性
+A multiplayer interactive game application designed for couples, supporting various game modes including Flying Chess, Lucky Wheel, Minesweeper, and Draw & Guess. Offers both **online multiplayer** and **local LAN** gameplay options. Enhance interaction and understanding between couples through fun games and task systems.
 
-- 🎮 **多种游戏模式**
-  - **飞行棋**：经典双人棋盘游戏，落到特殊格子触发任务挑战
-  - **大转盘**：趣味抽奖转盘，随机抽取惊喜任务或惩罚
-  - **扫雷对战**：双人竞技扫雷，比拼速度与运气
+## ✨ Features
 
-- 🌐 **灵活的连接方式**
-  - **局域网模式**：同一 WiFi 下无需联网，低延迟本地对战
-  - **在线模式**：通过服务器实现远程联机，异地情侣也能一起玩
+- 🎮 **Multiple Game Modes**
+  - **Flying Chess**: Classic two-player board game with task challenges on special tiles
+  - **Lucky Wheel**: Fun lottery wheel that randomly draws surprise tasks or penalties
+  - **Minesweeper Battle**: Two-player competitive minesweeper, compete in speed and luck
+  - **Draw & Guess**: Creative drawing game where one draws and the other guesses
 
-- 🎯 **任务系统**
-  - 内置丰富的情侣互动任务库
-  - 支持自定义任务集，打造专属游戏体验
-  - 多种任务类型：问答、动作、亲密互动等
-  - 难度分级系统（轻松/适中/刺激）
+- 🤖 **AI-Powered Features**
+  - **AI Word Generation**: Intelligent word generation for Draw & Guess game
+  - **AI Task Creation**: Automatically generate personalized couple tasks
+  - **Multi-language Support**: AI adapts to your selected language
+  - **Customizable**: Configure your own AI service (OpenAI-compatible APIs)
 
-- 🌍 **多平台支持**
-  - iOS 原生应用
-  - Android 原生应用
-  - Web 网页版（支持 PWA）
+- 🌐 **Flexible Connection Options**
+  - **LAN Mode**: Play locally on the same WiFi without internet, low latency
+  - **Online Mode**: Remote multiplayer via server, play together even when apart
 
-- 🎨 **用户友好**
-  - 简洁美观的界面设计
-  - 流畅的动画效果
-  - 完整的国际化支持（中文/English）
+- 🎯 **Task System**
+  - Rich built-in couple interaction task library
+  - Support custom task sets for personalized game experience
+  - Various task types: Q&A, actions, intimate interactions, etc.
+  - Difficulty grading system (Easy/Medium/Hard)
+  - **AI-Generated Tasks**: Create unlimited unique tasks with AI
 
-## 🎲 游戏玩法介绍
+- 🌍 **Multi-Platform Support**
+  - iOS native app
+  - Android native app
+  - Web version (PWA support)
 
-### 飞行棋模式 ✈️
-经典双人飞行棋游戏，掷骰子前进，首先到达终点者获胜。
-- 落到**任务格**：抽取随机任务完成挑战
-- 落到**对方棋子**：将对方送回起点
-- 支持局域网和在线对战
+- 🎨 **User-Friendly**
+  - Clean and beautiful interface design
+  - Smooth animation effects
+  - Complete internationalization support (English/中文/日本語)
 
-### 大转盘模式 🎡
-刺激的转盘抽奖游戏，考验运气的时刻！
-- 旋转转盘，指针停留位置决定任务
-- 多种任务类型混合，充满惊喜
-- 轮流操作，增加游戏互动性
+## 🎲 Game Modes
 
-### 扫雷对战模式 💣
-双人竞技版扫雷游戏，比拼速度与策略。
-- 共享同一个雷区，竞争翻开更多安全格子
-- 踩到地雷扣分，翻开数字加分
-- 实时对战，紧张刺激
+### Flying Chess ✈️
+Classic two-player flying chess game. Roll the dice to move forward, first to reach the end wins.
+- Land on **Task Tiles**: Draw random tasks to complete challenges
+- Land on **Opponent's Piece**: Send opponent back to start
+- Supports LAN and online battles
 
-### 任务系统 📝
-贯穿所有游戏的核心系统：
-- **问答类**：增进了解，回答关于彼此的问题
-- **动作类**：趣味挑战，完成指定动作
-- **亲密类**：增进感情的甜蜜互动（18+）
-- **自定义**：创建专属任务，打造个性化体验
+### Lucky Wheel 🎡
+Exciting lottery wheel game, test your luck!
+- Spin the wheel, pointer position determines the task
+- Multiple task types mixed, full of surprises
+- Take turns, increase game interaction
 
-## 💡 使用场景
+### Minesweeper Battle 💣
+Two-player competitive minesweeper, compete in speed and strategy.
+- Share the same minefield, compete to reveal more safe tiles
+- Hit mines lose points, reveal numbers gain points
+- Real-time battle, intense and exciting
 
-- 🏠 **居家约会**：使用局域网模式，无需流量，低延迟高体验
-- 🌃 **异地恋**：通过在线模式，随时随地一起玩
-- 🎉 **聚会助兴**：朋友聚会时的互动小游戏
-- 💑 **增进感情**：通过任务系统更了解彼此
-- 🎁 **特殊日子**：纪念日、生日等特殊场合的浪漫互动
+### Draw & Guess 🎨
+Creative drawing game that unleashes imagination!
+- **Drawing Phase**: One player draws the given word
+- **Guessing Phase**: Other player guesses what's being drawn
+- **AI Word Generation**: Intelligent word generation based on difficulty
+- **Scoring System**: Points based on guessing speed and accuracy
+- **Multiple Difficulties**: Easy/Medium/Hard with different time limits
+- Perfect for couples to have fun and laugh together
 
-> 💡 **推荐使用局域网模式**
+### Task System 📝
+Core system throughout all games:
+- **Q&A Type**: Enhance understanding, answer questions about each other
+- **Action Type**: Fun challenges, complete specified actions
+- **Intimate Type**: Sweet interactions that enhance feelings (18+)
+- **Custom Type**: Create exclusive tasks for personalized experience
+- **AI-Generated**: Use AI to create unlimited unique tasks tailored to your preferences
+
+## 🤖 AI Features
+
+### AI Word Generation (Draw & Guess)
+- Automatically generates drawing words based on selected difficulty
+- Adapts to your language preference
+- Ensures varied and interesting words for each game
+- Fallback to built-in word library when AI is unavailable
+
+### AI Task Generation
+- Generate personalized couple tasks with AI
+- Customize task difficulty and type
+- Create unlimited unique tasks
+- Support multiple languages
+
+### AI Configuration
+Configure your own AI service in settings:
+- **API URL**: OpenAI-compatible API endpoint
+- **API Key**: Your API key
+- **Model Name**: Specify the model to use
+- Works with OpenAI, Azure OpenAI, or compatible services
+
+## 💡 Use Cases
+
+- 🏠 **Home Dating**: Use LAN mode, no data usage, low latency, high experience
+- 🌃 **Long Distance**: Play together anytime, anywhere through online mode
+- 🎉 **Party Fun**: Interactive mini-games for friend gatherings
+- 💑 **Enhance Relationship**: Get to know each other better through task system
+- 🎁 **Special Occasions**: Romantic interactions for anniversaries, birthdays, etc.
+
+> 💡 **Recommended: LAN Mode**
 >
-> 同一 WiFi 下使用局域网模式，享受：
-> - ⚡ 零延迟的游戏体验
-> - 🔒 更私密的数据传输
-> - 📱 无需消耗移动流量
-> - 🌐 无需依赖外网服务器
+> Use LAN mode on the same WiFi to enjoy:
+> - ⚡ Zero-latency game experience
+> - 🔒 More private data transmission
+> - 📱 No mobile data consumption
+> - 🌐 No dependency on external servers
 
-## 🚀 快速开始
+## 🚀 Quick Start
 
-### 本地开发
+### Local Development
 
 ```bash
-# 克隆仓库
+# Clone repository
 git clone https://github.com/yourusername/couple-game-rn.git
 cd couple-game-rn
 
-# 安装依赖
+# Install dependencies
 npm install
 
-# 启动开发服务器
+# Start development server
 npm start
 
 # iOS
@@ -100,98 +141,108 @@ npm run android
 npm run web
 ```
 
-### 服务器部署
+### Server Deployment
 
-详细部署指南请查看：[📖 部署指南](https://github.com/JYuYuan/coupon-game-server/blob/main/README.md)
+For detailed deployment guide, see: [📖 Deployment Guide](https://github.com/JYuYuan/coupon-game-server/blob/main/README.md)
 
-## 📦 下载安装
+## 📦 Download & Install
 
-### 从 GitHub Releases 下载
+### Download from GitHub Releases
 
-前往 [Releases](https://github.com/JYuYuan/couple-game-rn/releases) 页面下载最新版本：
+Visit the [Releases](https://github.com/JYuYuan/couple-game-rn/releases) page to download the latest version:
 
 - **Android**: `couple-game.apk`
-- **iOS**: `couple-game-unsigned.ipa` (需要签名工具安装)
-- **Web**: 在线访问或下载 `couple-game-web.zip` 离线部署
+- **iOS**: `couple-game-unsigned.ipa` (requires signing tool to install)
+- **Web**: Visit online or download `couple-game-web.zip` for offline deployment
 
-### Web 在线体验
+### Web Online Experience
 
-访问：`https://qq.cpflying.top`
+Visit: `https://qq.cpflying.top`
 
-## 🛠 技术栈
+## 🛠 Tech Stack
 
-### 客户端
-- **框架**: React Native + Expo
-- **路由**: Expo Router
-- **状态管理**: Zustand
-- **国际化**: i18next
+### Client
+- **Framework**: React Native + Expo
+- **Routing**: Expo Router
+- **State Management**: Zustand
+- **Internationalization**: i18next
 - **UI**: React Native Reanimated + Expo Vector Icons
-- **网络**: Socket.IO Client
+- **Networking**: Socket.IO Client
+- **AI Integration**: OpenAI-compatible API support
 
-### 服务器
-- **运行时**: Node.js
-- **框架**: Express
-- **实时通信**: Socket.IO
-- **数据存储**: Redis (Upstash)
-- **语言**: TypeScript
+### Server
+- **Runtime**: Node.js
+- **Framework**: Express
+- **Real-time Communication**: Socket.IO
+- **Language**: TypeScript
 
-## 📱 支持的平台
+## 📱 Supported Platforms
 
-| 平台 | 支持状态 | 备注 |
-|------|---------|------|
-| iOS | ✅ 支持 | 需要 iOS 13.0+ |
-| Android | ✅ 支持 | 需要 Android 5.0+ |
-| Web | ✅ 支持 | 现代浏览器 |
+| Platform | Support Status | Notes |
+|----------|---------------|-------|
+| iOS | ✅ Supported | Requires iOS 13.0+ |
+| Android | ✅ Supported | Requires Android 5.0+ |
+| Web | ✅ Supported | Modern browsers |
 
-## 🔧 项目结构
+## 🔧 Project Structure
 
 ```
 couple-game-rn/
-├── app/                    # 应用页面
-│   ├── (tabs)/            # Tab 导航页面
-│   └── _layout.tsx        # 根布局
-├── components/            # 可复用组件
-├── constants/             # 常量配置
-├── hooks/                 # 自定义 Hooks
-├── i18n/                  # 国际化配置
-├── services/              # 业务服务
-├── store/                 # 状态管理
-├── types/                 # TypeScript 类型
-├── server/                # Socket.IO 服务器
-│   ├─ core/             # 核心游戏逻辑
-│   ├── games/            # 游戏实现
-│   └── index.ts          # 服务器入口
-└── .github/              # GitHub Actions 工作流
-    └── workflows/        # CI/CD 配置
+├── app/                    # Application pages
+│   ├── (tabs)/            # Tab navigation pages
+│   └── _layout.tsx        # Root layout
+├── components/            # Reusable components
+├── constants/             # Constants configuration
+├── hooks/                 # Custom Hooks
+├── i18n/                  # Internationalization config
+│   └── locales/          # Language files (en, zh, ja)
+├── services/              # Business services
+│   └── ai/               # AI service integration
+├── store/                 # State management
+├── types/                 # TypeScript types
+├── server/                # Socket.IO server
+│   ├── core/             # Core game logic
+│   ├── games/            # Game implementations
+│   └── index.ts          # Server entry
+└── .github/              # GitHub Actions workflows
+    └── workflows/        # CI/CD configuration
 ```
 
-## 📖 文档
+## 📖 Documentation
 
-- [部署指南](https://github.com/JYuYuan/coupon-game-server/blob/main/DEPLOYMENT.md) - 服务器和客户端部署
-- [服务器文档](https://github.com/JYuYuan/coupon-game-server/blob/main/DEPLOYMENT.md) - 服务器配置详情
-- [服务器 README](https://github.com/JYuYuan/coupon-game-server/blob/main/README.md) - 游戏模拟器使用
+- [Deployment Guide](https://github.com/JYuYuan/coupon-game-server/blob/main/DEPLOYMENT.md) - Server and client deployment
+- [Server Documentation](https://github.com/JYuYuan/coupon-game-server/blob/main/DEPLOYMENT.md) - Server configuration details
+- [Server README](https://github.com/JYuYuan/coupon-game-server/blob/main/README.md) - Game simulator usage
+- [AI Integration Guide](./AI_INTEGRATION.md) - How to configure AI features
 
-## 🤝 贡献
+## 🤝 Contributing
 
-欢迎提交 Issue 和 Pull Request！
+Issues and Pull Requests are welcome!
 
-## 📄 许可证
+## 📄 License
 
 MIT License
 
-## 🎯 路线图
+## 🎯 Roadmap
 
-- [ ] 更多游戏模式
-- [ ] 排行榜系统
-- [ ] 社交功能
-- [ ] 成就系统
-- [ ] 皮肤商店
-- [ ] 语音聊天
+- [x] Flying Chess game mode
+- [x] Lucky Wheel game mode
+- [x] Minesweeper Battle mode
+- [x] Draw & Guess game mode
+- [x] AI word generation for Draw & Guess
+- [x] AI task generation
+- [x] Multi-language support (English/中文/日本語)
+- [ ] More game modes
+- [ ] Leaderboard system
+- [ ] Social features
+- [ ] Achievement system
+- [ ] Skin shop
+- [ ] Voice chat
 
-## 📞 联系方式
+## 📞 Contact
 
-如有问题或建议，请通过以下方式联系：
-- GitHub Issues: [创建 Issue](https://github.com/JYuYuan/couple-game-rn/issues)
+For questions or suggestions, please contact us through:
+- GitHub Issues: [Create Issue](https://github.com/JYuYuan/couple-game-rn/issues)
 
 ---
 
