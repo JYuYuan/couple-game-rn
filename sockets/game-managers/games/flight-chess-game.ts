@@ -6,6 +6,7 @@
 import type { MockSocketIO } from '../base-game'
 import BaseGame from '../base-game'
 import type { BaseRoom, NetworkPlayer, GamePlayer } from '@/types/online'
+import type { Task } from '@/types/tasks'
 import { createBoardPath } from '@/utils/board'
 
 // 🐾 游戏动作类型定义
@@ -426,7 +427,7 @@ class FlightChessGame extends BaseGame {
     const winner = this.room.players.find((p: NetworkPlayer) => p.id === winnerId)
 
     // 🐾 从任务集中随机选择3个任务
-    let victoryTasks: string[] = []
+    let victoryTasks: (string | Task)[] = []
     if (this.room.taskSet && this.room.taskSet.tasks && this.room.taskSet.tasks.length > 0) {
       const allTasks = [...this.room.taskSet.tasks]
       // 随机打乱并取前3个

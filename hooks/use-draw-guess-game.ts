@@ -29,101 +29,46 @@ export interface GameRound {
   drawingConfirmed: boolean // 画画是否已确认
 }
 
-// 备用词库配置（当 AI 不可用时使用）
+export type WordDifficulty = 'easy' | 'medium' | 'hard'
+
+// 词库配置类型
+interface WordCategoryConfig {
+  name: string
+  words: string[]
+  timeLimit: number
+  basePoints: number
+}
+
+// 获取国际化的词库配置
+export const getWordCategoryConfig = (
+  t: (key: string, options?: any) => any,
+  difficulty: WordDifficulty,
+): WordCategoryConfig => {
+  return {
+    name: t(`drawGuess.difficultyNames.${difficulty}`),
+    words: t(`drawGuess.words.${difficulty}`, { returnObjects: true }) as string[],
+    timeLimit: difficulty === 'easy' ? 60 : difficulty === 'medium' ? 90 : 120,
+    basePoints: difficulty === 'easy' ? 10 : difficulty === 'medium' ? 20 : 30,
+  }
+}
+
+// 备用词库配置（当 AI 不可用时使用） - 保留用于类型推断
 export const FALLBACK_WORD_CATEGORIES = {
   easy: {
     name: '简单',
-    words: [
-      '太阳',
-      '月亮',
-      '星星',
-      '房子',
-      '树',
-      '花',
-      '猫',
-      '狗',
-      '鱼',
-      '鸟',
-      '苹果',
-      '香蕉',
-      '西瓜',
-      '草莓',
-      '汽车',
-      '飞机',
-      '船',
-      '自行车',
-      '雨伞',
-      '眼镜',
-      '杯子',
-      '书',
-      '笔',
-      '爱心',
-      '笑脸',
-    ],
+    words: [] as string[], // 实际词汇从 i18n 获取
     timeLimit: 60,
     basePoints: 10,
   },
   medium: {
     name: '中等',
-    words: [
-      '电脑',
-      '手机',
-      '键盘',
-      '耳机',
-      '相机',
-      '冰箱',
-      '电视',
-      '沙发',
-      '桌子',
-      '椅子',
-      '足球',
-      '篮球',
-      '羽毛球',
-      '游泳',
-      '跑步',
-      '跳舞',
-      '唱歌',
-      '钢琴',
-      '吉他',
-      '画画',
-      '彩虹',
-      '风筝',
-      '蝴蝶',
-      '蜜蜂',
-      '蜗牛',
-    ],
+    words: [] as string[],
     timeLimit: 90,
     basePoints: 20,
   },
   hard: {
     name: '困难',
-    words: [
-      '宇航员',
-      '恐龙',
-      '城堡',
-      '火山',
-      '金字塔',
-      '过山车',
-      '摩天轮',
-      '热气球',
-      '潜水艇',
-      '直升机',
-      '机器人',
-      '外星人',
-      '海盗',
-      '骑士',
-      '公主',
-      '巫师',
-      '龙',
-      '独角兽',
-      '美人鱼',
-      '凤凰',
-      '北极光',
-      '流星雨',
-      '瀑布',
-      '沙漠',
-      '森林',
-    ],
+    words: [] as string[],
     timeLimit: 120,
     basePoints: 30,
   },
@@ -131,8 +76,6 @@ export const FALLBACK_WORD_CATEGORIES = {
 
 // 保持向后兼容
 export const WORD_CATEGORIES = FALLBACK_WORD_CATEGORIES
-
-export type WordDifficulty = keyof typeof FALLBACK_WORD_CATEGORIES
 
 export const useDrawGuessGame = () => {
   const { t } = useTranslation()
@@ -247,7 +190,7 @@ export const useDrawGuessGame = () => {
       }
 
       // 2. 回退到静态词库
-      const category = FALLBACK_WORD_CATEGORIES[difficulty]
+      const category = getWordCategoryConfig(t, difficulty)
       const availableWords = category.words.filter((word) => !usedWords.has(word))
 
       if (availableWords.length === 0) {
@@ -261,7 +204,7 @@ export const useDrawGuessGame = () => {
       console.log(`📚 Using fallback word: ${word}`)
       return word
     },
-    [wordPool, usedWords, checkAndRefillWordPool],
+    [wordPool, usedWords, checkAndRefillWordPool, t],
   )
 
   // 创建新的游戏轮次
@@ -271,7 +214,7 @@ export const useDrawGuessGame = () => {
       const guesserIndex = (roundNumber + 1) % players.length
 
       const word = getRandomWord(difficulty)
-      const config = WORD_CATEGORIES[difficulty]
+      const config = getWordCategoryConfig(t, difficulty)
 
       return {
         roundNumber,

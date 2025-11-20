@@ -1,129 +1,101 @@
 {
   "common": {
-    "loading": "Loading...",
-    "start": "Start",
-    "restart": "Restart",
-    "completed": "Completed",
-    "failed": "Failed",
-    "rollDice": "Roll Dice",
-    "rolling": "Rolling Dice...",
-    "moving": "Moving...",
-    "preparing": "Preparing...",
-    "skipToHome": "Skip to Home",
     "cancel": "Cancel",
-    "confirm": "Confirm"
+    "confirm": "Confirm",
+    "ok": "OK",
+    "success": "Success",
+    "error": "Error",
+    "back": "Back"
+  },
+  "error": {
+    "rollDice": "Failed to roll dice, please try again",
+    "completeTask": "Failed to complete task, please try again",
+    "restartGame": "Failed to restart game, please try again"
+  },
+  "avatar": {
+    "selectGender": "Select Gender",
+    "man": "Male",
+    "woman": "Female",
+    "random": "Random",
+    "yourAvatar": "Your Avatar"
   },
   "home": {
     "title": "Fun Games",
-    "subtitle": "Let the relationship heat up in the game",
-    "features": {
-      "title": "Game Features",
-      "classic": {
-        "title": "Classic Gameplay",
-        "description": "Traditional Ludo rules, easy to learn"
-      },
-      "interaction": {
-        "title": "Couple Interaction",
-        "description": "Specially designed interactive tasks to deepen your bond"
-      },
-      "modes": {
-        "title": "Multiple Modes",
-        "description": "Various game modes for endless fun"
-      }
-    },
+    "subtitle": "Strengthen your relationship through games",
     "flyingChess": {
-      "title": "Ludo",
+      "title": "Flying Chess",
       "subtitle": "Strategic Battle",
-      "description": "Experience the perfect blend of strategy and luck"
+      "description": "Experience the perfect combination of strategy and luck"
     },
     "luckyWheel": {
       "title": "Lucky Wheel",
       "subtitle": "Fun Interaction",
-      "description": "Spin the wheel of fate"
+      "description": "Spin the wheel of fortune"
     },
     "minesweeper": {
-      "title": "Minesweeper Duel",
-      "subtitle": "2-Player Showdown",
-      "description": "Step on mines to complete tasks and compete for points"
+      "title": "Minesweeper Battle",
+      "subtitle": "Two-Player Duel",
+      "description": "Complete tasks when hitting mines, win by points"
+    },
+    "drawGuess": {
+      "title": "Draw & Guess",
+      "subtitle": "Creative Drawing",
+      "description": "Use your imagination, draw and let others guess"
     },
     "cta": {
-      "startGame": "Start Game",
-      "subtext": "Choose your favorite game mode to begin"
+      "subtext": "Choose your favorite game mode to start"
+    },
+    "onlineGame": {
+      "continue": "There is an ongoing online game",
+      "continueButton": "Continue Game"
     }
   },
   "minesweeper": {
-    "title": "Minesweeper Duel",
+    "title": "Minesweeper Battle",
     "difficulty": {
-      "title": "Difficulty Selection",
+      "title": "Select Difficulty",
       "easy": "Easy",
       "medium": "Medium",
       "hard": "Hard"
     },
     "status": {
-      "waiting": "Ready to Start",
-      "playing": "Game in Progress",
-      "finished": "Game Over",
-      "currentPlayerTurn": "Turn: {{playerName}}"
-    },
-    "stats": {
-      "cells": "Cells",
-      "mines": "Mines Stepped",
-      "time": "Time",
-      "progress": "Progress",
-      "remaining": "Remaining"
+      "selectDifficulty": "Select Difficulty"
     },
     "players": {
-      "title": "Player Status",
       "player1": "Player 1",
       "player2": "Player 2"
     },
-    "game": {
-      "title": "Minesweeper Battlefield",
-      "rules": {
-        "title": "Game Rules",
-        "rule1": "Two players take turns clicking cells to reveal content",
-        "rule2": "Long-press cells to mark mines",
-        "rule3": "Step on a mine to complete a challenge task",
-        "rule4": "The player who claims more cells wins",
-        "rule5": "If cell counts are equal, the player with fewer mines stepped wins",
-        "rule6": "Game ends when all cells are revealed"
-      }
-    },
     "task": {
-      "hitMine": "Stepped on a mine!",
+      "hitMine": "Hit a mine!",
       "position": "Position",
-      "challenger": "Challenger",
-      "challengeTask": "Challenge Task",
-      "challengeDescription": {
-        "title": "Challenge Instructions",
-        "rule1": "Complete a challenge task after stepping on a mine",
-        "rule2": "Task completion does not affect points",
-        "rule3": "Points depend on the number of cells claimed"
-      },
-      "result": {
-        "completed": "Task Completed!",
-        "failed": "Task Failed!",
-        "completedDesc": "Successfully completed the challenge!",
-        "failedDesc": "Failed the challenge",
-        "continue": "Continue Game..."
-      }
+      "complete": "Complete Task",
+      "giveUp": "Give Up",
+      "triggeredBy": "Triggered by: {{playerName}}",
+      "ruleSuccess": "Completing the task earns rewards",
+      "ruleFail": "Giving up may result in penalties",
+      "completed": "Task Completed!",
+      "completedDesc": "Challenge completed successfully!",
+      "continue": "Continue game...",
+      "failed": "Task Failed!",
+      "failedDesc": "Challenge failed"
     }
   },
   "flyingChess": {
-    "title": "Ludo",
+    "title": "Flying Chess",
     "headerBackTitle": "Back",
     "gameStatus": {
       "waiting": "Ready to Start",
       "playing": "Game in Progress",
       "finished": "Game Over"
     },
-    "currentPlayer": "Turn: {{playerName}}",
+    "currentPlayer": "{{playerName}}'s Turn",
     "playersStatus": "Player Status",
     "position": "Position: {{position}}",
     "dice": {
-      "clickToRoll": "Click to Roll Dice",
+      "clickToRoll": "Click to roll dice",
       "rolling": "Rolling...",
-      "moving": "Piece Moving..."
+      "moving": "Piece moving...",
+      "waitingOpponent": "Waiting for opponent to roll dice..."
     }
   },
   "wheelPoints": {
@@ -131,50 +103,266 @@
     "headerBackTitle": "Back",
     "gameStatus": {
       "waiting": "Ready to Start",
-      "playing": "Game in Progress",
       "finished": "Game Over"
     },
-    "currentPlayer": "Turn: {{playerName}}",
+    "currentPlayer": "{{playerName}}'s Turn",
     "round": "Round {{round}}",
-    "scoreRanking": "Score Ranking",
-    "winCondition": "Win Condition: Be the first to reach {{score}} points",
     "spin": {
-      "start": "Start Spinning",
+      "start": "Spin",
       "spinning": "Spinning..."
     },
-    "luckyWheel": "Lucky Wheel",
     "wheelResult": "Wheel Result",
-    "resultMessage": "{{playerName}} spun: {{result}}"
+    "resultMessage": "{{playerName}} landed on: {{result}}"
+  },
+  "drawGuess": {
+    "title": "Draw & Guess",
+    "welcome": {
+      "title": "Draw & Guess",
+      "subtitle": "Unleash your creativity and imagination"
+    },
+    "difficulty": {
+      "title": "Select Difficulty"
+    },
+    "game": {
+      "round": "Round {{current}}/{{total}}",
+      "drawerHint": "Draw this:",
+      "guesserHint": "Guess what it is:",
+      "confirmDrawing": "Confirm Drawing",
+      "guessPlaceholder": "Enter your guess...",
+      "skip": "Skip This Round"
+    },
+    "transition": {
+      "correct": "Correct!",
+      "timeout": "Time's Up!",
+      "answer": "The answer is: {{word}}",
+      "points": "+{{points}} points"
+    },
+    "aiGenerating": {
+      "title": "AI Generating Words",
+      "useLocal": "Use Local Words",
+      "wait": "Wait for AI",
+      "loading": "AI generating words..."
+    },
+    "button": {
+      "start": "Start Game"
+    },
+    "role": {
+      "drawer": "Draw",
+      "guesser": "Guess"
+    },
+    "units": {
+      "seconds": "sec",
+      "points": "pts"
+    },
+    "feedback": {
+      "correct": "Correct! Great job!",
+      "wrong": "Keep trying!"
+    },
+    "canvas": {
+      "undo": "Undo",
+      "clear": "Clear"
+    },
+    "words": {
+      "easy": [
+        "sun", "moon", "star", "house", "tree", "flower", "cat", "dog", "fish", "bird",
+        "apple", "banana", "watermelon", "strawberry", "car", "airplane", "boat", "bicycle",
+        "umbrella", "glasses", "cup", "book", "pen", "heart", "smile"
+      ],
+      "medium": [
+        "computer", "phone", "keyboard", "headphones", "camera", "refrigerator", "TV", "sofa",
+        "table", "chair", "soccer", "basketball", "badminton", "swimming", "running", "dancing",
+        "singing", "piano", "guitar", "painting", "rainbow", "kite", "butterfly", "bee", "snail"
+      ],
+      "hard": [
+        "astronaut", "dinosaur", "castle", "volcano", "pyramid", "rollercoaster", "ferris wheel",
+        "hot air balloon", "submarine", "helicopter", "robot", "alien", "pirate", "knight",
+        "princess", "wizard", "dragon", "unicorn", "mermaid", "phoenix", "northern lights",
+        "meteor shower", "waterfall", "desert", "forest"
+      ]
+    },
+    "difficultyNames": {
+      "easy": "Easy",
+      "medium": "Medium",
+      "hard": "Hard"
+    }
+  },
+  "joinRoom": {
+    "title": "Join Room",
+    "browseRooms": "Browse Rooms",
+    "browseDescription": "View all available rooms",
+    "scanRooms": "Scan Rooms",
+    "scanDescription": "Scan for rooms on LAN",
+    "enterCode": "Enter Room Code",
+    "codeDescription": "Enter 6-digit room code to join",
+    "codePlaceholder": "Enter room code",
+    "roomCode": "Room Code",
+    "roomId": "Room ID",
+    "roomIdPlaceholder": "Enter room ID",
+    "playerName": "Player Name",
+    "playerNamePlaceholder": "Enter your name",
+    "selectAvatar": "Select Avatar",
+    "join": "Join",
+    "joining": "Joining...",
+    "connecting": "Connecting...",
+    "connectAndJoin": "Connect & Join",
+    "refresh": "Refresh",
+    "loadingRooms": "Loading rooms...",
+    "noRooms": "No rooms available",
+    "noRoomsHint": "No rooms yet, create one",
+    "noLANRooms": "No LAN rooms found",
+    "noNetworkEnabled": "Network mode not enabled",
+    "enableNetworkHint": "Please enable network mode in settings",
+    "goToSettings": "Go to Settings",
+    "manualConnect": "Manual Connect",
+    "manualDescription": "Enter IP address and port to connect",
+    "ipAddress": "IP Address",
+    "port": "Port",
+    "lan": "LAN",
+    "host": "Host",
+    "players": "Players",
+    "waiting": "Waiting",
+    "playing": "Playing",
+    "finished": "Finished",
+    "unknown": "Unknown",
+    "startScan": "Start Scan",
+    "stopScan": "Stop Scan",
+    "scanning": "Scanning...",
+    "scanUnavailable": "Scan Unavailable"
+  },
+  "online": {
+    "title": "Online Mode",
+    "tabs": {
+      "create": "Create Room",
+      "join": "Join Room"
+    },
+    "create": {
+      "title": "Create New Room",
+      "button": "Create Room"
+    },
+    "join": {
+      "title": "Join Room",
+      "button": "Join Room"
+    },
+    "lan": {
+      "mode": "LAN Mode",
+      "create": {
+        "title": "Create LAN Room",
+        "button": "Create Room"
+      },
+      "join": {
+        "title": "Join LAN Room",
+        "button": "Join Room"
+      },
+      "discoveredRooms": "Discovered Rooms",
+      "noRooms": "No rooms found",
+      "noRoomsHint": "Make sure devices are on the same LAN",
+      "scanning": "Scanning...",
+      "startScan": "Start Scan",
+      "stopScan": "Stop Scan",
+      "manualConnect": "Manual Connect",
+      "port": "Port",
+      "portPlaceholder": "Enter port number",
+      "ipPlaceholder": "Enter IP address",
+      "infoCopied": "Connection info copied",
+      "webNotSupported": "Web not supported",
+      "webNotSupportedTitle": "Feature Unavailable",
+      "error": {
+        "noIP": "Cannot get local IP address",
+        "invalidPort": "Invalid port number"
+      }
+    },
+    "roomName": {
+      "placeholder": "Enter room name"
+    },
+    "roomCode": {
+      "placeholder": "Enter 6-digit room code"
+    },
+    "playerName": {
+      "placeholder": "Enter your name"
+    },
+    "gameType": "Game Type",
+    "taskSet": "Task Set",
+    "maxPlayers": "Max Players",
+    "players": "Players",
+    "connectionType": "Connection Type",
+    "lanMode": "LAN Mode",
+    "waitingRoom": "Waiting Room",
+    "waitingPlayers": "Waiting for players...",
+    "waitingPlayer": "Waiting for players: {{count}}/{{max}}",
+    "waitingHost": "Waiting for host to start...",
+    "startGame": "Start Game",
+    "leaveRoom": "Leave Room",
+    "creating": "Creating...",
+    "joining": "Joining...",
+    "starting": "Starting...",
+    "connected": "Connected",
+    "connecting": "Connecting...",
+    "disconnected": "Disconnected",
+    "host": "Host",
+    "retry": "Retry",
+    "roomCodeCopied": "Room code copied",
+    "mode": {
+      "online": "Online Mode",
+      "lan": "LAN Mode"
+    },
+    "instructions": {
+      "title": "Instructions",
+      "shareCode": "1. Share room code with other players",
+      "minPlayers": "2. Wait for at least 2 players to join",
+      "hostControl": "3. Host can start the game"
+    },
+    "error": {
+      "joinFailed": "Failed to join room",
+      "fillRequired": "Please fill all required fields",
+      "selectAvatar": "Please select an avatar"
+    },
+    "copyFailed": "Copy failed"
+  },
+  "room": {
+    "destroyed": "Room has been destroyed"
   },
   "simpleTaskModal": {
     "taskChallenge": "Task Challenge",
     "completedReward": "Completion Reward",
-    "points": "Points",
-    "chooseCompletion": "Please select task completion status:",
+    "pointsAmount": "{{points}} points",
+    "chooseCompletion": "Did you complete the task?",
     "completed": "Completed",
     "notCompleted": "Not Completed",
     "taskCompleted": "Task Completed!",
     "taskFailed": "Task Failed!",
-    "earnedPoints": "Earned {{points}} Points",
-    "noPoints": "No Points Earned",
-    "updatingScore": "Updating Score..."
+    "earnedPoints": "Earned {{points}} points",
+    "noPointsEarned": "No points earned",
+    "updatingScore": "Updating score..."
   },
   "taskModal": {
     "taskTypes": {
       "trap": {
         "title": "Trap Challenge",
-        "description": "Stepped on a trap! Complete the task to continue moving forward"
+        "ruleExecutor": "Penalized: Player who triggered the trap",
+        "ruleReward": "Complete task: Move forward 3-6 spaces",
+        "rulePenalty": "Fail penalty: Move backward 3-6 spaces"
       },
       "star": {
         "title": "Lucky Task",
-        "description": "Got a lucky chance! Complete the task for extra rewards"
+        "ruleExecutor": "Beneficiary: Player who got lucky",
+        "ruleReward": "Complete task: Move forward 3-6 spaces",
+        "rulePenalty": "Fail penalty: Move backward 3-6 spaces"
       },
       "collision": {
         "title": "Collision Challenge",
-        "description": "Collision occurred! Pass the challenge to decide your position"
+        "ruleExecutor": "Penalized: Collided player",
+        "ruleReward": "Complete task: Stay in place",
+        "rulePenalty": "Fail penalty: Return to start"
+      },
+      "normal": {
+        "title": "Normal Task"
+      },
+      "unknown": {
+        "title": "Unknown Task"
       }
     },
     "executor": "Executor",
+    "executors": "Executors",
     "taskContent": "Task Content",
     "difficulty": {
       "easy": "Easy",
@@ -183,9 +371,15 @@
       "extreme": "Extreme",
       "unknown": "Unknown"
     },
-    "chooseCompletion": "Please select task completion status:",
     "completed": "Completed",
     "notCompleted": "Not Completed",
+    "submitError": "Submit failed, please retry",
+    "processError": "Process failed, please retry",
+    "processing": "Processing...",
+    "retry": "Retry",
+    "observerMode": "Observer Mode",
+    "observerHint": "Waiting for other players to complete...",
+    "closeObserver": "Close Observer",
     "results": {
       "taskCompleted": "Task Completed!",
       "taskFailed": "Task Failed!",
@@ -193,53 +387,73 @@
       "missedChance": "Missed Chance!",
       "successDefense": "Successful Defense!",
       "collisionFailed": "Collision Failed!",
-      "trapReward": "Reward: Move Forward 3-6 Grids",
-      "trapPenalty": "Penalty: Move Backward 3-6 Grids",
-      "starReward": "Lucky Reward: Move Forward 3-6 Grids",
-      "starPenalty": "Regret Penalty: Move Backward 3-6 Grids",
-      "collisionStay": "Stay in Current Position",
-      "collisionStart": "Return to Start and Restart"
+      "trapReward": "Reward earned: Move forward 3-6 spaces",
+      "trapPenalty": "Penalty: Move backward 3-6 spaces",
+      "starReward": "Lucky reward: Move forward 3-6 spaces",
+      "starPenalty": "Regret penalty: Move backward 3-6 spaces",
+      "collisionStay": "Stay in place",
+      "collisionStart": "Return to start",
+      "moveForward": "Move forward {{steps}} spaces",
+      "moveBackward": "Move backward {{steps}} spaces",
+      "backToStart": "Back to start"
     },
-    "executing": "Executing..."
+    "affectedPlayers": "Affected players:",
+    "executing": "Executing...",
+    "you": "You",
+    "executorHint": "Please execute the task",
+    "moveForward": "Move forward {{steps}} spaces",
+    "moveBackward": "Move backward {{steps}} spaces",
+    "backToStart": "Back to start",
+    "observer": {
+      "title": "Observer Mode",
+      "waiting": "Waiting for other players to complete...",
+      "progress": "Progress: {{completed}}/{{total}}",
+      "allCompleted": "All players completed"
+    },
+    "observerView": {
+      "title": "Observing Other Players",
+      "watching": "Observing",
+      "yourTurn": "Your turn",
+      "completed": "Completed",
+      "waitingOthers": "Waiting for others to complete",
+      "allCompleted": "All players completed"
+    },
+    "observerCompleted": "Observer confirms completion",
+    "observerFailed": "Observer confirms failure"
   },
   "victoryModal": {
-    "gameWin": "🎉 Game Won! 🎉",
     "congratulations": "Congratulations on your victory!",
-    "victoryReward": "🎁 Winner's Reward",
-    "rewardDescription": "As the winner, you can choose 3 tasks from the following as your reward!",
-    "selectRewardTasks": "Select Reward Tasks",
-    "selectLater": "Select Later",
-    "selectRewardTasksTitle": "Select Reward Tasks",
-    "selectedCount": "Selected {{count}}/3 Tasks",
-    "confirmSelection": "Confirm Selection ({{count}})",
-    "rewardReceived": "🎊 Reward Tasks Received!",
-    "selectedTasksCount": "You have successfully selected {{count}} reward tasks",
-    "rewardTasks": "Received Reward Tasks:",
     "restart": "Restart",
-    "exitGame": "Exit Game"
-  },
-  "customAlert": {
-    "confirm": "Confirm"
+    "exitGame": "Exit Game",
+    "youWin": "You Win!",
+    "winnerIs": "Winner is: {{name}}",
+    "gameOver": "Game Over",
+    "waitingForWinner": "Waiting for winner to select rewards...",
+    "allTasksCompleted": "All tasks completed!",
+    "completeAllTasks": "Complete All Tasks",
+    "completeTasks": "Complete Tasks",
+    "close": "Close"
   },
   "settings": {
-    "title": "settings",
+    "title": "Settings",
     "sections": {
       "general": "General",
+      "network": "Network Settings",
       "gameSettings": "Game Settings",
+      "aiSettings": "AI Settings",
       "about": "About"
     },
     "updateCheck": {
-      "error": "Failed to check for updates. Please try again later.",
-      "noUpdate": "You are already on the latest version.",
+      "error": "Failed to check for updates, please try again later",
+      "noUpdate": "You are already on the latest version",
       "hasUpdate": "New version {{version}} found!",
       "update": "Update Now",
-      "later": "Update Later",
+      "later": "Later",
       "alertTitle": "Check for Updates",
-      "checking": "Checking...",
       "label": "Check for Updates"
     },
     "language": {
-      "label": "Language Settings",
+      "label": "Language",
       "modalTitle": "Select Language",
       "config": {
         "zh": "Chinese",
@@ -248,7 +462,7 @@
       }
     },
     "theme": {
-      "label": "Theme Settings",
+      "label": "Theme",
       "modalTitle": "Select Theme",
       "config": {
         "system": "Follow System",
@@ -258,27 +472,48 @@
     },
     "sound": {
       "label": "Sound Settings",
-      "value": "Sound Effects On",
-      "alertTitle": "Sound Settings",
-      "alertMessage": "Game sound effects are under development...",
-      "enabled": "Enabled",
-      "disabled": "Disabled",
       "bgm": "Background Music"
     },
+    "network": {
+      "enabled": "Network Mode",
+      "socketUrl": "Socket URL",
+      "socketUrlSaved": "Socket URL saved",
+      "lanMode": "LAN Mode"
+    },
+    "lan": {
+      "label": "Local IP Address",
+      "loading": "Getting...",
+      "error": "Failed",
+      "unavailable": "Unavailable",
+      "errorMessage": "Cannot get local IP address, please check network connection",
+      "copied": "IP address copied to clipboard",
+      "port": "LAN Port",
+      "portSaved": "Port saved",
+      "invalidPort": "Port must be between 1024-65535"
+    },
+    "ai": {
+      "enabled": "Enable AI Features",
+      "config": "AI Configuration",
+      "configured": "Configured",
+      "notConfigured": "Not Configured",
+      "description": "Configure AI service to enable smart features",
+      "apiUrl": "API URL",
+      "apiKey": "API Key",
+      "apiModel": "Model Name",
+      "apiUrlRequired": "API URL is required",
+      "apiKeyRequired": "API Key is required",
+      "configSaved": "AI configuration saved"
+    },
     "version": {
-      "label": "Version Info",
-      "alertTitle": "Version Info",
-      "alertMessage": "Version: 1.0.0\nBuild: {{buildDate}}"
+      "label": "Version Info"
     },
     "userAgreement": {
       "label": "User Agreement",
-      "alertTitle": "User Agreement",
-      "alertMessage": "Thank you for using our app. Please use all features of this app properly."
+      "alertTitle": "User Agreement"
     },
     "privacyPolicy": {
       "label": "Privacy Policy",
-      "alertTitle": "Privacy Policy",
-      "alertMessage": "We value your privacy. All data is stored locally and will not be uploaded to servers."
+      "alertTitle": "Privacy Policy"
     }
   },
   "tasks": {
@@ -303,56 +538,46 @@
       "taskSets": "{{count}} task sets"
     },
     "empty": {
-      "taskSets": "No task sets available, tap the button in the bottom right to create one",
-      "categories": "No categories available, tap the button in the bottom right to create one"
+      "taskSets": "No task sets yet, click the button to create",
+      "categories": "No categories yet, click the button to create"
     },
     "delete": {
       "taskSet": {
-        "title": "Delete Confirmation",
-        "message": "Are you sure you want to delete the task set \"{{name}}\"? This action cannot be undone."
+        "title": "Delete Confirmation"
       },
       "category": {
-        "title": "Delete Confirmation",
-        "message": "Are you sure you want to delete the category \"{{name}}\"? This action cannot be undone.",
-        "withTaskSets": "This will also delete {{count}} task sets under this category."
+        "warning": "Warning: Deleting a category will also delete all task sets under it"
       },
-      "cancel": "Cancel",
       "confirm": "Delete"
     },
     "import": {
       "title": "Import",
       "error": {
-        "title": "Error",
         "invalidFormat": "Invalid file format",
-        "invalidContent": "Invalid file content",
+        "invalidContent": "Invalid file content format",
         "failed": "Import failed"
       },
       "success": "Successfully imported task set: {{name}}",
       "unnamedTaskSet": "Unnamed Task Set",
-      "categoryCreated": "A new category was also created: {{categoryName}}"
+      "categoryCreated": "Also created new category: {{categoryName}}"
     },
     "export": {
       "title": "Export Task Set",
-      "message": "Please choose an export method",
-      "share": "Share",
+      "message": "Please select export method",
       "saveToFile": "Save to File",
-      "cancel": "Cancel",
-      "shareTitle": "Export Task Set: {{name}}",
       "success": {
-        "downloaded": "The file has been downloaded to your device",
-        "saved": "The file has been saved to: {{fileName}}",
-        "exported": "The file has been exported and can be saved to your device"
+        "downloaded": "File downloaded to your device",
+        "saved": "File saved to: {{fileName}}",
+        "exported": "File exported and can be saved to your device"
       },
       "error": {
-        "title": "Error",
-        "failed": "Export failed",
         "saveFailed": "Failed to save file"
       }
     }
   },
   "taskSetDetail": {
     "taskList": "Task List",
-    "emptyTasks": "No tasks available"
+    "emptyTasks": "No tasks yet"
   },
   "tabs": {
     "home": "Home",
@@ -366,23 +591,23 @@
     },
     "couple": {
       "name": "Couple Exclusive",
-      "description": "Sweet tasks to deepen your relationship"
+      "description": "Sweet tasks to enhance your relationship"
     },
     "sweet": {
-      "name": "Sweet Moments",
+      "name": "Sweet Time",
       "description": "Warm and romantic sweet tasks"
     },
     "advanced": {
-      "name": "Relationship Advanced",
-      "description": "Advanced tasks for in-depth interaction"
+      "name": "Love Advanced",
+      "description": "Deep interaction advanced tasks"
     },
     "love": {
       "name": "Romantic Atmosphere",
-      "description": "Tasks to create a romantic atmosphere"
+      "description": "Tasks to create romantic atmosphere"
     },
     "mixed": {
       "name": "Mixed Mode",
-      "description": "Diversified mixed tasks"
+      "description": "Diverse mixed tasks"
     },
     "intimate": {
       "name": "Intimate Interaction",
@@ -390,35 +615,40 @@
     }
   },
   "gameMode": {
-    "flyingChess": "Ludo - Task Selection",
-    "wheel": "Lucky Wheel - Task Selection",
-    "minesweeper": "Minesweeper Duel - Task Selection",
+    "flyingChess": "Flying Chess",
+    "wheel": "Wheel",
+    "minesweeper": "Minesweeper",
+    "drawGuess": "Draw & Guess",
     "default": "Task Selection",
     "all": "All",
+    "singlePlayer": "Single Player",
+    "createRoom": "Create Room",
+    "joinRoom": "Join Room",
+    "onlineComingSoon": "Online mode coming soon",
+    "onlineNotSupported": "This game doesn't support online mode yet",
     "empty": {
-      "title": "No Available Game Modes",
-      "subtitle": "Go to the Task Management page to add some task sets",
-      "button": "Go to Add Tasks"
+      "title": "No game modes available",
+      "subtitle": "Go to task management to add some task sets",
+      "button": "Add Tasks"
     },
-    "taskCount": "{{count}} Tasks",
+    "taskCount": "{{count}} tasks",
     "estimatedTime": {
-      "minutes": "Approx. {{minutes}} Mins",
-      "hours": "Approx. {{hours}}hr {{minutes}}min",
-      "hoursOnly": "Approx. {{hours}}hr"
-    },
-    "startGame": "Start Game"
+      "minutes": "About {{minutes}} minutes",
+      "hours": "About {{hours}}h {{minutes}}m",
+      "hoursOnly": "About {{hours}} hours"
+    }
   },
   "taskSetModal": {
     "create": "Create Task Set",
     "edit": "Edit Task Set",
-    "copyFromSystem": "Create from System Task",
+    "copyFromSystem": "Create from System Tasks",
     "name": "Name",
     "description": "Description",
     "category": "Category",
     "taskList": "Task List",
     "addTask": "Add Task",
     "paste": "Paste",
-    "aiGenerated": "AI Generate",
+    "aiGenerated": "AI Generated",
     "aiGenerating": "Generating...",
     "taskPlaceholder": "Task {{index}}",
     "namePlaceholder": "Enter task set name",
@@ -428,55 +658,51 @@
     "saving": "Saving...",
     "alerts": {
       "nameRequired": {
-        "title": "Reminder",
-        "message": "Please enter a task set name"
+        "title": "Hint",
+        "message": "Please enter task set name"
       },
       "tasksRequired": {
-        "title": "Reminder",
         "message": "Please add at least one task"
       },
       "saveError": {
         "title": "Error",
-        "message": "Save failed, please try again"
+        "message": "Save failed, please retry"
       },
       "clipboardEmpty": {
-        "title": "Reminder",
         "message": "Clipboard is empty"
       },
       "clipboardNoTasks": {
-        "title": "Reminder",
-        "message": "No valid task content in clipboard"
+        "message": "No valid tasks in clipboard"
       },
       "pasteSuccess": {
         "title": "Success",
-        "message": "Successfully pasted {{count}} tasks"
+        "message": "Pasted {{count}} tasks"
       },
       "pasteError": {
         "title": "Error",
-        "message": "Paste failed, please try again"
+        "message": "Paste failed, please retry"
       }
     },
     "aiGenerate": {
       "disabled": {
         "title": "AI Not Enabled",
-        "message": "Please configure and enable AI in settings first"
+        "message": "Please configure and enable AI features in settings first"
       },
       "confirm": {
         "title": "AI Generate Tasks",
-        "message": "Will use AI to generate 50 tasks for \"{{name}}\". This will replace the current task list. Continue?",
         "yes": "Start Generating"
       },
       "failed": {
         "title": "Generation Failed",
-        "message": "AI task generation failed. Please check network connection or try again later"
+        "message": "AI task generation failed, please check network or try again later"
       },
       "success": {
-        "title": "Generation Successful",
+        "title": "Generation Success",
         "message": "Successfully generated {{count}} tasks!"
       },
       "error": {
-        "title": "Error Occurred",
-        "message": "An error occurred while generating tasks. Please try again"
+        "title": "An Error Occurred",
+        "message": "Error generating tasks, please retry"
       }
     }
   },
@@ -486,11 +712,11 @@
       "description": "Warm daily interaction tasks"
     },
     "sweetTime": {
-      "name": "Sweet Moments",
-      "description": "Sweet tasks to deepen your relationship"
+      "name": "Sweet Time",
+      "description": "Sweet tasks to enhance feelings"
     },
     "funChallenge": {
-      "name": "Fun Challenges",
+      "name": "Fun Challenge",
       "description": "Interesting challenge tasks"
     }
   },
@@ -506,31 +732,9 @@
     "finalRanking": "📊 Final Ranking:",
     "rankingItem": "{{rank}}. {{name}} (Position: {{position}}, Score: {{score}})",
     "winnerStats": "🏆 Winner Stats:",
-    "completedTasks": "✅ Tasks Completed: {{count}}",
-    "achievements": "🌟 Achievements: {{count}}",
+    "completedTasks": "✅ Completed tasks: {{count}}",
+    "achievements": "🌟 Achievements earned: {{count}}",
     "restart": "Restart",
     "exitGame": "Exit Game"
-  },
-  "aiService": {
-    "drawGuess": {
-      "categories": {
-        "random": "Random",
-        "animal": "Animal",
-        "food": "Food",
-        "item": "Item",
-        "nature": "Nature",
-        "building": "Building",
-        "emotion": "Emotion",
-        "sport": "Sport",
-        "profession": "Profession",
-        "transport": "Transport",
-        "plant": "Plant"
-      },
-      "validation": {
-        "empty": "Word cannot be empty",
-        "tooLong": "Word is too long for the game",
-        "noNumbers": "Word should not contain numbers"
-      }
-    }
   }
 }

@@ -1,36 +1,27 @@
 {
   "common": {
-    "loading": "加载中...",
-    "start": "开始",
-    "restart": "重新开始",
-    "completed": "已完成",
-    "failed": "未完成",
-    "rollDice": "掷骰子",
-    "rolling": "掷骰中...",
-    "moving": "移动中...",
-    "preparing": "准备中...",
-    "skipToHome": "跳过回到首页",
     "cancel": "取消",
-    "confirm": "确认"
+    "confirm": "确认",
+    "ok": "确定",
+    "success": "成功",
+    "error": "错误",
+    "back": "返回"
+  },
+  "error": {
+    "rollDice": "掷骰子失败，请重试",
+    "completeTask": "完成任务失败，请重试",
+    "restartGame": "重启游戏失败，请重试"
+  },
+  "avatar": {
+    "selectGender": "选择性别",
+    "man": "男性",
+    "woman": "女性",
+    "random": "随机",
+    "yourAvatar": "你的头像"
   },
   "home": {
     "title": "趣味游戏",
     "subtitle": "让关系在游戏中升温",
-    "features": {
-      "title": "游戏特色",
-      "classic": {
-        "title": "经典玩法",
-        "description": "传统飞行棋规则，简单易上手"
-      },
-      "interaction": {
-        "title": "情侣互动",
-        "description": "特别设计的互动任务，增进感情"
-      },
-      "modes": {
-        "title": "多种模式",
-        "description": "多种游戏模式，玩不腻"
-      }
-    },
     "flyingChess": {
       "title": "飞行棋",
       "subtitle": "策略对战",
@@ -46,9 +37,17 @@
       "subtitle": "双人对决",
       "description": "踩雷执行任务，积分决胜负"
     },
+    "drawGuess": {
+      "title": "你画我猜",
+      "subtitle": "创意涂鸦",
+      "description": "发挥想象力,画出你的创意让对方猜"
+    },
     "cta": {
-      "startGame": "开始游戏",
       "subtext": "选择你喜欢的游戏模式开始吧"
+    },
+    "onlineGame": {
+      "continue": "有正在进行的在线游戏",
+      "continueButton": "继续游戏"
     }
   },
   "minesweeper": {
@@ -60,53 +59,25 @@
       "hard": "困难"
     },
     "status": {
-      "waiting": "准备开始",
-      "playing": "游戏进行中",
-      "finished": "游戏结束",
-      "currentPlayerTurn": "轮到 {{playerName}}"
-    },
-    "stats": {
-      "cells": "格子",
-      "mines": "踩雷",
-      "time": "时间",
-      "progress": "进度",
-      "remaining": "剩余"
+      "selectDifficulty": "选择难度"
     },
     "players": {
-      "title": "玩家状态",
       "player1": "玩家1",
       "player2": "玩家2"
-    },
-    "game": {
-      "title": "扫雷战场",
-      "rules": {
-        "title": "游戏规则",
-        "rule1": "双人轮流点击格子揭示内容",
-        "rule2": "长按格子可以标记地雷",
-        "rule3": "踩到地雷需要执行任务",
-        "rule4": "获得格子数多的玩家获胜",
-        "rule5": "格子数相同则踩雷少者胜",
-        "rule6": "所有格子揭示完毕游戏结束"
-      }
     },
     "task": {
       "hitMine": "踩到地雷了！",
       "position": "位置",
-      "challenger": "挑战者",
-      "challengeTask": "挑战任务",
-      "challengeDescription": {
-        "title": "挑战说明",
-        "rule1": "踩雷后需要完成任务挑战",
-        "rule2": "任务完成与否不影响积分",
-        "rule3": "积分取决于获得的格子数量"
-      },
-      "result": {
-        "completed": "任务完成！",
-        "failed": "任务失败！",
-        "completedDesc": "顺利完成挑战！",
-        "failedDesc": "挑战失败了",
-        "continue": "继续游戏..."
-      }
+      "complete": "完成任务",
+      "giveUp": "放弃任务",
+      "triggeredBy": "触发者：{{playerName}}",
+      "ruleSuccess": "完成任务可获得奖励",
+      "ruleFail": "放弃任务可能会有惩罚",
+      "completed": "任务完成！",
+      "completedDesc": "顺利完成挑战！",
+      "continue": "继续游戏...",
+      "failed": "任务失败！",
+      "failedDesc": "挑战失败了"
     }
   },
   "flyingChess": {
@@ -123,7 +94,8 @@
     "dice": {
       "clickToRoll": "点击投掷骰子",
       "rolling": "投掷中...",
-      "moving": "棋子移动中..."
+      "moving": "棋子移动中...",
+      "waitingOpponent": "等待对手掷骰子..."
     }
   },
   "wheelPoints": {
@@ -131,62 +103,262 @@
     "headerBackTitle": "返回",
     "gameStatus": {
       "waiting": "准备开始",
-      "playing": "游戏进行中",
       "finished": "游戏结束"
     },
     "currentPlayer": "轮到 {{playerName}}",
     "round": "第 {{round}} 轮",
-    "scoreRanking": "积分排行",
-    "winCondition": "胜利条件: 率先达到 {{score}} 分",
     "spin": {
       "start": "开始转盘",
       "spinning": "旋转中..."
     },
-    "luckyWheel": "幸运转盘",
     "wheelResult": "转盘结果",
     "resultMessage": "{{playerName}} 转到了: {{result}}"
+  },
+  "drawGuess": {
+    "title": "你画我猜",
+    "welcome": {
+      "title": "你画我猜",
+      "subtitle": "发挥创意,画出你的想象"
+    },
+    "difficulty": {
+      "title": "选择难度"
+    },
+    "game": {
+      "round": "第 {{current}}/{{total}} 回合",
+      "drawerHint": "你要画的是:",
+      "guesserHint": "猜一猜画的是什么:",
+      "confirmDrawing": "确认画完",
+      "guessPlaceholder": "输入你的猜测...",
+      "skip": "跳过这一轮"
+    },
+    "transition": {
+      "correct": "猜对了!",
+      "timeout": "时间到!",
+      "answer": "答案是: {{word}}",
+      "points": "+{{points}}分"
+    },
+    "aiGenerating": {
+      "title": "AI 题词生成中",
+      "useLocal": "使用本地题词",
+      "wait": "等待 AI",
+      "loading": "AI 题词生成中..."
+    },
+    "button": {
+      "start": "开始游戏"
+    },
+    "role": {
+      "drawer": "画",
+      "guesser": "猜"
+    },
+    "units": {
+      "seconds": "秒",
+      "points": "分"
+    },
+    "feedback": {
+      "correct": "猜对了! 太棒了!",
+      "wrong": "加油! 再试一次~"
+    },
+    "canvas": {
+      "undo": "撤销",
+      "clear": "清空"
+    },
+    "words": {
+      "easy": [
+        "太阳", "月亮", "星星", "房子", "树", "花", "猫", "狗", "鱼", "鸟",
+        "苹果", "香蕉", "西瓜", "草莓", "汽车", "飞机", "船", "自行车",
+        "雨伞", "眼镜", "杯子", "书", "笔", "爱心", "笑脸"
+      ],
+      "medium": [
+        "电脑", "手机", "键盘", "耳机", "相机", "冰箱", "电视", "沙发",
+        "桌子", "椅子", "足球", "篮球", "羽毛球", "游泳", "跑步", "跳舞",
+        "唱歌", "钢琴", "吉他", "画画", "彩虹", "风筝", "蝴蝶", "蜜蜂", "蜗牛"
+      ],
+      "hard": [
+        "宇航员", "恐龙", "城堡", "火山", "金字塔", "过山车", "摩天轮",
+        "热气球", "潜水艇", "直升机", "机器人", "外星人", "海盗", "骑士",
+        "公主", "巫师", "龙", "独角兽", "美人鱼", "凤凰", "北极光",
+        "流星雨", "瀑布", "沙漠", "森林"
+      ]
+    },
+    "difficultyNames": {
+      "easy": "简单",
+      "medium": "中等",
+      "hard": "困难"
+    }
+  },
+  "joinRoom": {
+    "title": "加入房间",
+    "browseRooms": "浏览房间",
+    "browseDescription": "查看所有可用的房间",
+    "scanRooms": "扫描房间",
+    "scanDescription": "扫描局域网内的房间",
+    "enterCode": "输入房间码",
+    "codeDescription": "输入6位房间码加入游戏",
+    "codePlaceholder": "输入房间码",
+    "roomCode": "房间码",
+    "roomId": "房间ID",
+    "roomIdPlaceholder": "输入房间ID",
+    "playerName": "玩家名称",
+    "playerNamePlaceholder": "输入你的名称",
+    "selectAvatar": "选择头像",
+    "join": "加入",
+    "joining": "加入中...",
+    "connecting": "连接中...",
+    "connectAndJoin": "连接并加入",
+    "refresh": "刷新",
+    "loadingRooms": "加载房间中...",
+    "noRooms": "暂无房间",
+    "noRoomsHint": "还没有可用的房间，去创建一个吧",
+    "noLANRooms": "未发现局域网房间",
+    "noNetworkEnabled": "未启用网络模式",
+    "enableNetworkHint": "请先在设置中启用网络模式",
+    "goToSettings": "前往设置",
+    "manualConnect": "手动连接",
+    "manualDescription": "输入IP地址和端口手动连接",
+    "ipAddress": "IP地址",
+    "port": "端口",
+    "lan": "局域网",
+    "host": "房主",
+    "players": "玩家",
+    "waiting": "等待中",
+    "playing": "游戏中",
+    "finished": "已结束",
+    "unknown": "未知",
+    "startScan": "开始扫描",
+    "stopScan": "停止扫描",
+    "scanning": "扫描中...",
+    "scanUnavailable": "扫描不可用"
+  },
+  "online": {
+    "title": "在线模式",
+    "tabs": {
+      "create": "创建房间",
+      "join": "加入房间"
+    },
+    "create": {
+      "title": "创建新房间",
+      "button": "创建房间"
+    },
+    "join": {
+      "title": "加入房间",
+      "button": "加入房间"
+    },
+    "lan": {
+      "mode": "局域网模式",
+      "create": {
+        "title": "创建局域网房间",
+        "button": "创建房间"
+      },
+      "join": {
+        "title": "加入局域网房间",
+        "button": "加入房间"
+      },
+      "discoveredRooms": "发现的房间",
+      "noRooms": "未发现房间",
+      "noRoomsHint": "请确保设备在同一局域网内",
+      "scanning": "扫描中...",
+      "startScan": "开始扫描",
+      "stopScan": "停止扫描",
+      "manualConnect": "手动连接",
+      "port": "端口",
+      "portPlaceholder": "输入端口号",
+      "ipPlaceholder": "输入IP地址",
+      "infoCopied": "连接信息已复制",
+      "webNotSupported": "网页端不支持",
+      "webNotSupportedTitle": "功能不可用",
+      "error": {
+        "noIP": "无法获取本机IP地址",
+        "invalidPort": "端口号无效"
+      }
+    },
+    "roomName": {
+      "placeholder": "输入房间名称"
+    },
+    "roomCode": {
+      "placeholder": "输入6位房间码"
+    },
+    "playerName": {
+      "placeholder": "输入你的名称"
+    },
+    "gameType": "游戏类型",
+    "taskSet": "任务集",
+    "maxPlayers": "最大玩家数",
+    "players": "玩家",
+    "connectionType": "连接类型",
+    "lanMode": "局域网模式",
+    "waitingRoom": "等待房间",
+    "waitingPlayers": "等待玩家加入...",
+    "waitingPlayer": "等待玩家：{{count}}/{{max}}",
+    "waitingHost": "等待房主开始游戏...",
+    "startGame": "开始游戏",
+    "leaveRoom": "离开房间",
+    "creating": "创建中...",
+    "joining": "加入中...",
+    "starting": "启动中...",
+    "connected": "已连接",
+    "connecting": "连接中...",
+    "disconnected": "已断开",
+    "host": "房主",
+    "retry": "重试",
+    "roomCodeCopied": "房间码已复制",
+    "mode": {
+      "online": "在线模式",
+      "lan": "局域网模式"
+    },
+    "instructions": {
+      "title": "使用说明",
+      "shareCode": "1. 分享房间码给其他玩家",
+      "minPlayers": "2. 等待至少2名玩家加入",
+      "hostControl": "3. 房主可以开始游戏"
+    },
+    "error": {
+      "joinFailed": "加入房间失败",
+      "fillRequired": "请填写所有必填项",
+      "selectAvatar": "请选择头像"
+    },
+    "copyFailed": "复制失败"
+  },
+  "room": {
+    "destroyed": "房间已被销毁"
   },
   "simpleTaskModal": {
     "taskChallenge": "任务挑战",
     "completedReward": "完成奖励",
-    "points": "积分",
+    "pointsAmount": "{{points}} 积分",
     "chooseCompletion": "请选择任务完成情况：",
     "completed": "完成",
     "notCompleted": "未完成",
     "taskCompleted": "任务完成！",
     "taskFailed": "任务失败！",
     "earnedPoints": "获得 {{points}} 积分",
-    "noPoints": "未获得积分",
+    "noPointsEarned": "未获得积分",
     "updatingScore": "正在更新积分..."
   },
   "taskModal": {
     "taskTypes": {
       "trap": {
         "title": "陷阱挑战",
-        "description": "踩到陷阱！",
-        "ruleTitle": "规则说明",
         "ruleExecutor": "受罚者：触发陷阱的玩家",
         "ruleReward": "完成任务：前进 3-6 格",
-        "rulePenalty": "失败惩罚：后退 3-6 格",
-        "hint": "根据任务内容，由相应的玩家执行动作"
+        "rulePenalty": "失败惩罚：后退 3-6 格"
       },
       "star": {
         "title": "幸运任务",
-        "description": "获得幸运机会！",
-        "ruleTitle": "规则说明",
         "ruleExecutor": "受益者：触发幸运的玩家",
         "ruleReward": "完成任务：前进 3-6 格",
-        "rulePenalty": "失败惩罚：后退 3-6 格",
-        "hint": "根据任务内容，由相应的玩家执行动作"
+        "rulePenalty": "失败惩罚：后退 3-6 格"
       },
       "collision": {
         "title": "碰撞挑战",
-        "description": "发生碰撞！",
-        "ruleTitle": "规则说明",
         "ruleExecutor": "受罚者：被碰撞的玩家",
         "ruleReward": "完成任务：保持位置",
-        "rulePenalty": "失败惩罚：回到起点",
-        "hint": "根据任务内容，由相应的玩家执行动作"
+        "rulePenalty": "失败惩罚：回到起点"
+      },
+      "normal": {
+        "title": "普通任务"
+      },
+      "unknown": {
+        "title": "未知任务"
       }
     },
     "executor": "执行者",
@@ -199,18 +371,12 @@
       "extreme": "极限",
       "unknown": "未知"
     },
-    "chooseCompletion": "任务完成了吗？",
     "completed": "完成",
     "notCompleted": "未完成",
-    "confirmComplete": "确认完成任务？",
-    "confirmFailed": "确认任务失败？",
-    "completeMessage": "确定你已经成功完成了这个任务吗？",
-    "failedMessage": "确定任务没有完成吗？这可能会有惩罚。",
     "submitError": "提交失败，请重试",
     "processError": "处理失败，请重试",
     "processing": "处理中...",
     "retry": "重试",
-    "quickTip": "💡 点击按钮会显示确认对话框",
     "observerMode": "观察模式",
     "observerHint": "等待其他玩家完成任务...",
     "closeObserver": "关闭观察",
@@ -226,37 +392,55 @@
       "starReward": "幸运奖励：前进 3-6 格",
       "starPenalty": "遗憾惩罚：后退 3-6 格",
       "collisionStay": "保持位置不变",
-      "collisionStart": "回到起点重新开始"
+      "collisionStart": "回到起点重新开始",
+      "moveForward": "前进 {{steps}} 格",
+      "moveBackward": "后退 {{steps}} 格",
+      "backToStart": "回到起点"
     },
-    "positive": "正面效果",
-    "negative": "负面效果",
     "affectedPlayers": "受影响玩家：",
-    "executing": "正在执行中..."
+    "executing": "正在执行中...",
+    "you": "你",
+    "executorHint": "请执行任务",
+    "moveForward": "前进 {{steps}} 格",
+    "moveBackward": "后退 {{steps}} 格",
+    "backToStart": "回到起点",
+    "observer": {
+      "title": "观察模式",
+      "waiting": "等待其他玩家完成任务...",
+      "progress": "进度: {{completed}}/{{total}}",
+      "allCompleted": "所有玩家已完成任务"
+    },
+    "observerView": {
+      "title": "观察其他玩家",
+      "watching": "观察中",
+      "yourTurn": "轮到你了",
+      "completed": "已完成",
+      "waitingOthers": "等待其他玩家完成",
+      "allCompleted": "所有玩家已完成"
+    },
+    "observerCompleted": "观察者确认完成",
+    "observerFailed": "观察者确认失败"
   },
   "victoryModal": {
-    "gameWin": "🎉 游戏胜利！🎉",
     "congratulations": "恭喜获得胜利！",
-    "victoryReward": "🎁 胜利者奖励",
-    "rewardDescription": "作为胜利者，你可以从以下任务中选择3个作为奖励！",
-    "selectRewardTasks": "选择奖励任务",
-    "selectLater": "稍后选择",
-    "selectRewardTasksTitle": "选择奖励任务",
-    "selectedCount": "已选择 {{count}}/3 个任务",
-    "confirmSelection": "确认选择 ({{count}})",
-    "rewardReceived": "🎊 任务奖励已获得！",
-    "selectedTasksCount": "你已成功选择了 {{count}} 个奖励任务",
-    "rewardTasks": "获得的奖励任务：",
     "restart": "重新开始",
-    "exitGame": "退出游戏"
-  },
-  "customAlert": {
-    "confirm": "确定"
+    "exitGame": "退出游戏",
+    "youWin": "你赢了！",
+    "winnerIs": "获胜者是：{{name}}",
+    "gameOver": "游戏结束",
+    "waitingForWinner": "等待获胜者选择奖励...",
+    "allTasksCompleted": "所有任务已完成！",
+    "completeAllTasks": "完成所有任务",
+    "completeTasks": "完成任务",
+    "close": "关闭"
   },
   "settings": {
     "title": "设置",
     "sections": {
       "general": "通用",
+      "network": "网络设置",
       "gameSettings": "游戏设置",
+      "aiSettings": "AI 设置",
       "about": "关于"
     },
     "updateCheck": {
@@ -266,7 +450,6 @@
       "update": "立即更新",
       "later": "稍后更新",
       "alertTitle": "检查更新",
-      "checking": "检查中...",
       "label": "检查更新"
     },
     "language": {
@@ -289,27 +472,48 @@
     },
     "sound": {
       "label": "声音设置",
-      "value": "音效开启",
-      "alertTitle": "声音设置",
-      "alertMessage": "游戏音效功能正在开发中...",
-      "enabled": "已开启",
-      "disabled": "已关闭",
       "bgm": "背景音乐"
     },
+    "network": {
+      "enabled": "网络模式",
+      "socketUrl": "Socket 地址",
+      "socketUrlSaved": "Socket 地址已保存",
+      "lanMode": "局域网模式"
+    },
+    "lan": {
+      "label": "本机IP地址",
+      "loading": "获取中...",
+      "error": "获取失败",
+      "unavailable": "不可用",
+      "errorMessage": "无法获取本机 IP 地址，请检查网络连接",
+      "copied": "IP地址已复制到剪贴板",
+      "port": "局域网端口",
+      "portSaved": "端口已保存",
+      "invalidPort": "端口号必须在 1024-65535 之间"
+    },
+    "ai": {
+      "enabled": "启用 AI 功能",
+      "config": "AI 配置",
+      "configured": "已配置",
+      "notConfigured": "未配置",
+      "description": "配置 AI 服务以启用智能功能",
+      "apiUrl": "API 地址",
+      "apiKey": "API Key",
+      "apiModel": "模型名称",
+      "apiUrlRequired": "API 地址不能为空",
+      "apiKeyRequired": "API Key 不能为空",
+      "configSaved": "AI 配置已保存"
+    },
     "version": {
-      "label": "版本信息",
-      "alertTitle": "版本信息",
-      "alertMessage": "版本：1.0.0\n构建：{{buildDate}}"
+      "label": "版本信息"
     },
     "userAgreement": {
       "label": "用户协议",
-      "alertTitle": "用户协议",
-      "alertMessage": "感谢使用我们的应用，请合理使用本应用的各项功能。"
+      "alertTitle": "用户协议"
     },
     "privacyPolicy": {
       "label": "隐私政策",
-      "alertTitle": "隐私政策",
-      "alertMessage": "我们重视您的隐私，所有数据均存储在本地，不会上传到服务器。"
+      "alertTitle": "隐私政策"
     }
   },
   "tasks": {
@@ -339,21 +543,16 @@
     },
     "delete": {
       "taskSet": {
-        "title": "删除确认",
-        "message": "确定要删除任务集 \"{{name}}\" 吗？此操作无法撤销。"
+        "title": "删除确认"
       },
       "category": {
-        "title": "删除确认",
-        "message": "确定要删除分类 \"{{name}}\" 吗？此操作无法撤销。",
-        "withTaskSets": "这将同时删除该分类下的 {{count}} 个任务集。"
+        "warning": "警告：删除分类将同时删除其下的所有任务集"
       },
-      "cancel": "取消",
       "confirm": "删除"
     },
     "import": {
       "title": "导入",
       "error": {
-        "title": "错误",
         "invalidFormat": "导入的文件格式不正确",
         "invalidContent": "导入的文件内容格式不正确",
         "failed": "导入失败"
@@ -365,18 +564,13 @@
     "export": {
       "title": "导出任务集",
       "message": "请选择导出方式",
-      "share": "分享",
       "saveToFile": "保存到文件",
-      "cancel": "取消",
-      "shareTitle": "导出任务集: {{name}}",
       "success": {
         "downloaded": "文件已下载到您的设备",
         "saved": "文件已保存到: {{fileName}}",
         "exported": "文件已导出并可以保存到您的设备"
       },
       "error": {
-        "title": "错误",
-        "failed": "导出失败",
         "saveFailed": "保存文件失败"
       }
     }
@@ -424,8 +618,14 @@
     "flyingChess": "飞行棋",
     "wheel": "大转盘",
     "minesweeper": "扫雷对战",
+    "drawGuess": "你画我猜",
     "default": "任务选择",
     "all": "全部",
+    "singlePlayer": "单人模式",
+    "createRoom": "创建房间",
+    "joinRoom": "加入房间",
+    "onlineComingSoon": "在线模式即将上线",
+    "onlineNotSupported": "该游戏暂不支持在线模式",
     "empty": {
       "title": "暂无可用的游戏模式",
       "subtitle": "去任务管理页面添加一些任务集吧",
@@ -436,8 +636,7 @@
       "minutes": "约 {{minutes}} 分钟",
       "hours": "约 {{hours}}小时{{minutes}}",
       "hoursOnly": "约 {{hours}}小时"
-    },
-    "startGame": "开始游戏"
+    }
   },
   "taskSetModal": {
     "create": "创建任务集",
@@ -463,7 +662,6 @@
         "message": "请输入任务集名称"
       },
       "tasksRequired": {
-        "title": "提示",
         "message": "请至少添加一个任务"
       },
       "saveError": {
@@ -471,11 +669,9 @@
         "message": "保存失败，请重试"
       },
       "clipboardEmpty": {
-        "title": "提示",
         "message": "剪切板为空"
       },
       "clipboardNoTasks": {
-        "title": "提示",
         "message": "剪切板中没有有效的任务内容"
       },
       "pasteSuccess": {
@@ -494,7 +690,6 @@
       },
       "confirm": {
         "title": "AI 生成任务",
-        "message": "将使用 AI 为{{name}}生成 50 个任务。这将替换当前的任务列表，是否继续？",
         "yes": "开始生成"
       },
       "failed": {
@@ -541,27 +736,5 @@
     "achievements": "🌟 获得成就: {{count}} 个",
     "restart": "重新开始",
     "exitGame": "退出游戏"
-  },
-  "aiService": {
-    "drawGuess": {
-      "categories": {
-        "random": "随机",
-        "animal": "动物",
-        "food": "食物",
-        "item": "物品",
-        "nature": "自然",
-        "building": "建筑",
-        "emotion": "情感",
-        "sport": "运动",
-        "profession": "职业",
-        "transport": "交通",
-        "plant": "植物"
-      },
-      "validation": {
-        "empty": "词语不能为空",
-        "tooLong": "词语太长，不适合游戏",
-        "noNumbers": "词语不应包含数字"
-      }
-    }
   }
 }

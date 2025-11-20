@@ -21,7 +21,7 @@ import VictoryModal from '@/components/VictoryModal'
 import { DrawGuessTaskModal, DrawGuessTaskData } from '@/components/DrawGuessTaskModal'
 import { PhaseTransitionModal } from '@/components/PhaseTransitionModal'
 import { useGameTasks } from '@/hooks/use-game-tasks'
-import { useDrawGuessGame, WORD_CATEGORIES, WordDifficulty } from '@/hooks/use-draw-guess-game'
+import { useDrawGuessGame, getWordCategoryConfig, WordDifficulty } from '@/hooks/use-draw-guess-game'
 import { showConfirmDialog } from '@/components/ConfirmDialog'
 
 const { width: screenWidth } = Dimensions.get('window')
@@ -251,9 +251,11 @@ export default function DrawGuess() {
                 </LinearGradient>
               </View>
 
-              <Text style={[styles.welcomeTitle, { color: colors.homeCardTitle }]}>你画我猜</Text>
+              <Text style={[styles.welcomeTitle, { color: colors.homeCardTitle }]}>
+                {t('drawGuess.welcome.title')}
+              </Text>
               <Text style={[styles.welcomeSubtitle, { color: colors.homeCardDescription }]}>
-                发挥创意,画出你的想象
+                {t('drawGuess.welcome.subtitle')}
               </Text>
 
               {/* 玩家信息 */}
@@ -277,12 +279,12 @@ export default function DrawGuess() {
               {/* 难度选择 */}
               <View style={styles.difficultySection}>
                 <Text style={[styles.difficultyTitle, { color: colors.homeCardTitle }]}>
-                  选择难度
+                  {t('drawGuess.difficulty.title')}
                 </Text>
 
                 <View style={styles.difficultyCards}>
-                  {(Object.keys(WORD_CATEGORIES) as WordDifficulty[]).map((diff) => {
-                    const config = WORD_CATEGORIES[diff]
+                  {(['easy', 'medium', 'hard'] as WordDifficulty[]).map((diff) => {
+                    const config = getWordCategoryConfig(t, diff)
                     const isSelected = game.difficulty === diff
 
                     return (
@@ -314,7 +316,7 @@ export default function DrawGuess() {
                             { color: isSelected ? '#F59E0B' : colors.homeCardDescription },
                           ]}
                         >
-                          ⏱️ {config.timeLimit}秒
+                          ⏱️ {config.timeLimit}{t('drawGuess.units.seconds')}
                         </Text>
                         <Text
                           style={[
@@ -322,7 +324,7 @@ export default function DrawGuess() {
                             { color: isSelected ? '#F59E0B' : colors.homeCardDescription },
                           ]}
                         >
-                          🏆 {config.basePoints}分
+                          🏆 {config.basePoints}{t('drawGuess.units.points')}
                         </Text>
                       </TouchableOpacity>
                     )
@@ -340,7 +342,7 @@ export default function DrawGuess() {
                 >
                   <ActivityIndicator size="small" color="#F59E0B" />
                   <Text style={[styles.aiLoadingText, { color: colors.homeCardDescription }]}>
-                    AI 题词生成中...
+                    {t('drawGuess.aiGenerating.loading')}
                   </Text>
                 </View>
               )}
@@ -358,7 +360,7 @@ export default function DrawGuess() {
                   end={{ x: 1, y: 1 }}
                 >
                   <Ionicons name="play" size={24} color="#FFFFFF" />
-                  <Text style={styles.startButtonText}>开始游戏</Text>
+                  <Text style={styles.startButtonText}>{t('drawGuess.button.start')}</Text>
                 </LinearGradient>
               </TouchableOpacity>
             </View>
@@ -396,7 +398,7 @@ export default function DrawGuess() {
                               style={[styles.roleTag, { backgroundColor: player.color + '30' }]}
                             >
                               <Text style={[styles.roleTagText, { color: player.color }]}>
-                                🖌️ 画
+                                🖌️ {t('drawGuess.role.drawer')}
                               </Text>
                             </View>
                           )}
@@ -405,13 +407,13 @@ export default function DrawGuess() {
                               style={[styles.roleTag, { backgroundColor: player.color + '30' }]}
                             >
                               <Text style={[styles.roleTagText, { color: player.color }]}>
-                                🤔 猜
+                                🤔 {t('drawGuess.role.guesser')}
                               </Text>
                             </View>
                           )}
                         </View>
                         <Text style={[styles.playerHUDScore, { color: player.color }]}>
-                          🏆 {player.score}分
+                          🏆 {player.score}{t('drawGuess.units.points')}
                         </Text>
                       </View>
                     </View>
@@ -435,7 +437,10 @@ export default function DrawGuess() {
               >
                 <View style={styles.roundInfoTop}>
                   <Text style={[styles.roundNumber, { color: colors.homeCardDescription }]}>
-                    第 {game.currentRoundIndex + 1}/{game.totalRounds} 回合
+                    {t('drawGuess.game.round', {
+                      current: game.currentRoundIndex + 1,
+                      total: game.totalRounds,
+                    })}
                   </Text>
 
                   <View style={styles.timerContainer}>
@@ -444,7 +449,7 @@ export default function DrawGuess() {
                       {formatTime(
                         game.currentRound
                           ? game.currentRound.timeLimit - timer
-                          : WORD_CATEGORIES[game.difficulty].timeLimit,
+                          : getWordCategoryConfig(t, game.difficulty).timeLimit,
                       )}
                     </Text>
                   </View>
@@ -467,7 +472,9 @@ export default function DrawGuess() {
                 {game.currentRound && (
                   <View style={styles.wordHintContainer}>
                     <Text style={[styles.wordHintLabel, { color: colors.homeCardDescription }]}>
-                      {game.currentRound.phase === 'drawing' ? '你要画的是:' : `猜一猜画的是什么:`}
+                      {game.currentRound.phase === 'drawing'
+                        ? t('drawGuess.game.drawerHint')
+                        : t('drawGuess.game.guesserHint')}
                     </Text>
                     {game.currentRound.phase === 'drawing' ? (
                       <Text style={[styles.wordHintText, { color: '#F59E0B' }]}>
@@ -504,7 +511,7 @@ export default function DrawGuess() {
                     end={{ x: 1, y: 1 }}
                   >
                     <Ionicons name="checkmark-circle" size={24} color="#FFFFFF" />
-                    <Text style={styles.confirmButtonText}>确认画完</Text>
+                    <Text style={styles.confirmButtonText}>{t('drawGuess.game.confirmDrawing')}</Text>
                   </LinearGradient>
                 </TouchableOpacity>
               )}
@@ -516,7 +523,7 @@ export default function DrawGuess() {
                     correctWord={game.currentRound.word}
                     onGuessCorrect={handleGuessCorrect}
                     colors={colors}
-                    placeholder="输入你的猜测..."
+                    placeholder={t('drawGuess.game.guessPlaceholder')}
                     disabled={game.currentRound.isCompleted}
                   />
                 </View>
@@ -531,7 +538,7 @@ export default function DrawGuess() {
                   disabled={game.currentRound?.isCompleted}
                 >
                   <Ionicons name="play-skip-forward" size={20} color="#FFFFFF" />
-                  <Text style={styles.skipButtonText}>跳过这一轮</Text>
+                  <Text style={styles.skipButtonText}>{t('drawGuess.game.skip')}</Text>
                 </TouchableOpacity>
               )}
             </ScrollView>
@@ -548,17 +555,23 @@ export default function DrawGuess() {
             {game.currentRound?.guessedCorrectly ? (
               <>
                 <Ionicons name="checkmark-circle" size={80} color={colors.success} />
-                <Text style={[styles.transitionTitle, { color: colors.success }]}>猜对了!</Text>
+                <Text style={[styles.transitionTitle, { color: colors.success }]}>
+                  {t('drawGuess.transition.correct')}
+                </Text>
                 <Text style={[styles.transitionPoints, { color: colors.homeCardTitle }]}>
-                  +{game.currentRound.pointsAwarded}分
+                  {t('drawGuess.transition.points', { points: game.currentRound.pointsAwarded })}
                 </Text>
               </>
             ) : (
               <>
                 <Ionicons name="close-circle" size={80} color={colors.error} />
-                <Text style={[styles.transitionTitle, { color: colors.error }]}>时间到!</Text>
+                <Text style={[styles.transitionTitle, { color: colors.error }]}>
+                  {t('drawGuess.transition.timeout')}
+                </Text>
                 <Text style={[styles.transitionWord, { color: colors.homeCardDescription }]}>
-                  答案是: {game.rounds[game.currentRoundIndex]?.word || ''}
+                  {t('drawGuess.transition.answer', {
+                    word: game.rounds[game.currentRoundIndex]?.word || '',
+                  })}
                 </Text>
               </>
             )}

@@ -1,116 +1,87 @@
 {
   "common": {
-    "loading": "読み込み中...",
-    "start": "開始",
-    "restart": "再開",
-    "completed": "完了",
-    "failed": "未達成",
-    "rollDice": "サイコロを振る",
-    "rolling": "サイコロを振っています...",
-    "moving": "移動中...",
-    "preparing": "準備中...",
-    "skipToHome": "スキップしてホームに戻る",
     "cancel": "キャンセル",
-    "confirm": "確認"
+    "confirm": "確認",
+    "ok": "OK",
+    "success": "成功",
+    "error": "エラー",
+    "back": "戻る"
+  },
+  "error": {
+    "rollDice": "サイコロを振るのに失敗しました。もう一度お試しください",
+    "completeTask": "タスクの完了に失敗しました。もう一度お試しください",
+    "restartGame": "ゲームの再起動に失敗しました。もう一度お試しください"
+  },
+  "avatar": {
+    "selectGender": "性別を選択",
+    "man": "男性",
+    "woman": "女性",
+    "random": "ランダム",
+    "yourAvatar": "あなたのアバター"
   },
   "home": {
-    "title": "趣味ゲーム",
-    "subtitle": "ゲームで関係を温めましょう",
-    "features": {
-      "title": "ゲーム特徴",
-      "classic": {
-        "title": "クラシックプレイ",
-        "description": "伝統的な飞行机ゲームのルールで、簡単に始められる"
-      },
-      "interaction": {
-        "title": "カップルインタラクション",
-        "description": "特別にデザインされたインタラクティブタスクで、感情を深める"
-      },
-      "modes": {
-        "title": "マルチモード",
-        "description": "多様なゲームモードで、飽きることがない"
-      }
-    },
+    "title": "楽しいゲーム",
+    "subtitle": "ゲームで関係を深めよう",
     "flyingChess": {
-      "title": "飞行机ゲーム",
-      "subtitle": "戦略対戦",
-      "description": "戦略と運の完璧な組み合わせを体験しよう"
+      "title": "飛行棋",
+      "subtitle": "戦略バトル",
+      "description": "戦略と運の完璧な組み合わせを体験"
     },
     "luckyWheel": {
       "title": "ラッキーホイール",
-      "subtitle": "趣味的インタラクション",
-      "description": "運命の歯車を回そう"
+      "subtitle": "楽しい交流",
+      "description": "運命の輪を回そう"
     },
     "minesweeper": {
-      "title": "マインスイーパー対戦",
+      "title": "地雷対戦",
       "subtitle": "2人対決",
-      "description": "地雷を踏んでタスクを実行、ポイントで勝敗を決めよう"
+      "description": "地雷を踏んだらタスク実行、ポイントで勝負"
+    },
+    "drawGuess": {
+      "title": "お絵描き伝言",
+      "subtitle": "創造的なお絵描き",
+      "description": "想像力を発揮して、絵を描いて当ててもらおう"
     },
     "cta": {
-      "startGame": "ゲーム開始",
-      "subtext": "好きなゲームモードを選んで始めよう"
+      "subtext": "お気に入りのゲームモードを選んで始めよう"
+    },
+    "onlineGame": {
+      "continue": "進行中のオンラインゲームがあります",
+      "continueButton": "ゲームを続ける"
     }
   },
   "minesweeper": {
-    "title": "マインスイーパー対戦",
+    "title": "地雷対戦",
     "difficulty": {
-      "title": "難易度選択",
-      "easy": "イージー",
-      "medium": "ミディアム",
-      "hard": "ハード"
+      "title": "難易度を選択",
+      "easy": "簡単",
+      "medium": "普通",
+      "hard": "難しい"
     },
     "status": {
-      "waiting": "開始準備中",
-      "playing": "ゲーム進行中",
-      "finished": "ゲーム終了",
-      "currentPlayerTurn": "{{playerName}}のターン"
-    },
-    "stats": {
-      "cells": "マス",
-      "mines": "地雷踏破数",
-      "time": "時間",
-      "progress": "進行状況",
-      "remaining": "残り"
+      "selectDifficulty": "難易度を選択"
     },
     "players": {
-      "title": "プレイヤー状況",
       "player1": "プレイヤー1",
       "player2": "プレイヤー2"
     },
-    "game": {
-      "title": "マインスイーパー戦場",
-      "rules": {
-        "title": "ゲームルール",
-        "rule1": "2人が交互にマスをクリックして内容を明かす",
-        "rule2": "マスを長押しすると地雷をマークできる",
-        "rule3": "地雷を踏むとタスクを実行しなければならない",
-        "rule4": "マスを多く獲得したプレイヤーが勝利",
-        "rule5": "マス数が同じ場合は地雷踏破数が少ない方が勝利",
-        "rule6": "すべてのマスが明かされるとゲーム終了"
-      }
-    },
     "task": {
-      "hitMine": "地雷を踏みました！",
+      "hitMine": "地雷を踏んだ！",
       "position": "位置",
-      "challenger": "チャレンジャー",
-      "challengeTask": "チャレンジタスク",
-      "challengeDescription": {
-        "title": "チャレンジ説明",
-        "rule1": "地雷を踏んだ後、チャレンジタスクを完了しなければならない",
-        "rule2": "タスクの完了有無はポイントに影響しない",
-        "rule3": "ポイントは獲得したマスの数に依存する"
-      },
-      "result": {
-        "completed": "タスク完了！",
-        "failed": "タスク失敗！",
-        "completedDesc": "チャレンジを無事に完了！",
-        "failedDesc": "チャレンジに失敗しました",
-        "continue": "ゲームを続ける..."
-      }
+      "complete": "タスク完了",
+      "giveUp": "諦める",
+      "triggeredBy": "発動者：{{playerName}}",
+      "ruleSuccess": "タスクを完了すると報酬がもらえます",
+      "ruleFail": "諦めるとペナルティがあるかもしれません",
+      "completed": "タスク完了！",
+      "completedDesc": "チャレンジ成功！",
+      "continue": "ゲームを続ける...",
+      "failed": "タスク失敗！",
+      "failedDesc": "チャレンジ失敗"
     }
   },
   "flyingChess": {
-    "title": "飞行机ゲーム",
+    "title": "飛行棋",
     "headerBackTitle": "戻る",
     "gameStatus": {
       "waiting": "開始準備中",
@@ -118,12 +89,13 @@
       "finished": "ゲーム終了"
     },
     "currentPlayer": "{{playerName}}のターン",
-    "playersStatus": "プレイヤー状況",
-    "position": "位置：{{position}}",
+    "playersStatus": "プレイヤーステータス",
+    "position": "位置: {{position}}",
     "dice": {
       "clickToRoll": "クリックしてサイコロを振る",
       "rolling": "振っています...",
-      "moving": "コマ移動中..."
+      "moving": "駒を移動中...",
+      "waitingOpponent": "相手のサイコロを待っています..."
     }
   },
   "wheelPoints": {
@@ -131,115 +103,357 @@
     "headerBackTitle": "戻る",
     "gameStatus": {
       "waiting": "開始準備中",
-      "playing": "ゲーム進行中",
       "finished": "ゲーム終了"
     },
     "currentPlayer": "{{playerName}}のターン",
     "round": "第{{round}}ラウンド",
-    "scoreRanking": "ポイントランキング",
-    "winCondition": "勝利条件：{{score}}ポイントを先に獲得する",
     "spin": {
-      "start": "ホイールを回す",
+      "start": "スピン",
       "spinning": "回転中..."
     },
-    "luckyWheel": "ラッキーホイール",
     "wheelResult": "ホイール結果",
-    "resultMessage": "{{playerName}}が回した結果：{{result}}"
+    "resultMessage": "{{playerName}}が出たのは: {{result}}"
+  },
+  "drawGuess": {
+    "title": "お絵描き伝言",
+    "welcome": {
+      "title": "お絵描き伝言",
+      "subtitle": "創造力と想像力を解き放とう"
+    },
+    "difficulty": {
+      "title": "難易度を選択"
+    },
+    "game": {
+      "round": "ラウンド{{current}}/{{total}}",
+      "drawerHint": "これを描いて:",
+      "guesserHint": "何だと思う?:",
+      "confirmDrawing": "描画を確認",
+      "guessPlaceholder": "あなたの答えを入力...",
+      "skip": "このラウンドをスキップ"
+    },
+    "transition": {
+      "correct": "正解！",
+      "timeout": "時間切れ！",
+      "answer": "答えは: {{word}}",
+      "points": "+{{points}}ポイント"
+    },
+    "aiGenerating": {
+      "title": "AI単語生成中",
+      "useLocal": "ローカル単語を使用",
+      "wait": "AIを待つ",
+      "loading": "AI単語生成中..."
+    },
+    "button": {
+      "start": "ゲーム開始"
+    },
+    "role": {
+      "drawer": "描く",
+      "guesser": "当てる"
+    },
+    "units": {
+      "seconds": "秒",
+      "points": "点"
+    },
+    "feedback": {
+      "correct": "正解！素晴らしい！",
+      "wrong": "頑張って！"
+    },
+    "canvas": {
+      "undo": "元に戻す",
+      "clear": "クリア"
+    },
+    "words": {
+      "easy": [
+        "太陽", "月", "星", "家", "木", "花", "猫", "犬", "魚", "鳥",
+        "りんご", "バナナ", "スイカ", "いちご", "車", "飛行機", "船", "自転車",
+        "傘", "眼鏡", "カップ", "本", "ペン", "ハート", "笑顔"
+      ],
+      "medium": [
+        "パソコン", "携帯電話", "キーボード", "ヘッドフォン", "カメラ", "冷蔵庫", "テレビ", "ソファ",
+        "テーブル", "椅子", "サッカー", "バスケットボール", "バドミントン", "水泳", "ランニング", "ダンス",
+        "歌", "ピアノ", "ギター", "絵を描く", "虹", "凧", "蝶", "蜂", "カタツムリ"
+      ],
+      "hard": [
+        "宇宙飛行士", "恐竜", "城", "火山", "ピラミッド", "ジェットコースター", "観覧車",
+        "熱気球", "潜水艦", "ヘリコプター", "ロボット", "宇宙人", "海賊", "騎士",
+        "王女", "魔法使い", "龍", "ユニコーン", "人魚", "不死鳥", "オーロラ",
+        "流星群", "滝", "砂漠", "森"
+      ]
+    },
+    "difficultyNames": {
+      "easy": "簡単",
+      "medium": "普通",
+      "hard": "難しい"
+    }
+  },
+  "joinRoom": {
+    "title": "ルームに参加",
+    "browseRooms": "ルームを閲覧",
+    "browseDescription": "利用可能なすべてのルームを表示",
+    "scanRooms": "ルームをスキャン",
+    "scanDescription": "LAN内のルームをスキャン",
+    "enterCode": "ルームコードを入力",
+    "codeDescription": "6桁のルームコードを入力して参加",
+    "codePlaceholder": "ルームコードを入力",
+    "roomCode": "ルームコード",
+    "roomId": "ルームID",
+    "roomIdPlaceholder": "ルームIDを入力",
+    "playerName": "プレイヤー名",
+    "playerNamePlaceholder": "名前を入力",
+    "selectAvatar": "アバターを選択",
+    "join": "参加",
+    "joining": "参加中...",
+    "connecting": "接続中...",
+    "connectAndJoin": "接続して参加",
+    "refresh": "更新",
+    "loadingRooms": "ルーム読み込み中...",
+    "noRooms": "利用可能なルームがありません",
+    "noRoomsHint": "まだルームがありません。作成してください",
+    "noLANRooms": "LANルームが見つかりません",
+    "noNetworkEnabled": "ネットワークモードが有効になっていません",
+    "enableNetworkHint": "設定でネットワークモードを有効にしてください",
+    "goToSettings": "設定へ",
+    "manualConnect": "手動接続",
+    "manualDescription": "IPアドレスとポートを入力して接続",
+    "ipAddress": "IPアドレス",
+    "port": "ポート",
+    "lan": "LAN",
+    "host": "ホスト",
+    "players": "プレイヤー",
+    "waiting": "待機中",
+    "playing": "プレイ中",
+    "finished": "終了",
+    "unknown": "不明",
+    "startScan": "スキャン開始",
+    "stopScan": "スキャン停止",
+    "scanning": "スキャン中...",
+    "scanUnavailable": "スキャン利用不可"
+  },
+  "online": {
+    "title": "オンラインモード",
+    "tabs": {
+      "create": "ルーム作成",
+      "join": "ルーム参加"
+    },
+    "create": {
+      "title": "新しいルームを作成",
+      "button": "ルーム作成"
+    },
+    "join": {
+      "title": "ルームに参加",
+      "button": "ルーム参加"
+    },
+    "lan": {
+      "mode": "LANモード",
+      "create": {
+        "title": "LANルームを作成",
+        "button": "ルーム作成"
+      },
+      "join": {
+        "title": "LANルームに参加",
+        "button": "ルーム参加"
+      },
+      "discoveredRooms": "発見されたルーム",
+      "noRooms": "ルームが見つかりません",
+      "noRoomsHint": "デバイスが同じLAN上にあることを確認してください",
+      "scanning": "スキャン中...",
+      "startScan": "スキャン開始",
+      "stopScan": "スキャン停止",
+      "manualConnect": "手動接続",
+      "port": "ポート",
+      "portPlaceholder": "ポート番号を入力",
+      "ipPlaceholder": "IPアドレスを入力",
+      "infoCopied": "接続情報をコピーしました",
+      "webNotSupported": "Webは非対応",
+      "webNotSupportedTitle": "機能は利用できません",
+      "error": {
+        "noIP": "ローカルIPアドレスを取得できません",
+        "invalidPort": "無効なポート番号"
+      }
+    },
+    "roomName": {
+      "placeholder": "ルーム名を入力"
+    },
+    "roomCode": {
+      "placeholder": "6桁のルームコードを入力"
+    },
+    "playerName": {
+      "placeholder": "名前を入力"
+    },
+    "gameType": "ゲームタイプ",
+    "taskSet": "タスクセット",
+    "maxPlayers": "最大プレイヤー数",
+    "players": "プレイヤー",
+    "connectionType": "接続タイプ",
+    "lanMode": "LANモード",
+    "waitingRoom": "待機ルーム",
+    "waitingPlayers": "プレイヤーを待っています...",
+    "waitingPlayer": "プレイヤー待機中: {{count}}/{{max}}",
+    "waitingHost": "ホストがゲームを開始するのを待っています...",
+    "startGame": "ゲーム開始",
+    "leaveRoom": "ルームを退出",
+    "creating": "作成中...",
+    "joining": "参加中...",
+    "starting": "開始中...",
+    "connected": "接続済み",
+    "connecting": "接続中...",
+    "disconnected": "切断",
+    "host": "ホスト",
+    "retry": "再試行",
+    "roomCodeCopied": "ルームコードをコピーしました",
+    "mode": {
+      "online": "オンラインモード",
+      "lan": "LANモード"
+    },
+    "instructions": {
+      "title": "使い方",
+      "shareCode": "1. ルームコードを他のプレイヤーと共有",
+      "minPlayers": "2. 最低2人のプレイヤーが参加するまで待つ",
+      "hostControl": "3. ホストがゲームを開始できます"
+    },
+    "error": {
+      "joinFailed": "ルーム参加に失敗しました",
+      "fillRequired": "すべての必須項目を入力してください",
+      "selectAvatar": "アバターを選択してください"
+    },
+    "copyFailed": "コピーに失敗しました"
+  },
+  "room": {
+    "destroyed": "ルームが破棄されました"
   },
   "simpleTaskModal": {
     "taskChallenge": "タスクチャレンジ",
     "completedReward": "完了報酬",
-    "points": "ポイント",
-    "chooseCompletion": "タスクの完了状況を選択してください：",
+    "pointsAmount": "{{points}}ポイント",
+    "chooseCompletion": "タスクを完了しましたか？",
     "completed": "完了",
     "notCompleted": "未完了",
     "taskCompleted": "タスク完了！",
     "taskFailed": "タスク失敗！",
     "earnedPoints": "{{points}}ポイント獲得",
-    "noPoints": "ポイント未獲得",
+    "noPointsEarned": "ポイントなし",
     "updatingScore": "スコア更新中..."
   },
   "taskModal": {
     "taskTypes": {
       "trap": {
         "title": "トラップチャレンジ",
-        "description": "トラップにかかりました！タスクを完了してから前に進めます"
+        "ruleExecutor": "ペナルティ対象：トラップを発動したプレイヤー",
+        "ruleReward": "タスク完了：3-6マス前進",
+        "rulePenalty": "失敗ペナルティ：3-6マス後退"
       },
       "star": {
         "title": "ラッキータスク",
-        "description": "ラッキーチャンスを獲得！タスクを完了して追加報酬を得よう"
+        "ruleExecutor": "受益者：ラッキーを得たプレイヤー",
+        "ruleReward": "タスク完了：3-6マス前進",
+        "rulePenalty": "失敗ペナルティ：3-6マス後退"
       },
       "collision": {
-        "title": "コリジョンチャレンジ",
-        "description": "衝突が発生！チャレンジを通過して位置を決めよう"
+        "title": "衝突チャレンジ",
+        "ruleExecutor": "ペナルティ対象：衝突されたプレイヤー",
+        "ruleReward": "タスク完了：その場に留まる",
+        "rulePenalty": "失敗ペナルティ：スタートに戻る"
+      },
+      "normal": {
+        "title": "通常タスク"
+      },
+      "unknown": {
+        "title": "不明なタスク"
       }
     },
     "executor": "実行者",
+    "executors": "実行者たち",
     "taskContent": "タスク内容",
     "difficulty": {
-      "easy": "イージー",
-      "normal": "ノーマル",
-      "hard": "ハード",
-      "extreme": "エクストリーム",
+      "easy": "簡単",
+      "normal": "普通",
+      "hard": "難しい",
+      "extreme": "超難",
       "unknown": "不明"
     },
-    "chooseCompletion": "タスクの完了状況を選択してください：",
     "completed": "完了",
     "notCompleted": "未完了",
+    "submitError": "送信に失敗しました。もう一度お試しください",
+    "processError": "処理に失敗しました。もう一度お試しください",
+    "processing": "処理中...",
+    "retry": "再試行",
+    "observerMode": "観察モード",
+    "observerHint": "他のプレイヤーが完了するまで待っています...",
+    "closeObserver": "観察を閉じる",
     "results": {
       "taskCompleted": "タスク完了！",
       "taskFailed": "タスク失敗！",
       "luckyBonus": "ラッキーボーナス！",
-      "missedChance": "チャンスを逃しました！",
+      "missedChance": "チャンスを逃した！",
       "successDefense": "防御成功！",
-      "collisionFailed": "コリジョン失敗！",
-      "trapReward": "報酬：3-6マス前に進む",
-      "trapPenalty": "ペナルティ：3-6マス後ろに戻る",
-      "starReward": "ラッキー報酬：3-6マス前に進む",
-      "starPenalty": "残念ペナルティ：3-6マス後ろに戻る",
-      "collisionStay": "現在の位置にとどまる",
-      "collisionStart": "スタートに戻って再開"
+      "collisionFailed": "衝突失敗！",
+      "trapReward": "報酬獲得：3-6マス前進",
+      "trapPenalty": "ペナルティ：3-6マス後退",
+      "starReward": "ラッキー報酬：3-6マス前進",
+      "starPenalty": "残念ペナルティ：3-6マス後退",
+      "collisionStay": "その場に留まる",
+      "collisionStart": "スタートに戻る",
+      "moveForward": "{{steps}}マス前進",
+      "moveBackward": "{{steps}}マス後退",
+      "backToStart": "スタートに戻る"
     },
-    "executing": "実行中..."
+    "affectedPlayers": "影響を受けるプレイヤー：",
+    "executing": "実行中...",
+    "you": "あなた",
+    "executorHint": "タスクを実行してください",
+    "moveForward": "{{steps}}マス前進",
+    "moveBackward": "{{steps}}マス後退",
+    "backToStart": "スタートに戻る",
+    "observer": {
+      "title": "観察モード",
+      "waiting": "他のプレイヤーが完了するまで待っています...",
+      "progress": "進捗: {{completed}}/{{total}}",
+      "allCompleted": "すべてのプレイヤーが完了しました"
+    },
+    "observerView": {
+      "title": "他のプレイヤーを観察",
+      "watching": "観察中",
+      "yourTurn": "あなたのターン",
+      "completed": "完了",
+      "waitingOthers": "他のプレイヤーが完了するまで待っています",
+      "allCompleted": "すべてのプレイヤーが完了しました"
+    },
+    "observerCompleted": "観察者が完了を確認",
+    "observerFailed": "観察者が失敗を確認"
   },
   "victoryModal": {
-    "gameWin": "🎉 ゲーム勝利！ 🎉",
-    "congratulations": "勝利おめでとう！",
-    "victoryReward": "🎁 勝利者報酬",
-    "rewardDescription": "勝利者として、以下のタスクから3つを選択して報酬として獲得できます！",
-    "selectRewardTasks": "報酬タスクを選択",
-    "selectLater": "後で選択",
-    "selectRewardTasksTitle": "報酬タスク選択",
-    "selectedCount": "{{count}}/3件選択済み",
-    "confirmSelection": "選択を確定（{{count}}件）",
-    "rewardReceived": "🎊 報酬タスクを獲得！",
-    "selectedTasksCount": "{{count}}件の報酬タスクを正常に選択しました",
-    "rewardTasks": "獲得した報酬タスク：",
+    "congratulations": "勝利おめでとうございます！",
     "restart": "再開",
-    "exitGame": "ゲームを終了"
-  },
-  "customAlert": {
-    "confirm": "確定"
+    "exitGame": "ゲーム終了",
+    "youWin": "あなたの勝ち！",
+    "winnerIs": "勝者は：{{name}}",
+    "gameOver": "ゲームオーバー",
+    "waitingForWinner": "勝者が報酬を選択するまで待っています...",
+    "allTasksCompleted": "すべてのタスクが完了しました！",
+    "completeAllTasks": "すべてのタスクを完了",
+    "completeTasks": "タスクを完了",
+    "close": "閉じる"
   },
   "settings": {
     "title": "設定",
     "sections": {
-      "general": "一般設定",
+      "general": "一般",
+      "network": "ネットワーク設定",
       "gameSettings": "ゲーム設定",
-      "about": "アプリについて"
+      "aiSettings": "AI設定",
+      "about": "について"
     },
     "updateCheck": {
-      "error": "更新の確認に失敗しました。しばらくしてからもう一度お試しください。",
-      "noUpdate": "現在は最新バージョンです",
-      "hasUpdate": "新しいバージョン {{version}} が見つかりました！",
+      "error": "アップデートの確認に失敗しました。後でもう一度お試しください",
+      "noUpdate": "最新バージョンをお使いです",
+      "hasUpdate": "新しいバージョン{{version}}が見つかりました！",
       "update": "今すぐ更新",
-      "later": "後で更新",
-      "alertTitle": "更新の確認",
-      "checking": "確認中...",
-      "label": "更新を確認"
+      "later": "後で",
+      "alertTitle": "アップデートを確認",
+      "label": "アップデートを確認"
     },
     "language": {
-      "label": "言語設定",
+      "label": "言語",
       "modalTitle": "言語を選択",
       "config": {
         "zh": "中国語",
@@ -248,111 +462,122 @@
       }
     },
     "theme": {
-      "label": "テーマ設定",
+      "label": "テーマ",
       "modalTitle": "テーマを選択",
       "config": {
-        "system": "システムに追随",
+        "system": "システムに従う",
         "light": "ライトモード",
         "dark": "ダークモード"
       }
     },
     "sound": {
       "label": "サウンド設定",
-      "value": "サウンドエフェクトON",
-      "alertTitle": "サウンド設定",
-      "alertMessage": "ゲームサウンドエフェクトは開発中です...",
-      "enabled": "有効",
-      "disabled": "無効",
-      "bgm": "BGM（背景音楽）"
+      "bgm": "BGM"
+    },
+    "network": {
+      "enabled": "ネットワークモード",
+      "socketUrl": "Socket URL",
+      "socketUrlSaved": "Socket URLを保存しました",
+      "lanMode": "LANモード"
+    },
+    "lan": {
+      "label": "ローカルIPアドレス",
+      "loading": "取得中...",
+      "error": "失敗",
+      "unavailable": "利用不可",
+      "errorMessage": "ローカルIPアドレスを取得できません。ネットワーク接続を確認してください",
+      "copied": "IPアドレスをクリップボードにコピーしました",
+      "port": "LANポート",
+      "portSaved": "ポートを保存しました",
+      "invalidPort": "ポートは1024-65535の間である必要があります"
+    },
+    "ai": {
+      "enabled": "AI機能を有効にする",
+      "config": "AI設定",
+      "configured": "設定済み",
+      "notConfigured": "未設定",
+      "description": "AIサービスを設定してスマート機能を有効にします",
+      "apiUrl": "API URL",
+      "apiKey": "API Key",
+      "apiModel": "モデル名",
+      "apiUrlRequired": "API URLは必須です",
+      "apiKeyRequired": "API Keyは必須です",
+      "configSaved": "AI設定を保存しました"
     },
     "version": {
-      "label": "バージョン情報",
-      "alertTitle": "バージョン情報",
-      "alertMessage": "バージョン：1.0.0\nビルド日：{{buildDate}}"
+      "label": "バージョン情報"
     },
     "userAgreement": {
-      "label": "ユーザー契約",
-      "alertTitle": "ユーザー契約",
-      "alertMessage": "本アプリをご利用いただきありがとうございます。アプリの各機能を適切にご利用ください。"
+      "label": "利用規約",
+      "alertTitle": "利用規約"
     },
     "privacyPolicy": {
       "label": "プライバシーポリシー",
-      "alertTitle": "プライバシーポリシー",
-      "alertMessage": "ユーザーのプライバシーを重視しています。すべてのデータはローカルに保存され、サーバーにアップロードされることはありません。"
+      "alertTitle": "プライバシーポリシー"
     }
   },
   "tasks": {
     "title": "タスク管理",
-    "subtitle": "ゲームのタスクとカテゴリを管理",
+    "subtitle": "ゲームタスクとカテゴリーを管理",
     "tabs": {
       "taskSets": "タスクセット",
-      "categories": "カテゴリ"
+      "categories": "カテゴリー"
     },
     "taskSet": {
       "type": {
         "system": "システム",
         "custom": "カスタム"
       },
-      "tasks": "{{count}} 件のタスク",
+      "tasks": "{{count}}個のタスク",
       "status": {
         "enabled": "有効",
         "disabled": "無効"
       }
     },
     "category": {
-      "taskSets": "{{count}} 件のタスクセット"
+      "taskSets": "{{count}}個のタスクセット"
     },
     "empty": {
-      "taskSets": "タスクセットがありません。右下のボタンをタップして作成してください",
-      "categories": "カテゴリがありません。右下のボタンをタップして作成してください"
+      "taskSets": "タスクセットがありません。ボタンをクリックして作成してください",
+      "categories": "カテゴリーがありません。ボタンをクリックして作成してください"
     },
     "delete": {
       "taskSet": {
-        "title": "削除の確認",
-        "message": "タスクセット「{{name}}」を削除してもよろしいですか？この操作は元に戻せません。"
+        "title": "削除確認"
       },
       "category": {
-        "title": "削除の確認",
-        "message": "カテゴリ「{{name}}」を削除してもよろしいですか？この操作は元に戻せません。",
-        "withTaskSets": "このカテゴリに含まれる {{count}} 件のタスクセットも同時に削除されます。"
+        "warning": "警告：カテゴリーを削除すると、その下のすべてのタスクセットも削除されます"
       },
-      "cancel": "キャンセル",
       "confirm": "削除"
     },
     "import": {
       "title": "インポート",
       "error": {
-        "title": "エラー",
-        "invalidFormat": "ファイル形式が正しくありません",
-        "invalidContent": "ファイル内容の形式が正しくありません",
+        "invalidFormat": "無効なファイル形式",
+        "invalidContent": "無効なファイル内容形式",
         "failed": "インポートに失敗しました"
       },
-      "success": "タスクセットを正常にインポートしました: {{name}}",
-      "unnamedTaskSet": "無名のタスクセット",
-      "categoryCreated": "新しいカテゴリも作成されました: {{categoryName}}"
+      "success": "タスクセットを正常にインポートしました：{{name}}",
+      "unnamedTaskSet": "名前のないタスクセット",
+      "categoryCreated": "新しいカテゴリーも作成しました：{{categoryName}}"
     },
     "export": {
-      "title": "タスクセットのエクスポート",
+      "title": "タスクセットをエクスポート",
       "message": "エクスポート方法を選択してください",
-      "share": "共有",
       "saveToFile": "ファイルに保存",
-      "cancel": "キャンセル",
-      "shareTitle": "タスクセットのエクスポート: {{name}}",
       "success": {
         "downloaded": "ファイルがデバイスにダウンロードされました",
-        "saved": "ファイルが保存されました: {{fileName}}",
-        "exported": "ファイルがエクスポートされ、デバイスに保存できます"
+        "saved": "ファイルを保存しました：{{fileName}}",
+        "exported": "ファイルをエクスポートし、デバイスに保存できます"
       },
       "error": {
-        "title": "エラー",
-        "failed": "エクスポートに失敗しました",
         "saveFailed": "ファイルの保存に失敗しました"
       }
     }
   },
   "taskSetDetail": {
     "taskList": "タスクリスト",
-    "emptyTasks": "タスクはありません"
+    "emptyTasks": "タスクがありません"
   },
   "tabs": {
     "home": "ホーム",
@@ -362,136 +587,137 @@
   "systemTasks": {
     "normal": {
       "name": "クラシックモード",
-      "description": "カップルの日常インタラクションに適したクラシックタスク"
+      "description": "日常のカップル交流のためのクラシックタスク"
     },
     "couple": {
       "name": "カップル専用",
-      "description": "感情を深めるためのスウィートタスク"
+      "description": "関係を深める甘いタスク"
     },
     "sweet": {
-      "name": "スウィートタイム",
-      "description": "温かくロマンチックなスウィートタスク"
+      "name": "スイートタイム",
+      "description": "温かくロマンチックな甘いタスク"
     },
     "advanced": {
-      "name": "恋愛アドバンス",
-      "description": "深いインタラクションができるアドバンスタスク"
+      "name": "恋愛上級",
+      "description": "深い交流の上級タスク"
     },
     "love": {
       "name": "ロマンチックな雰囲気",
-      "description": "ロマンチックな雰囲気を作るためのタスク"
+      "description": "ロマンチックな雰囲気を作るタスク"
     },
     "mixed": {
       "name": "ミックスモード",
-      "description": "多様な種類が組み合わさったミックスタスク"
+      "description": "多様なミックスタスク"
     },
     "intimate": {
-      "name": "インティメイトインタラクション",
-      "description": "親密な関係を深めるためのタスク"
+      "name": "親密な交流",
+      "description": "親密な関係を深めるタスク"
     }
   },
   "gameMode": {
-    "flyingChess": "飞行机ゲーム - タスク選択",
-    "wheel": "ラッキーホイール - タスク選択",
-    "minesweeper": "マインスイーパー対戦 - タスク選択",
+    "flyingChess": "飛行棋",
+    "wheel": "ホイール",
+    "minesweeper": "地雷対戦",
+    "drawGuess": "お絵描き伝言",
     "default": "タスク選択",
     "all": "すべて",
+    "singlePlayer": "シングルプレイヤー",
+    "createRoom": "ルーム作成",
+    "joinRoom": "ルーム参加",
+    "onlineComingSoon": "オンラインモード近日公開",
+    "onlineNotSupported": "このゲームはまだオンラインモードに対応していません",
     "empty": {
       "title": "利用可能なゲームモードがありません",
-      "subtitle": "タスク管理ページに移動してタスクセットを追加してください",
-      "button": "タスクを追加する"
+      "subtitle": "タスク管理でタスクセットを追加してください",
+      "button": "タスクを追加"
     },
-    "taskCount": "{{count}}件のタスク",
+    "taskCount": "{{count}}個のタスク",
     "estimatedTime": {
       "minutes": "約{{minutes}}分",
       "hours": "約{{hours}}時間{{minutes}}分",
       "hoursOnly": "約{{hours}}時間"
-    },
-    "startGame": "ゲーム開始"
+    }
   },
   "taskSetModal": {
-    "create": "タスクセットを作成",
-    "edit": "タスクセットを編集",
-    "copyFromSystem": "システムタスクに基づいて作成",
+    "create": "タスクセット作成",
+    "edit": "タスクセット編集",
+    "copyFromSystem": "システムタスクから作成",
     "name": "名前",
     "description": "説明",
     "category": "カテゴリー",
     "taskList": "タスクリスト",
-    "addTask": "タスクを追加",
-    "paste": "ペースト",
+    "addTask": "タスク追加",
+    "paste": "貼り付け",
     "aiGenerated": "AI生成",
     "aiGenerating": "生成中...",
     "taskPlaceholder": "タスク{{index}}",
-    "namePlaceholder": "タスクセットの名前を入力してください",
-    "descriptionPlaceholder": "タスクセットの説明を入力してください（任意）",
+    "namePlaceholder": "タスクセット名を入力",
+    "descriptionPlaceholder": "タスクセットの説明を入力（オプション）",
     "cancel": "キャンセル",
     "save": "保存",
     "saving": "保存中...",
     "alerts": {
       "nameRequired": {
         "title": "ヒント",
-        "message": "タスクセットの名前を入力してください"
+        "message": "タスクセット名を入力してください"
       },
       "tasksRequired": {
-        "title": "ヒント",
-        "message": "少なくとも1件のタスクを追加してください"
+        "message": "少なくとも1つのタスクを追加してください"
       },
       "saveError": {
         "title": "エラー",
-        "message": "保存に失敗しました。再試行してください"
+        "message": "保存に失敗しました。もう一度お試しください"
       },
       "clipboardEmpty": {
-        "title": "ヒント",
-        "message": "クリップボードは空です"
+        "message": "クリップボードが空です"
       },
       "clipboardNoTasks": {
-        "title": "ヒント",
-        "message": "クリップボードに有効なタスク内容がありません"
+        "message": "クリップボードに有効なタスクがありません"
       },
       "pasteSuccess": {
         "title": "成功",
-        "message": "{{count}}件のタスクを正常にペーストしました"
+        "message": "{{count}}個のタスクを貼り付けました"
       },
       "pasteError": {
         "title": "エラー",
-        "message": "ペーストに失敗しました。再試行してください"
+        "message": "貼り付けに失敗しました。もう一度お試しください"
       }
     },
     "aiGenerate": {
       "disabled": {
-        "title": "AI未有効",
-        "message": "先に設定でAI機能を設定して有効にしてください"
+        "title": "AIが有効になっていません",
+        "message": "まず設定でAI機能を設定して有効にしてください"
       },
       "confirm": {
         "title": "AIタスク生成",
-        "message": "「{{name}}」に対して50件のタスクをAIで生成します。現在のタスクリストが置き換えられます。続行しますか？",
-        "yes": "生成を開始"
+        "yes": "生成開始"
       },
       "failed": {
         "title": "生成失敗",
-        "message": "AIタスク生成に失敗しました。ネットワーク接続を確認するか、しばらくしてから再試行してください"
+        "message": "AIタスク生成に失敗しました。ネットワークを確認するか、後でもう一度お試しください"
       },
       "success": {
         "title": "生成成功",
-        "message": "{{count}}件のタスクを正常に生成しました！"
+        "message": "{{count}}個のタスクを正常に生成しました！"
       },
       "error": {
-        "title": "エラー発生",
-        "message": "タスク生成中にエラーが発生しました。再試行してください"
+        "title": "エラーが発生しました",
+        "message": "タスク生成中にエラーが発生しました。もう一度お試しください"
       }
     }
   },
   "defaultCategories": {
     "dailyInteraction": {
-      "name": "日常インタラクション",
-      "description": "温かい日常のインタラクションタスク"
+      "name": "日常交流",
+      "description": "温かい日常の交流タスク"
     },
     "sweetTime": {
-      "name": "スウィートタイム",
-      "description": "感情を深めるためのスウィートタスク"
+      "name": "スイートタイム",
+      "description": "感情を深める甘いタスク"
     },
     "funChallenge": {
-      "name": "ファンチャレンジ",
-      "description": "楽しいチャレンジタスク"
+      "name": "楽しいチャレンジ",
+      "description": "面白いチャレンジタスク"
     }
   },
   "players": {
@@ -502,35 +728,13 @@
       "player4": "プレイヤー4"
     },
     "gameEnd": "🎉 ゲーム終了",
-    "victory": "{{name}} の勝利！",
+    "victory": "{{name}}の勝利！",
     "finalRanking": "📊 最終ランキング:",
     "rankingItem": "{{rank}}. {{name}} (位置: {{position}}, スコア: {{score}})",
-    "winnerStats": "🏆 勝者統計:",
-    "completedTasks": "✅ 完了タスク: {{count}} 個",
-    "achievements": "🌟 獲得実績: {{count}} 個",
-    "restart": "再開始",
+    "winnerStats": "🏆 勝者の統計:",
+    "completedTasks": "✅ 完了したタスク: {{count}}個",
+    "achievements": "🌟 獲得した実績: {{count}}個",
+    "restart": "再開",
     "exitGame": "ゲーム終了"
-  },
-  "aiService": {
-    "drawGuess": {
-      "categories": {
-        "random": "ランダム",
-        "animal": "動物",
-        "food": "食べ物",
-        "item": "物品",
-        "nature": "自然",
-        "building": "建物",
-        "emotion": "感情",
-        "sport": "スポーツ",
-        "profession": "職業",
-        "transport": "交通",
-        "plant": "植物"
-      },
-      "validation": {
-        "empty": "単語を空にすることはできません",
-        "tooLong": "単語が長すぎてゲームに適していません",
-        "noNumbers": "単語に数字を含めることはできません"
-      }
-    }
   }
 }

@@ -2,7 +2,9 @@ import React, { useRef, useState } from 'react'
 import { StyleSheet, View, TouchableOpacity, Text } from 'react-native'
 import { Svg, Path, G } from 'react-native-svg'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
+import { runOnJS } from 'react-native-reanimated'
 import { Ionicons } from '@expo/vector-icons'
+import { useTranslation } from 'react-i18next'
 import { Colors } from '@/constants/theme'
 
 export interface DrawingCanvasProps {
@@ -39,44 +41,75 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   onClear,
   disabled = false,
 }) => {
+  const { t } = useTranslation()
   const [paths, setPaths] = useState<PathData[]>([])
   const [currentPath, setCurrentPath] = useState<string>('')
   const [selectedColor, setSelectedColor] = useState(DRAWING_COLORS[0])
   const [selectedStrokeWidth, setSelectedStrokeWidth] = useState(STROKE_WIDTHS[1])
 
   const currentPoints = useRef<{ x: number; y: number }[]>([])
+  const pathStringRef = useRef<string>('')
 
-  // 绘画手势
+  // 更新当前绘制路径
+  const updateCurrentPath = (newPath: string) => {
+    setCurrentPath(newPath)
+  }
+
+  // 保存完成的路径
+  const saveCompletedPath = (pathStr: string, color: string, strokeWidth: number) => {
+    setPaths((prev) => [
+      ...prev,
+      {
+        path: pathStr,
+        color,
+        strokeWidth,
+      },
+    ])
+    setCurrentPath('')
+  }
+
+  // 绘画手势 - 优化版本
   const panGesture = Gesture.Pan()
     .enabled(!disabled)
+    .minDistance(0) // 立即响应
+    .maxPointers(1) // 只允许单指
+    .shouldCancelWhenOutside(false) // 不在画布外取消
+    .activeOffsetX([-10, 10]) // 设置激活偏移,避免与ScrollView冲突
+    .activeOffsetY([-10, 10])
     .onStart((event) => {
-      currentPoints.current = [{ x: event.x, y: event.y }]
-      setCurrentPath(`M ${event.x} ${event.y}`)
+      'worklet'
+      const x = Math.round(event.x * 10) / 10 // 四舍五入减少精度
+      const y = Math.round(event.y * 10) / 10
+      currentPoints.current = [{ x, y }]
+      pathStringRef.current = `M ${x} ${y}`
+      runOnJS(updateCurrentPath)(`M ${x} ${y}`)
     })
     .onUpdate((event) => {
-      currentPoints.current.push({ x: event.x, y: event.y })
-      const path = currentPoints.current
-        .map((point, index) => {
-          if (index === 0) {
-            return `M ${point.x} ${point.y}`
-          }
-          return `L ${point.x} ${point.y}`
-        })
-        .join(' ')
-      setCurrentPath(path)
+      'worklet'
+      const x = Math.round(event.x * 10) / 10
+      const y = Math.round(event.y * 10) / 10
+
+      // 检查是否移动足够距离（避免重复点）
+      const lastPoint = currentPoints.current[currentPoints.current.length - 1]
+      const distance = Math.sqrt(
+        Math.pow(x - lastPoint.x, 2) + Math.pow(y - lastPoint.y, 2)
+      )
+
+      // 只有移动超过2像素才记录新点
+      if (distance > 2) {
+        currentPoints.current.push({ x, y })
+        // 增量添加路径,而不是重新生成整个字符串
+        pathStringRef.current += ` L ${x} ${y}`
+        runOnJS(updateCurrentPath)(pathStringRef.current)
+      }
     })
     .onEnd(() => {
-      if (currentPath) {
-        setPaths((prev) => [
-          ...prev,
-          {
-            path: currentPath,
-            color: selectedColor,
-            strokeWidth: selectedStrokeWidth,
-          },
-        ])
-        setCurrentPath('')
+      'worklet'
+      if (pathStringRef.current) {
+        // 保存路径
+        runOnJS(saveCompletedPath)(pathStringRef.current, selectedColor, selectedStrokeWidth)
         currentPoints.current = []
+        pathStringRef.current = ''
       }
     })
 
@@ -85,6 +118,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     setPaths([])
     setCurrentPath('')
     currentPoints.current = []
+    pathStringRef.current = ''
     onClear?.()
   }
 
@@ -114,7 +148,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
             <Svg width={width} height={height}>
               <G>
                 {/* 绘制已完成的路径 */}
-                {paths.map((pathData, index) => (
+                {paths?.map((pathData, index) => (
                   <Path
                     key={`path-${index}`}
                     d={pathData.path}
@@ -208,7 +242,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
               disabled={paths.length === 0}
             >
               <Ionicons name="arrow-undo" size={24} color="#FFFFFF" />
-              <Text style={styles.actionButtonText}>撤销</Text>
+              <Text style={styles.actionButtonText}>{t('drawGuess.canvas.undo')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -218,7 +252,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
               disabled={paths.length === 0 && !currentPath}
             >
               <Ionicons name="trash" size={24} color="#FFFFFF" />
-              <Text style={styles.actionButtonText}>清空</Text>
+              <Text style={styles.actionButtonText}>{t('drawGuess.canvas.clear')}</Text>
             </TouchableOpacity>
           </View>
         </View>

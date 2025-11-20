@@ -12,6 +12,7 @@ import Animated, {
 } from 'react-native-reanimated'
 import { LinearGradient } from 'expo-linear-gradient'
 import { Ionicons } from '@expo/vector-icons'
+import { useTranslation } from 'react-i18next'
 import { Colors } from '@/constants/theme'
 
 export interface GuessInputProps {
@@ -31,11 +32,15 @@ export const GuessInput: React.FC<GuessInputProps> = ({
   onGuessWrong,
   colors = Colors.light,
   disabled = false,
-  placeholder = '输入你的猜测...',
+  placeholder,
 }) => {
+  const { t } = useTranslation()
   const [guess, setGuess] = useState('')
   const [showFeedback, setShowFeedback] = useState<'correct' | 'wrong' | null>(null)
   const [isFocused, setIsFocused] = useState(false)
+
+  // Use translated placeholder if not provided
+  const inputPlaceholder = placeholder || t('drawGuess.game.guessPlaceholder')
 
   // Animation values
   const shakeTranslate = useSharedValue(0)
@@ -148,15 +153,19 @@ export const GuessInput: React.FC<GuessInputProps> = ({
   }
 
   // Container animation style
-  const containerAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: shakeTranslate.value },
-      { scale: bounceScale.value * pulseScale.value },
-    ],
-  }))
+  const containerAnimatedStyle = useAnimatedStyle(() => {
+    'worklet'
+    return {
+      transform: [
+        { translateX: shakeTranslate.value },
+        { scale: bounceScale.value * pulseScale.value },
+      ],
+    }
+  })
 
   // Glow animation style - 只用于反馈时的发光效果
   const glowAnimatedStyle = useAnimatedStyle(() => {
+    'worklet'
     if (!showFeedback) {
       return {
         shadowOpacity: 0,
@@ -173,19 +182,30 @@ export const GuessInput: React.FC<GuessInputProps> = ({
   })
 
   // Button animation style
-  const buttonAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: buttonScale.value }, { rotate: `${successRotate.value}deg` }],
-  }))
+  const buttonAnimatedStyle = useAnimatedStyle(() => {
+    'worklet'
+    return {
+      transform: [{ scale: buttonScale.value }, { rotate: `${successRotate.value}deg` }],
+    }
+  })
 
   // Border glow style
   const borderAnimatedStyle = useAnimatedStyle(() => {
+    'worklet'
     const glowIntensity = borderGlow.value
+
+    // 在 worklet 中直接计算颜色，不调用外部函数
+    let borderColor = '#F59E0B' // 默认橙色
+    if (showFeedback === 'correct') {
+      borderColor = colors.success || '#10B981'
+    } else if (showFeedback === 'wrong') {
+      borderColor = colors.error || '#EF4444'
+    } else if (isFocused) {
+      borderColor = `rgba(245, 158, 11, ${0.5 + glowIntensity * 0.5})`
+    }
+
     return {
-      borderColor: showFeedback
-        ? getFeedbackColor()
-        : isFocused
-          ? `rgba(245, 158, 11, ${0.5 + glowIntensity * 0.5})`
-          : '#F59E0B', // 默认使用明显的橙色边框
+      borderColor,
       shadowColor: isFocused ? '#F59E0B' : '#000',
       shadowOffset: { width: 0, height: isFocused ? 4 : 2 },
       shadowOpacity: isFocused ? interpolate(glowIntensity, [0, 1], [0.1, 0.3]) : 0.15,
@@ -229,7 +249,7 @@ export const GuessInput: React.FC<GuessInputProps> = ({
               ]}
               value={guess}
               onChangeText={setGuess}
-              placeholder={placeholder}
+              placeholder={inputPlaceholder}
               placeholderTextColor={colors.homeCardDescription || '#999999'}
               onSubmitEditing={handleSubmit}
               onFocus={() => setIsFocused(true)}
@@ -309,7 +329,7 @@ export const GuessInput: React.FC<GuessInputProps> = ({
                 },
               ]}
             >
-              {showFeedback === 'correct' ? '猜对了! 太棒了!' : '加油! 再试一次~'}
+              {showFeedback === 'correct' ? t('drawGuess.feedback.correct') : t('drawGuess.feedback.wrong')}
             </Text>
           </LinearGradient>
         </Animated.View>
