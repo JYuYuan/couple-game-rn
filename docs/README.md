@@ -157,7 +157,7 @@ Visit the [Releases](https://github.com/JYuYuan/couple-game-rn/releases) page to
 
 ### Web Online Experience
 
-Visit: `https://qq.cpflying.top`
+Visit: https://qq.cpflying.top(https://qq.cpflying.top)
 
 ## 🛠 Tech Stack
 
