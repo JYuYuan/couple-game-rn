@@ -22,6 +22,10 @@ permissions:
 jobs:
   build-android:
     runs-on: ubuntu-latest
+    outputs:
+      android_qrcode_url: ${{ steps.upload_android_pgyer.outputs.android_qrcode_url }}
+      android_short_url: ${{ steps.upload_android_pgyer.outputs.android_short_url }}
+      android_version: ${{ steps.upload_android_pgyer.outputs.android_version }}
     env:
       GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=2048m -Dorg.gradle.daemon=false
       EXPO_NO_DOTENV: 1
@@ -92,8 +96,28 @@ jobs:
           path: ${{ steps.find_apk.outputs.apk_path }}
           retention-days: 30
 
+      - name: Install jq for JSON parsing
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Upload Android to Pgyer
+        id: upload_android_pgyer
+        run: ./.github/scripts/upload-to-pgyer.sh "${{ steps.find_apk.outputs.apk_path }}" "android"
+        env:
+          DANDELION_TOKEN: ${{ secrets.DANDELION_TOKEN }}
+
+      - name: Display Android QR Code
+        run: |
+          echo "📱 Android Download Information:"
+          echo "   Download URL: ${{ steps.upload_android_pgyer.outputs.android_short_url }}"
+          echo "   QR Code: ${{ steps.upload_android_pgyer.outputs.android_qrcode_url }}"
+          echo "   Version: ${{ steps.upload_android_pgyer.outputs.android_version }}"
+
   build-ios:
     runs-on: macos-latest
+    outputs:
+      ios_qrcode_url: ${{ steps.upload_ios_pgyer.outputs.ios_qrcode_url }}
+      ios_short_url: ${{ steps.upload_ios_pgyer.outputs.ios_short_url }}
+      ios_version: ${{ steps.upload_ios_pgyer.outputs.ios_version }}
     env:
       EXPO_NO_DOTENV: 1
       CI: false
@@ -137,6 +161,22 @@ jobs:
           name: ios-ipa
           path: ${{ steps.find_ipa.outputs.ipa_path }}
           retention-days: 30
+
+      - name: Install jq for JSON parsing
+        run: brew install jq || true
+
+      - name: Upload iOS to Pgyer
+        id: upload_ios_pgyer
+        run: ./.github/scripts/upload-to-pgyer.sh "${{ steps.find_ipa.outputs.ipa_path }}" "ios"
+        env:
+          DANDELION_TOKEN: ${{ secrets.DANDELION_TOKEN }}
+
+      - name: Display iOS QR Code
+        run: |
+          echo "📱 iOS Download Information:"
+          echo "   Download URL: ${{ steps.upload_ios_pgyer.outputs.ios_short_url }}"
+          echo "   QR Code: ${{ steps.upload_ios_pgyer.outputs.ios_qrcode_url }}"
+          echo "   Version: ${{ steps.upload_ios_pgyer.outputs.ios_version }}"
 
   create-release:
     needs: [build-android, build-ios]
