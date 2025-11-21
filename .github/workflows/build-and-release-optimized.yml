@@ -165,13 +165,13 @@ jobs:
       - name: Install jq for JSON parsing
         run: brew install jq || true
 
-      - name: Upload iOS to Pgyer
+      - name: Upload IOS to Pgyer
         id: upload_ios_pgyer
         run: ./.github/scripts/upload-to-pgyer.sh "${{ steps.find_ipa.outputs.ipa_path }}" "ios"
         env:
           DANDELION_TOKEN: ${{ secrets.DANDELION_TOKEN }}
 
-      - name: Display iOS QR Code
+      - name: Display IOS QR Code
         run: |
           echo "📱 iOS Download Information:"
           echo "   Download URL: ${{ steps.upload_ios_pgyer.outputs.ios_short_url }}"
