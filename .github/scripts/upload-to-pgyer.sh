@@ -5,6 +5,7 @@
 
 set -e
 
+DANDELION_TOKEN="bf1954fd73fdcdccf1f2e8c5e046592f"
 FILE_PATH="$1"
 PLATFORM="$2"
 
