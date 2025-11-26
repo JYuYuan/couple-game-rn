@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { StyleSheet, View, TextInput, TouchableOpacity, Text, Platform } from 'react-native'
+import { StyleSheet, View, TextInput, TouchableOpacity, Text, Platform, KeyboardAvoidingView } from 'react-native'
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -217,124 +217,129 @@ export const GuessInput: React.FC<GuessInputProps> = ({
   const isButtonDisabled = !guess.trim() || disabled || !!showFeedback
 
   return (
-    <View style={styles.container}>
-      <Animated.View style={[containerAnimatedStyle, glowAnimatedStyle]}>
-        <Animated.View
-          style={[
-            styles.inputContainer,
-            {
-              // 使用 surface 颜色，确保在两种主题下都有对比度
-              // 浅色主题: #FFFFFF (白色)
-              // 深色主题: #2C2C2E (深灰色)
-              backgroundColor: colors.surface || '#FFFFFF',
-            },
-            borderAnimatedStyle,
-          ]}
-        >
-          {/* Input field */}
-          <View style={styles.inputWrapper}>
-            <Ionicons
-              name="create-outline"
-              size={22}
-              color={isFocused ? '#F59E0B' : colors.homeCardDescription || '#999999'}
-              style={styles.inputIcon}
-            />
-            <TextInput
-              style={[
-                styles.input,
-                {
-                  color: colors.homeCardTitle || '#000000',
-                  outlineStyle: 'none' as any, // 去掉焦点边框 (Web only)
-                },
-              ]}
-              value={guess}
-              onChangeText={setGuess}
-              placeholder={inputPlaceholder}
-              placeholderTextColor={colors.homeCardDescription || '#999999'}
-              onSubmitEditing={handleSubmit}
-              onFocus={() => setIsFocused(true)}
-              onBlur={() => setIsFocused(false)}
-              returnKeyType="send"
-              autoCorrect={false}
-              autoCapitalize="none"
-              editable={!disabled && !showFeedback}
-            />
-          </View>
-
-          {/* Submit button with gradient */}
-          <Animated.View style={buttonAnimatedStyle}>
-            <TouchableOpacity
-              onPress={handleSubmit}
-              onPressIn={handleButtonPressIn}
-              onPressOut={handleButtonPressOut}
-              disabled={isButtonDisabled}
-              activeOpacity={1}
-              style={styles.submitButtonWrapper}
-            >
-              <AnimatedLinearGradient
-                colors={
-                  showFeedback === 'correct'
-                    ? ['#10B981', '#059669']
-                    : showFeedback === 'wrong'
-                      ? ['#EF4444', '#DC2626']
-                      : ['#F59E0B', '#FBBF24']
-                }
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={{ width: '100%' }}
+    >
+      <View style={styles.container}>
+        <Animated.View style={[containerAnimatedStyle, glowAnimatedStyle]}>
+          <Animated.View
+            style={[
+              styles.inputContainer,
+              {
+                // 使用 surface 颜色，确保在两种主题下都有对比度
+                // 浅色主题: #FFFFFF (白色)
+                // 深色主题: #2C2C2E (深灰色)
+                backgroundColor: colors.surface || '#FFFFFF',
+              },
+              borderAnimatedStyle,
+            ]}
+          >
+            {/* Input field */}
+            <View style={styles.inputWrapper}>
+              <Ionicons
+                name="create-outline"
+                size={22}
+                color={isFocused ? '#F59E0B' : colors.homeCardDescription || '#999999'}
+                style={styles.inputIcon}
+              />
+              <TextInput
                 style={[
-                  styles.submitButton,
+                  styles.input,
                   {
-                    opacity: isButtonDisabled ? 0.5 : 1,
+                    color: colors.homeCardTitle || '#000000',
+                    outlineStyle: 'none' as any, // 去掉焦点边框 (Web only)
+                  },
+                ]}
+                value={guess}
+                onChangeText={setGuess}
+                placeholder={inputPlaceholder}
+                placeholderTextColor={colors.homeCardDescription || '#999999'}
+                onSubmitEditing={handleSubmit}
+                onFocus={() => setIsFocused(true)}
+                onBlur={() => setIsFocused(false)}
+                returnKeyType="send"
+                autoCorrect={false}
+                autoCapitalize="none"
+                editable={!disabled && !showFeedback}
+              />
+            </View>
+
+            {/* Submit button with gradient */}
+            <Animated.View style={buttonAnimatedStyle}>
+              <TouchableOpacity
+                onPress={handleSubmit}
+                onPressIn={handleButtonPressIn}
+                onPressOut={handleButtonPressOut}
+                disabled={isButtonDisabled}
+                activeOpacity={1}
+                style={styles.submitButtonWrapper}
+              >
+                <AnimatedLinearGradient
+                  colors={
+                    showFeedback === 'correct'
+                      ? ['#10B981', '#059669']
+                      : showFeedback === 'wrong'
+                        ? ['#EF4444', '#DC2626']
+                        : ['#F59E0B', '#FBBF24']
+                  }
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={[
+                    styles.submitButton,
+                    {
+                      opacity: isButtonDisabled ? 0.5 : 1,
+                    },
+                  ]}
+                >
+                  <Ionicons name={getFeedbackIcon() as any} size={24} color="#FFFFFF" />
+                </AnimatedLinearGradient>
+              </TouchableOpacity>
+            </Animated.View>
+          </Animated.View>
+        </Animated.View>
+
+        {/* Feedback message */}
+        {showFeedback && (
+          <Animated.View
+            style={[
+              styles.feedbackContainer,
+              {
+                backgroundColor:
+                  showFeedback === 'correct' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+              },
+            ]}
+          >
+            <LinearGradient
+              colors={
+                showFeedback === 'correct'
+                  ? ['rgba(16, 185, 129, 0.2)', 'rgba(16, 185, 129, 0.05)']
+                  : ['rgba(239, 68, 68, 0.2)', 'rgba(239, 68, 68, 0.05)']
+              }
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.feedbackGradient}
+            >
+              <Ionicons
+                name={showFeedback === 'correct' ? 'trophy' : 'heart'}
+                size={20}
+                color={getFeedbackColor()}
+              />
+              <Text
+                style={[
+                  styles.feedbackText,
+                  {
+                    color: getFeedbackColor(),
                   },
                 ]}
               >
-                <Ionicons name={getFeedbackIcon() as any} size={24} color="#FFFFFF" />
-              </AnimatedLinearGradient>
-            </TouchableOpacity>
+                {showFeedback === 'correct' ? t('drawGuess.feedback.correct') : t('drawGuess.feedback.wrong')}
+              </Text>
+            </LinearGradient>
           </Animated.View>
-        </Animated.View>
-      </Animated.View>
-
-      {/* Feedback message */}
-      {showFeedback && (
-        <Animated.View
-          style={[
-            styles.feedbackContainer,
-            {
-              backgroundColor:
-                showFeedback === 'correct' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-            },
-          ]}
-        >
-          <LinearGradient
-            colors={
-              showFeedback === 'correct'
-                ? ['rgba(16, 185, 129, 0.2)', 'rgba(16, 185, 129, 0.05)']
-                : ['rgba(239, 68, 68, 0.2)', 'rgba(239, 68, 68, 0.05)']
-            }
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.feedbackGradient}
-          >
-            <Ionicons
-              name={showFeedback === 'correct' ? 'trophy' : 'heart'}
-              size={20}
-              color={getFeedbackColor()}
-            />
-            <Text
-              style={[
-                styles.feedbackText,
-                {
-                  color: getFeedbackColor(),
-                },
-              ]}
-            >
-              {showFeedback === 'correct' ? t('drawGuess.feedback.correct') : t('drawGuess.feedback.wrong')}
-            </Text>
-          </LinearGradient>
-        </Animated.View>
-      )}
-    </View>
+        )}
+      </View>
+    </KeyboardAvoidingView>
   )
 }
 
